@@ -1,3 +1,9 @@
 #a{
 color:red;}
 .weather{ float:left; padding-top:5px; padding-left:5px;}
+#xiugai {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
