@@ -6,24 +6,29 @@
 <title>调用接口例</title>
 </head>
 <body>
-    <input type="text" id="inputValue" placeholder="输入参数">
-    <button onclick="callAPI()">调用接口</button>
-    <div id="response"></div>
+ <input type="text" id="inputText"/>
+   <button onclick="callApi()">调用接口</button>
+   <div id="responseData"></div>
+ function callApi() {
+     const inputText = document.getElementById('inputText').value;
+     const apiUrl = `https://api.zxz.ee/api/ysss/?name=${encodeURIComponent(inputText)}`;
+     fetch(apiUrl)
+       .then(response => response.json())
+       .then(data => {
+         // 处理接口返回的数据
+         displayData(data);
+       })
+       .catch(error => {
+         // 处理接口调用失败的情况
+         console.error('接口调用失败:', error);
+       });
+   }
 
-    <script>
-        function callAPI() {
-            var inputValue = document.getElementById('inputValue').value;
-            var apiUrl = 'https://your-api-url.com?param=' + inputValue;
+   function displayData(data) {
+     const responseDataDiv = document.getElementById('responseData');
+     responseDataDiv.innerHTML = JSON.stringify(data, null, 2); // 格式化JSON数据并显示在页面上
+   }
 
-            fetch(apiUrl)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('response').innerText = JSON.stringify(data);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        }
-    </script>
+    
 </body>
 </html>
