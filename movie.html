@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
->调用接口例</title>
+<title>调用接口例</title>
 </head>
 <body>
     <input type="text" id="inputValue" placeholder="输入参数">
@@ -13,7 +13,7 @@
     <script>
         function callAPI() {
             var inputValue = document.getElementById('inputValue').value;
-            var apiUrl = 'https://api.zxz.ee/api/ysss/?name=' + inputValue;
+            var apiUrl = 'https://your-api-url.com?param=' + inputValue;
 
             fetch(apiUrl)
                 .then(response => response.json())
