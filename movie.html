@@ -9,6 +9,7 @@
  <input type="text" id="inputText"/>
    <button onclick="callApi()">调用接口</button>
    <div id="responseData"></div>
+<script>
  function callApi() {
      const inputText = document.getElementById('inputText').value;
      const apiUrl = `https://api.zxz.ee/api/ysss/?name=${encodeURIComponent(inputText)}`;
@@ -29,6 +30,6 @@
      responseDataDiv.innerHTML = JSON.stringify(data, null, 2); // 格式化JSON数据并显示在页面上
    }
 
-    
+</script>
 </body>
 </html>
