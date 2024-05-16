@@ -1,30 +1,28 @@
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>API Search Example</title>
-    <script>
-        function searchData() {
-            // 获取输入的查询参数
-            var query = document.getElementById('searchInput').value;
-            
-            // 调用API接口
-            fetch('https://api.zxz.ee/api/ysss/?name=' + encodeURIComponent(query))
-             
-                    // 将结果显示在页面上
-                    document.getElementById('searchResults').innerHTML = output;
-                })
-                .catch(error => console.error('Error fetching data: ', error));
-        }
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+>调用接口例</title>
 </head>
 <body>
- 
-    <input type="text" id="searchInput" placeholder="Enter search query">
-    <button onclick="searchData()">Search</button>
- 
-    <div id="searchResults">
-        <!-- Search results will be displayed here -->
-    </div>
- 
+    <input type="text" id="inputValue" placeholder="输入参数">
+    <button onclick="callAPI()">调用接口</button>
+    <div id="response"></div>
+
+    <script>
+        function callAPI() {
+            var inputValue = document.getElementById('inputValue').value;
+            var apiUrl = 'https://api.zxz.ee/api/ysss/?name=' + inputValue;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('response').innerText = JSON.stringify(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
 </body>
 </html>
