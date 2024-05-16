@@ -9,16 +9,7 @@
             
             // 调用API接口
             fetch('https://api.zxz.ee/api/ysss/?name=' + encodeURIComponent(query))
-                .then(response => response.json()) // 将响应转换为JSON
-                .then(data => {
-                    // 处理返回的数据
-                    var results = data.results; // 假设返回的数据格式为{ results: [...] }
-                    var output = '<ul>';
-                    results.forEach(item => {
-                        output += '<li>' + item.name + '</li>'; // 假设每个结果有一个名称属性
-                    });
-                    output += '</ul>';
-                    
+             
                     // 将结果显示在页面上
                     document.getElementById('searchResults').innerHTML = output;
                 })
