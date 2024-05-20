@@ -1,37 +1,63 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JSONP Example</title>
+    <title>视频播放</title>
+    <style>
+        #video-container {
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        video {
+            width: 800px;
+            height: 600px;
+            outline: none;
+        }
+
+        select {
+            font-size: 16px;
+            padding: 5px;
+        }
+    </style>
 </head>
 <body>
-  <input type="text" id="inputText" placeholder="Enter text...">
-  <button onclick="callApi()">Fetch Data</button>
-  <div id="output"></div>
+    <div id="video-container">
+        <select id="video-select">
+            <option value="">选择视频类型</option>
+            <option value="甩裙系列">甩裙系列</option>
+            <option value="又纯又欲">又纯又欲</option>
+            <option value="黑白双煞">黑白双煞</option>
+            <!-- 添加更多选项 -->
+        </select>
+        <br>
+        <button onclick="playVideo()">播放视频</button>
+        <br>
+        <video id="video-player" controls></video>
+    </div>
 
-  <script>
-    function callApi() {
-      const inputText = document.getElementById('inputText').value;
-      const callbackName = 'handleResponse'; // 定义回调函数名
-      const apiUrl = `https://api.zxz.ee/api/ysss/?name={encodeURIComponent(inputText)}&callback={callbackName}`;
+    <script>
+        function playVideo() {
+            var select = document.getElementById("video-select");
+            var selectedValue = select.options[select.selectedIndex].value;
 
-      // 动态创建 script 标签
-      const script = document.createElement('script');
-      script.src = apiUrl;
+            if (selectedValue === "") {
+                alert("请选择视频类型");
+                return;
+            }
 
-      // 将 script 标签添加到页面中
-      document.body.appendChild(script);
-    }
+            var url = "https://api.zxz.ee/api/video/?format=json&type=" + selectedValue;
 
-    function handleResponse(data) {
-      displayData(data);
-    }
-
-    function displayData(data) {
-      const outputDiv = document.getElementById('output');
-      outputDiv.innerHTML = JSON.stringify(data);
-    }
-  </script>
+            fetch(url)
+                .then(response => response.blob())
+                .then(videoBlob => {
+                    var videoPlayer = document.getElementById("video-player");
+                    videoPlayer.src = URL.createObjectURL(videoBlob);
+                    videoPlayer.play();
+                })
+                .catch(error => {
+                    console.log("播放视频出错:", error);
+                });
+        }
+    </script>
 </body>
 </html>
