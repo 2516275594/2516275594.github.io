@@ -1,63 +1,49 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
-    <title>视频播放</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>影视作品搜索</title>
     <style>
-        #video-container {
-            margin: 20px auto;
-            text-align: center;
-        }
-
-        video {
-            width: 800px;
-            height: 600px;
-            outline: none;
-        }
-
-        select {
-            font-size: 16px;
-            padding: 5px;
-        }
+        body { font-family: Arial, sans-serif; }
+        .movie { margin: 10px 0; }
     </style>
 </head>
 <body>
-    <div id="video-container">
-        <select id="video-select">
-            <option value="">选择视频类型</option>
-            <option value="甩裙系列">1</option>
-            <option value="又纯又欲">2</option>
-            <option value="黑白双煞">3</option>
-            <!-- 添加更多选项 -->
-        </select>
-        <br>
-        <button onclick="playVideo()">播放视频</button>
-        <br>
-        <video id="video-player" controls></video>
-    </div>
+    <h1>影视作品搜索</h1>
+    <input type="text" id="searchInput" placeholder="输入影视作品名称">
+    <button id="searchButton">搜索</button>
+    <div id="results"></div>
 
     <script>
-        function playVideo() {
-            var select = document.getElementById("video-select");
-            var selectedValue = select.options[select.selectedIndex].value;
-
-            if (selectedValue === "") {
-                alert("请选择视频类型");
-                return;
-            }
-
-            var url = "https://api.zxz.ee/api/video/?format=json&type=" + selectedValue;
+        document.getElementById('searchButton').addEventListener('click', function() {
+            const searchName = document.getElementById('searchInput').value;
+            const url = `https://api.zxz.ee/api/ysss/?name=${encodeURIComponent(searchName)}`;
 
             fetch(url)
-                .then(response => response.blob())
-                .then(videoBlob => {
-                    var videoPlayer = document.getElementById("video-player");
-                    videoPlayer.src = URL.createObjectURL(videoBlob);
-                    videoPlayer.play();
+                .then(response => response.json())
+                .then(data => {
+                    const resultsDiv = document.getElementById('results');
+                    resultsDiv.innerHTML = '';  // 清空之前的结果
+                    if (data.code === 200 && data.count > 0) {
+                        data.data.forEach(movie => {
+                            resultsDiv.innerHTML += `
+                                <div class="movie">
+                                    <h3>${movie.name}</h3>
+                                    <p>类别: ${movie.class}</p>
+                                    <p>评分: ${movie.douban_score}</p>
+                                    <img src="${movie.pic}" alt="${movie.name}" style="width: 150px;">
+                                </div>
+                            `;
+                        });
+                    } else {
+                        resultsDiv.innerHTML = '<p>未找到相关作品。</p>';
+                    }
                 })
                 .catch(error => {
-                    console.log("播放视频出错:", error);
+                    console.error('请求失败:', error);
                 });
-        }
-    </script>
-</body>
-</html>
+        });
+    </脚本>
+</正文>
+</html>​​
