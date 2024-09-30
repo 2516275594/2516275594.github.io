@@ -8,7 +8,7 @@
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background-color: #f0f0f0;
+            background-color: #ffffff;
             padding-top: 50px;
         }
         input[type="text"] {
@@ -39,7 +39,7 @@
     </style>
 </head>
 <body>
-    <h1>电影搜索</h1>
+    <h1>搜索</h1>
     <input type="text" id="searchInput" placeholder="请输入电影名称">
     <button onclick="searchMovie()">搜索</button>
     <div id="result"></div>
@@ -66,11 +66,11 @@
                         let resultHtml = '<ul>';
                         filteredData.forEach(item => {
                             const description = item.content || ''; // 如果没有content字段，默认为空字符串
-                            const formattedPlayerUrl = `https://api.zxz.ee/api/v/?url=${item.player}`;
+                            const formattedPlayerUrl = `${item.player}`;
                             resultHtml += `
                                 <li>
                                     名称: ${item.name}<br>
-                                    作者: ${item.director}<br>
+                                    作者：${item.director}<br>
                                     简介: ${description}<br>
                                     <a href="${formattedPlayerUrl}" class="play-button" target="_blank">播放</a>
                                 </li>
