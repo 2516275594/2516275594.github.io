@@ -1,37 +1,97 @@
-<html>
-<div id="header">
-  <div class="top">
-    <div class="time">
-      <script language=JavaScript>
-<!--
-var enabled = 0; today = new Date();
-var day; var date;
-if(today.getDay()==0) day = " 星期日"
-if(today.getDay()==1) day = " 星期一"
-if(today.getDay()==2) day = " 星期二"
-if(today.getDay()==3) day = " 星期三"
-if(today.getDay()==4) day = " 星期四"
-if(today.getDay()==5) day = " 星期五"
-if(today.getDay()==6) day = " 星期六"
-document.fgColor = "000000";
-date = "今天是:" + (today.getFullYear()) + "年" + (today.getMonth() + 1 ) + "月" + today.getDate() + "日" + day +"";
-document.write(date);
-// -->
-</script>
-    </div></div></div>
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-<title>ruaruaburua</title>
-  <link rel="stylesheet" href="css/index.css">
-  </head>
-  <body>
-<a href="../movie.html" target="_blank">
-  <button>看电影</button>
-</a>
-<a href="../music.html" target="_blank">
-  <button>听音乐</button>
-</a>
-<a
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ruaruaburua</title>
+    <link rel="stylesheet" href="css/index.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #header {
+            width: 100%;
+            background-color: #333;
+            color: #fff;
+            padding: 10px 0;
+            text-align: center;
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-around;
+            padding: 0 20px;
+        }
+
+        .time {
+            font-size: 18px;
+        }
+
+        a {
+            text-decoration: none;
+            color: #fff;
+            margin: 10px;
+        }
+
+        button {
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #4cae4c;
+        }
+
+        #xiugai {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <div class="top">
+            <div class="time">
+                <!-- 时间脚本 -->
+                <script language="JavaScript">
+                var enabled = 0; today = new Date();
+                var day; var date;
+                if(today.getDay()==0) day = " 星期日";
+                if(today.getDay()==1) day = " 星期一";
+                if(today.getDay()==2) day = " 星期二";
+                if(today.getDay()==3) day = " 星期三";
+                if(today.getDay()==4) day = " 星期四";
+                if(today.getDay()==5) day = " 星期五";
+                if(today.getDay()==6) day = " 星期六";
+                document.fgColor = "#fff";
+                date = "今天是:" + (today.getFullYear()) + "年" + (today.getMonth() + 1 ) + "月" + today.getDate() + "日" + day +"";
+                document.write(date);
+                </script>
+            </div>
+        </div>
+    </div>
+
+    <a href="../movie.html" target="_blank">
+        <button>看电影</button>
+    </a>
+    <a href="../music.html" target="_blank">
+        <button>听音乐</button>
+    </a>
     <button id="xiugai" onclick="window.open('https://github.com/dashboard', '_blank')">修改页面</button>
-</a>
+
 </body>
 </html>
