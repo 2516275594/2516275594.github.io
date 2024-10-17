@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MP3音频播放器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f7f7f7;
+        }
+
+        #audioPlayer {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            width: 300px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #5cb85c;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #4cae4c;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 输入框用于输入MP3链接 -->
+<input type="text" id="audioUrl" placeholder="输入MP3音频链接">
+
+<!-- 播放按钮 -->
+<button onclick="playAudio()">播放</button>
+
+<!-- 音频元素用于播放音频 -->
+<audio id="audioPlayer" controls style="display: none;">
+  <source id="audioSource" src="" type="audio/mpeg">
+  您的浏览器不支持 audio 元素。
+</audio>
+
+<script>
+// 播放音频的函数
+function playAudio() {
+    var audioUrl = document.getElementById('audioUrl').value;
+    var audioPlayer = document.getElementById('audioPlayer');
+    var audioSource = document.getElementById('audioSource');
+
+    // 设置音频源
+    audioSource.src = audioUrl;
+    audioPlayer.style.display = 'block'; // 显示音频播放器
+
+    // 播放音频
+    audioPlayer.load(); // 加载音频
+    audioPlayer.play();
+}
+</script>
+
+</body>
+</html>
