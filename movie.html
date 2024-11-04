@@ -91,7 +91,7 @@
                 return;
             }
 
-            const url = `https://api.allorigins.win/raw?url=https://api.zxz.ee/api/ysss/?name=${encodeURIComponent(searchName)}`;
+            const url = `https://cors-anywhere.herokuapp.com/https://api.zxz.ee/api/ysss/?name=${encodeURIComponent(searchName)}`;
 
             fetch(url)
                 .then(response => response.json())
@@ -139,7 +139,7 @@
                 return;
             }
 
-            const url = `https://api.allorigins.win/raw?url=https://api.zxz.ee/api/ysss/?name=${encodeURIComponent(searchName)}`;
+            const url = `https://cors-anywhere.herokuapp.com/https://api.zxz.ee/api/ysss/?name=${encodeURIComponent(searchName)}`;
 
             fetch(url)
                 .then(response => response.json())
