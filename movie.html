@@ -83,6 +83,53 @@
         <button onclick="searchMovie()">搜索</button>
         <div id="result"></div>
     </div>
+    <script>
+        function searchMovie() {
+            const searchName = document.getElementById('searchInput').value;
+            if (!searchName.trim()) {
+                alert("请输入有效的电影名称");
+                return;
+            }
+
+            const url = `https://api.allorigins.win/raw?url=https://api.zxz.ee/api/ysss/?name=${encodeURIComponent(searchName)}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    // 检查是否请求成功
+                    if (data.code === 200) {
+                        // 过滤掉 class 为 "短剧" 的数据
+                        const filteredData = data.data.filter(item => item.class !== '短剧');
+
+                        // 显示过滤后的数据
+                        let resultHtml = '<ul>';
+                        filteredData.forEach(item => {
+                            const description = item.content || ''; // 如果没有content字段，默认为空字符串
+                            const formattedPlayerUrl = `${item.player}`;
+                            resultHtml += `
+                                <li>
+                                    名称: ${item.name}<br>
+                                    作者：${item.director}<br>
+                                    简介: ${description}<br>
+                                    <a href="${formattedPlayerUrl}" class="play-button" target="_blank">播放</a>
+                                </li>
+                            `;
+                        });
+                        resultHtml += '</ul>';
+
+                        document.getElementById('result').innerHTML = resultHtml || '<p>没有找到符合条件的结果。</p>';
+                    } else {
+                        document.getElementById('result').innerHTML = `<p>${data.msg}</p>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("无法获取数据，请检查您的网络连接或稍后再试。");
+                });
+        }
+    </script>
+</body>
+</html>
 
     <script>
         function searchMovie() {
