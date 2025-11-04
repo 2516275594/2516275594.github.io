@@ -1,65 +1,365 @@
-<html>
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
- <title>视频播放器</title>
- <style>
- body {
- font-family: Arial, sans-serif;
- text-align: center;
- margin:0;
- padding:0;
- background-color: #f0f0f0;
- }
- #videoPlayer {
- width:80%;
- height:450px;
- margin:20px auto;
- background-color: #000;
- }
- </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>滚动切换视频播放器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #videoPlayer {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: #000;
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            padding: 10px 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            z-index: 10;
+        }
+        
+        .btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            flex-direction: column;
+            gap: 20px;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .error-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .title {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 10;
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 10;
+            animation: fadeOut 5s forwards;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
 </head>
 <body>
- <h1>视频播放器</h1>
- <video id="videoPlayer" controls>
- <source id="videoSource" src="" type="video/mp4">
- 您的浏览器不支持视频播放。
- </video>
+    <div class="container">
+        <div class="title">滚动切换视频播放器</div>
+        <video id="videoPlayer" controls autoplay muted></video>
+        
+        <div class="controls">
+            <button class="btn" id="prevBtn" title="上一个视频">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <button class="btn" id="playPauseBtn" title="播放/暂停">
+                <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+            </button>
+            <button class="btn" id="nextBtn" title="下一个视频">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <div>正在加载视频...</div>
+        </div>
+        
+        <div class="error" id="errorMessage" style="display: none;">
+            <div id="errorText">视频加载失败</div>
+            <button class="error-btn" id="retryBtn">重试</button>
+        </div>
+        
+        <div class="instructions" id="instructions">
+            使用鼠标滚轮或左右按钮切换视频
+        </div>
+    </div>
 
- <script>
- let currentIndex =0;
- let videoUrls = [];
-
- //从接口获取视频链接 fetch('https://api.kuleu.com/api/MP4_xiaojiejie?type=json')
- .then(response => response.json())
- .then(data => {
- // 假设接口返回的视频链接在 mp4_video 字段中 videoUrls = data.mp4_video;
-
- if (videoUrls.length >0) {
- const video = document.getElementById('videoPlayer');
- const source = document.getElementById('videoSource');
- source.src = videoUrls[currentIndex];
- video.load();
- video.play();
- }
- })
- .catch(error => {
- console.error('获取视频链接失败:', error);
- });
-
- // 鼠标滚动切换视频 window.addEventListener('wheel', function(e) {
- if (videoUrls.length ===0) return;
-
- if (e.deltaY >0) {
- currentIndex = (currentIndex +1) % videoUrls.length;
- } else {
- currentIndex = (currentIndex -1 + videoUrls.length) % videoUrls.length;
- }
-
- const video = document.getElementById('videoPlayer');
- const source = document.getElementById('videoSource');
- source.src = videoUrls[currentIndex];
- video.load();
- video.play();
- });
- </script>
+    <script>
+        // 获取DOM元素
+        const videoPlayer = document.getElementById('videoPlayer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const retryBtn = document.getElementById('retryBtn');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playIcon = document.getElementById('playIcon');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const instructions = document.getElementById('instructions');
+        
+        // API端点
+        const API_URL = 'https://api.kuleu.com/api/MP4_xiaojiejie?type=json';
+        
+        // 视频索引
+        let currentVideoIndex = 0;
+        let isLoading = false;
+        
+        // 获取视频URL
+        async function fetchVideo() {
+            try {
+                showLoading();
+                const response = await fetch(API_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`网络响应错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.code !== 200) {
+                    throw new Error(`API错误: ${data.msg}`);
+                }
+                
+                return data.mp4_video;
+            } catch (error) {
+                showError(`获取视频失败: ${error.message}`);
+                return null;
+            }
+        }
+        
+        // 加载并播放视频
+        async function loadAndPlayVideo() {
+            const videoUrl = await fetchVideo();
+            
+            if (videoUrl) {
+                videoPlayer.src = videoUrl;
+                
+                // 监听视频加载完成事件
+                videoPlayer.onloadeddata = () => {
+                    hideLoading();
+                    videoPlayer.play().catch(e => {
+                        console.error('自动播放失败:', e);
+                    });
+                };
+                
+                // 监听视频错误事件
+                videoPlayer.onerror = () => {
+                    showError('视频播放错误');
+                };
+            }
+        }
+        
+        // 显示加载指示器
+        function showLoading() {
+            isLoading = true;
+            loadingIndicator.style.display = 'flex';
+            errorMessage.style.display = 'none';
+        }
+        
+        // 隐藏加载指示器
+        function hideLoading() {
+            isLoading = false;
+            loadingIndicator.style.display = 'none';
+        }
+        
+        // 显示错误消息
+        function showError(message) {
+            isLoading = false;
+            loadingIndicator.style.display = 'none';
+            errorText.textContent = message;
+            errorMessage.style.display = 'flex';
+        }
+        
+        // 切换视频
+        async function switchVideo() {
+            if (isLoading) return;
+            await loadAndPlayVideo();
+        }
+        
+        // 事件监听器
+        retryBtn.addEventListener('click', switchVideo);
+        
+        playPauseBtn.addEventListener('click', () => {
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+                playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+            } else {
+                videoPlayer.pause();
+                playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+            }
+        });
+        
+        prevBtn.addEventListener('click', () => {
+            currentVideoIndex--;
+            switchVideo();
+        });
+        
+        nextBtn.addEventListener('click', () => {
+            currentVideoIndex++;
+            switchVideo();
+        });
+        
+        // 鼠标滚轮事件
+        window.addEventListener('wheel', (e) => {
+            if (isLoading) return;
+            
+            // 防止页面滚动
+            e.preventDefault();
+            
+            if (e.deltaY > 0) {
+                // 向下滚动 - 下一个视频
+                currentVideoIndex++;
+                switchVideo();
+            } else if (e.deltaY < 0) {
+                // 向上滚动 - 上一个视频
+                currentVideoIndex--;
+                switchVideo();
+            }
+        }, { passive: false });
+        
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (isLoading) return;
+            
+            switch (e.key) {
+                case 'ArrowLeft':
+                    currentVideoIndex--;
+                    switchVideo();
+                    break;
+                case 'ArrowRight':
+                    currentVideoIndex++;
+                    switchVideo();
+                    break;
+                case ' ':
+                    if (videoPlayer.paused) {
+                        videoPlayer.play();
+                        playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+                    } else {
+                        videoPlayer.pause();
+                        playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+                    }
+                    break;
+            }
+        });
+        
+        // 初始加载
+        loadAndPlayVideo();
+        
+        // 5秒后隐藏使用说明
+        setTimeout(() => {
+            instructions.style.display = 'none';
+        }, 5000);
+    </script>
 </body>
 </html>
