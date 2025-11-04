@@ -1,132 +1,65 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>电影搜索</title>
-    <style>
-        body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
-            text-align: center;
-            background-color: #f7f7f7;
-            margin: 0;
-            padding-top: 80px;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background-color: #fff;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-        }
-        input[type="text"] {
-            width: 80%;
-            margin-bottom: 20px;
-            padding: 12px 15px;
-            font-size: 18px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button {
-            padding: 12px 25px;
-            font-size: 18px;
-            color: #fff;
-            background-color: #007bff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        #result {
-            text-align: left;
-            margin-top: 30px;
-        }
-        .play-button {
-            display: inline-block;
-            padding: 8px 20px;
-            background-color: #28a745;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            margin-top: 10px;
-            transition: background-color 0.3s ease;
-        }
-        .play-button:hover {
-            background-color: #218838;
-        }
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-        li {
-            margin-bottom: 20px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
-        }
-        li:last-child {
-            border-bottom: none;
-        }
-    </style>
+ <title>视频播放器</title>
+ <style>
+ body {
+ font-family: Arial, sans-serif;
+ text-align: center;
+ margin:0;
+ padding:0;
+ background-color: #f0f0f0;
+ }
+ #videoPlayer {
+ width:80%;
+ height:450px;
+ margin:20px auto;
+ background-color: #000;
+ }
+ </style>
 </head>
 <body>
-    <div class="container">
-        <h1>电影搜索</h1>
-        <input type="text" id="searchInput" placeholder="请输入电影名称" autocomplete="off">
-        <button onclick="searchMovie()">搜索</button>
-        <div id="result"></div>
-    </div>
-    <script>
-        function searchMovie() {
-            const searchName = document.getElementById('searchInput').value;
-            if (!searchName.trim()) {
-                alert("请输入有效的电影名称");
-                return;
-            }
+ <h1>视频播放器</h1>
+ <video id="videoPlayer" controls>
+ <source id="videoSource" src="" type="video/mp4">
+ 您的浏览器不支持视频播放。
+ </video>
 
-            const url = `https://cors-anywhere.herokuapp.com/https://api.zxz.ee/api/ysss/?name=${encodeURIComponent(searchName)}`;
+ <script>
+ let currentIndex =0;
+ let videoUrls = [];
 
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    // 检查是否请求成功
-                    if (data.code === 200) {
-                        // 过滤掉 class 为 "短剧" 的数据
-                        const filteredData = data.data.filter(item => item.class !== '短剧');
+ //从接口获取视频链接 fetch('https://api.kuleu.com/api/MP4_xiaojiejie?type=json')
+ .then(response => response.json())
+ .then(data => {
+ // 假设接口返回的视频链接在 mp4_video 字段中 videoUrls = data.mp4_video;
 
-                        // 显示过滤后的数据
-                        let resultHtml = '<ul>';
-                        filteredData.forEach(item => {
-                            const description = item.content || ''; // 如果没有content字段，默认为空字符串
-                            const formattedPlayerUrl = `${item.player}`;
-                            resultHtml += `
-                                <li>
-                                    名称: ${item.name}<br>
-                                    作者：${item.director}<br>
-                                    简介: ${description}<br>
-                                    <a href="${formattedPlayerUrl}" class="play-button" target="_blank">播放</a>
-                                </li>
-                            `;
-                        });
-                        resultHtml += '</ul>';
+ if (videoUrls.length >0) {
+ const video = document.getElementById('videoPlayer');
+ const source = document.getElementById('videoSource');
+ source.src = videoUrls[currentIndex];
+ video.load();
+ video.play();
+ }
+ })
+ .catch(error => {
+ console.error('获取视频链接失败:', error);
+ });
 
-                        document.getElementById('result').innerHTML = resultHtml || '<p>没有找到符合条件的结果。</p>';
-                    } else {
-                        document.getElementById('result').innerHTML = `<p>${data.msg}</p>`;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert("无法获取数据，请检查您的网络连接或稍后再试。");
-                });
-        }
-    </script>
+ // 鼠标滚动切换视频 window.addEventListener('wheel', function(e) {
+ if (videoUrls.length ===0) return;
+
+ if (e.deltaY >0) {
+ currentIndex = (currentIndex +1) % videoUrls.length;
+ } else {
+ currentIndex = (currentIndex -1 + videoUrls.length) % videoUrls.length;
+ }
+
+ const video = document.getElementById('videoPlayer');
+ const source = document.getElementById('videoSource');
+ source.src = videoUrls[currentIndex];
+ video.load();
+ video.play();
+ });
+ </script>
 </body>
 </html>
