@@ -31,7 +31,7 @@
         async function fetchData() {
             try {
                 // 1. 获取HTML内容（需要处理跨域问题）
-                const response = await fetch('/proxy?url=https://ghproxy.cfd/' + encodeURIComponent(targetUrl));
+                const response = await fetch('/proxy?url=' + encodeURIComponent(targetUrl));
                 const html = await response.text();
                 
                 // 2. 解析HTML
