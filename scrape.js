@@ -1,6 +1,5 @@
 import fs from 'fs';
-import fetch from 'node-fetch';
-import { load } from 'cheerio';  // 使用命名导入
+import { load } from 'cheerio';
 
 const targetUrl = 'https://github.com/crossxx-labs/free-proxy';
 
@@ -8,7 +7,7 @@ async function scrapeProxies() {
   try {
     const res = await fetch(targetUrl);
     const html = await res.text();
-    const $ = load(html);  // 使用 load 函数加载 HTML
+    const $ = load(html);
 
     const proxies = [];
 
