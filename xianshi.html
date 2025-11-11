@@ -1,77 +1,48 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>免费代理服务列表</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        tr:hover { background-color: #f5f5f5; }
-    </style>
+  <meta charset="UTF-8">
+  <title>免费代理服务列表</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+    tr:hover { background-color: #f5f5f5; }
+  </style>
 </head>
 <body>
-    <h1>免费代理服务列表</h1>
-    <table id="proxyTable">
-        <thead>
-            <tr>
-                <th>服务类型</th>
-                <th>订阅链接</th>
-                <th>更新时间</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+  <h1>免费代理服务列表</h1>
+  <table id="proxyTable">
+    <thead>
+      <tr>
+        <th>服务类型</th>
+        <th>订阅链接</th>
+        <th>更新时间</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-    <script>
-        // 使用公共 CORS 代理服务（示例：https://cors-anywhere.herokuapp.com/）
-        const targetUrl = 'https://github.com/crossxx-labs/free-proxy';
-        const corsProxy = 'https://ghproxy.cfd/';
-
-        async function fetchData() {
-            try {
-                // 1. 获取HTML内容（通过公共代理）
-                const response = await fetch(corsProxy + targetUrl);
-                const html = await response.text();
-                
-                // 2. 解析HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                // 3. 查找所有代理行
-                const rows = doc.querySelectorAll('tr:has(td)');
-                
-                // 4. 处理数据
-                const tbody = document.querySelector('#proxyTable tbody');
-                rows.forEach(row => {
-                    const tds = Array.from(row.querySelectorAll('td'));
-                    
-                    // 确保包含所需数据
-                    if (tds.length >= 3) {
-                        const type = tds[0].textContent.trim();
-                        const link = tds[1].querySelector('code')?.textContent.trim() || 'N/A';
-                        const date = tds[2].textContent.trim();
-                        
-                        // 创建表格行
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${type}</td>
-                            <td><a href="${link}" target="_blank">${link}</a></td>
-                            <td>${date}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    }
-                });
-            } catch (error) {
-                console.error('获取数据失败:', error);
-                document.querySelector('#proxyTable tbody').innerHTML = 
-                    '<tr><td colspan="3" style="color:red">数据加载失败，请检查网络连接</td></tr>';
-            }
-        }
-
-        // 页面加载时执行
-        window.addEventListener('DOMContentLoaded', fetchData);
-    </script>
+  <script>
+    fetch('data/proxies.json')
+      .then(res => res.json())
+      .then(data => {
+        const tbody = document.querySelector('#proxyTable tbody');
+        data.forEach(proxy => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${proxy.type}</td>
+            <td><a href="${proxy.link}" target="_blank">${proxy.link}</a></td>
+            <td>${proxy.date}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        console.error('加载数据失败:', err);
+        document.querySelector('#proxyTable tbody').innerHTML = 
+          '<tr><td colspan="3" style="color:red">数据加载失败，请检查网络连接</td></tr>';
+      });
+  </script>
 </body>
 </html>
