@@ -1,32 +1,33 @@
-name: Update Proxy Data
+const fs = require('fs');
+const fetch = require('node-fetch');
+const cheerio = require('cheerio');
 
-on:
-  schedule:
-    - cron: '0 0 * * *'  # 每天午夜更新
-  workflow_dispatch:     # 手动触发
+const targetUrl = 'https://github.com/crossxx-labs/free-proxy';
 
-jobs:
-  update-data:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+async function scrapeProxies() {
+  try {
+    const res = await fetch(targetUrl);
+    const html = await res.text();
+    const $ = cheerio.load(html);
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+    const proxies = [];
 
-      - name: Install Dependencies
-        run: npm install
+    $('tr:has(td)').each((i, row) => {
+      const tds = $(row).find('td');
+      if (tds.length >= 3) {
+        const type = $(tds[0]).text().trim();
+        const link = $(tds[1]).find('code').text().trim();
+        const date = $(tds[2]).text().trim();
 
-      - name: Run Scraper
-        run: node scrape.js
+        proxies.push({ type, link, date });
+      }
+    });
 
-      - name: Commit and Push
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add data/proxies.json
-          git commit -m "Update proxy data" || echo "No changes"
-          git push
+    fs.writeFileSync('data/proxies.json', JSON.stringify(proxies, null, 2));
+    console.log('Data saved to data/proxies.json');
+  } catch (err) {
+    console.error('Error scraping:', err);
+  }
+}
+
+scrapeProxies();
