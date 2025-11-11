@@ -1,6 +1,6 @@
-const fs = require('fs');
-const fetch = require('node-fetch');
-const cheerio = require('cheerio');
+import fs from 'fs';
+import fetch from 'node-fetch';
+import cheerio from 'cheerio';
 
 const targetUrl = 'https://github.com/crossxx-labs/free-proxy';
 
