@@ -1,80 +1,151 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <title>MP3音频播放器</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本保存中心</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f7f7f7;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
         }
 
-        #audioPlayer {
-            width: 100%;
-            max-width: 600px;
-            margin-top: 20px;
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        form {
+            display: grid;
+            grid-template-columns: 3fr 2fr 1fr;
+            gap: 10px;
+            margin-bottom: 30px;
         }
 
         input[type="text"] {
             padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
             font-size: 16px;
-            width: 300px;
         }
 
         button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            background-color: #5cb85c;
-            color: white;
+            padding: 10px;
             font-size: 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
             cursor: pointer;
-            transition: background-color 0.3s;
         }
 
         button:hover {
-            background-color: #4cae4c;
+            background: #45a049;
+        }
+
+        .note-card {
+            background: #f8f8f8;
+            border-left: 5px solid #4CAF50;
+            margin: 15px 0;
+            padding: 15px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .note-content {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .note-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        @media (max-width: 600px) {
+            form {
+                grid-template-columns: 1fr;
+                gap: 8px;
+           }
+
+            button {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
+    <h1>📝 文本保存中心</h1>
+    
+    <form id="noteForm">
+        <input type="text" id="mainText" placeholder="输入要保存的文本..." required>
+        <input type="text" id="noteText" placeholder="备注（可选）">
+        <button type="submit">保存</button>
+    </form>
 
-<!-- 输入框用于输入MP3链接 -->
-<input type="text" id="audioUrl" placeholder="输入MP3音频链接">
+    <div id="notesContainer"></div>
 
-<!-- 播放按钮 -->
-<button onclick="playAudio()">播放</button>
+    <script>
+        // 日期格式化函数
+        function formatDate(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            const h = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            return `${y}-${m}-${d} ${h}:${min}`;
+        }
 
-<!-- 音频元素用于播放音频 -->
-<audio id="audioPlayer" controls style="display: none;">
-  <source id="audioSource" src="" type="audio/mpeg">
-  您的浏览器不支持 audio 元素。
-</audio>
+        // 渲染所有笔记
+        function renderNotes() {
+            const container = document.getElementById('notesContainer');
+            container.innerHTML = '';
+            
+            const notes = JSON.parse(localStorage.getItem('savedNotes') || '[]');
+            
+            notes.forEach(note => {
+                const card = document.createElement('div');
+                card.className = 'note-card';
+                
+                card.innerHTML = `
+                    <div class="note-content">${note.content}</div>
+                    ${note.remark ? `<div style="margin:8px 0;">备注：${note.remark}</div>` : ''}
+                    <div class="note-footer">
+                        <span>保存时间：${note.date}</span>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
 
-<script>
-// 播放音频的函数
-function playAudio() {
-    var audioUrl = document.getElementById('audioUrl').value;
-    var audioPlayer = document.getElementById('audioPlayer');
-    var audioSource = document.getElementById('audioSource');
+        // 表单提交处理
+        document.getElementById('noteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const content = document.getElementById('mainText').value.trim();
+            const remark = document.getElementById('noteText').value.trim();
+            
+            if (!content) {
+                alert('请输入要保存的文本内容！');
+                return;
+            }
+            
+            const date = formatDate(new Date());
+            const newNote = { content, remark, date };
+            
+            const notes = JSON.parse(localStorage.getItem('savedNotes') || '[]');
+            notes.unshift(newNote);
+            localStorage.setItem('savedNotes', JSON.stringify(notes));
+            
+            renderNotes();
+            this.reset();
+        });
 
-    // 设置音频源
-    audioSource.src = audioUrl;
-    audioPlayer.style.display = 'block'; // 显示音频播放器
-
-    // 播放音频
-    audioPlayer.load(); // 加载音频
-    audioPlayer.play();
-}
-</script>
-
+        // 初始化
+        document.addEventListener('DOMContentLoaded', renderNotes);
+    </script>
 </body>
 </html>
