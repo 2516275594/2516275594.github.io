@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>代理服务信息</title>
+    <title>免费代理服务列表</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
         table { border-collapse: collapse; width: 100%; }
@@ -25,13 +25,14 @@
     </table>
 
     <script>
-        // 如果遇到跨域问题，请使用后端代理
-        const targetUrl = 'https://github.com/crossxx-labs/free-proxy'; // 实际需要代理访问
+        // 使用公共 CORS 代理服务（示例：https://cors-anywhere.herokuapp.com/）
+        const targetUrl = 'https://github.com/crossxx-labs/free-proxy';
+        const corsProxy = 'https://ghproxy.cfd/';
 
         async function fetchData() {
             try {
-                // 1. 获取HTML内容（需要处理跨域问题）
-                const response = await fetch('/proxy?url=' + encodeURIComponent(targetUrl));
+                // 1. 获取HTML内容（通过公共代理）
+                const response = await fetch(corsProxy + targetUrl);
                 const html = await response.text();
                 
                 // 2. 解析HTML
