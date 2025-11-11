@@ -4,8 +4,201 @@
   <meta charset="UTF-8">
   <title>跨设备文本保存器</title>
   <style>
-    /* 保持原有样式不变 */
-  </style>
+  /* 全局变量（现代蓝绿色系） */
+  :root {
+    --primary-color: #48BB78; /* 主色调（蓝绿） */
+    --secondary-color: #4F46E5; /* 次要色（深蓝） */
+    --accent-color: #F59E0B; /* 强调色（橙色） */
+    --bg-color: #F9FAFB;
+    --card-bg: #FFFFFF;
+    --text-color: #1F2937;
+    --border-radius: 12px;
+    --transition: 0.3s ease;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    line-height: 1.6;
+    transition: background-color var(--transition);
+  }
+
+  h1 {
+    text-align: center;
+    color: var(--primary-color);
+    font-weight: 700;
+    margin-bottom: 20px;
+    font-size: 28px;
+    letter-spacing: 1px;
+  }
+
+  form {
+    display: grid;
+    grid-template-columns: 3fr 2fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+    background: white;
+    padding: 16px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: box-shadow var(--transition);
+  }
+
+  form:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  input[type="text"] {
+    padding: 12px 16px;
+    font-size: 16px;
+    border: 1px solid #D1D5DB;
+    border-radius: var(--border-radius);
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.2);
+  }
+
+  button {
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: background var(--transition), transform var(--transition);
+  }
+
+  button:hover {
+    background: #2F855A;
+    transform: translateY(-2px);
+  }
+
+  button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300%;
+    height: 300%;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform var(--transition);
+  }
+
+  button:hover::after {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .note-card {
+    background: var(--card-bg);
+    border-left: 6px solid var(--primary-color);
+    margin: 16px 0;
+    padding: 16px 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform var(--transition), box-shadow var(--transition);
+    position: relative;
+  }
+
+  .note-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .note-content {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-color);
+  }
+
+  .note-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    color: #6B7280;
+    margin-top: 10px;
+  }
+
+  .delete-btn {
+    color: var(--accent-color);
+    cursor: pointer;
+    font-weight: 600;
+    transition: color var(--transition);
+  }
+
+  .delete-btn:hover {
+    color: #D97706;
+  }
+
+  /* 分组选择器 */
+  select {
+    padding: 10px;
+    font-size: 15px;
+    border: 1px solid #D1D5DB;
+    border-radius: var(--border-radius);
+    transition: border-color var(--transition);
+  }
+
+  select:focus {
+    border-color: var(--secondary-color);
+    outline: none;
+  }
+
+  /* 加载动画 */
+  #loading {
+    display: none;
+    text-align: center;
+    margin: 20px 0;
+    color: var(--primary-color);
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  #loading::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #48BB78;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* 响应式优化 */
+  @media (max-width: 600px) {
+    form {
+      grid-template-columns: 1fr;
+    }
+
+    button {
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 22px;
+    }
+  }
+</style>
 </head>
 <body>
   <h1>📝 文本保存器</h1>
@@ -41,3 +234,4 @@
   <script src="script/script.js"></script>
 </body>
 </html>
+
