@@ -9,17 +9,69 @@
       max-width: 800px;
       margin: 0 auto;
       padding: 20px;
+      line-height: 1.6;
     }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: 3fr 2fr 1fr;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    input[type="text"] {
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px;
+      font-size: 16px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
     .note-card {
       background: #f8f8f8;
       border-left: 5px solid #4CAF50;
       margin: 15px 0;
       padding: 15px 20px;
       border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     }
+
     .note-content {
       font-weight: bold;
       margin-bottom: 10px;
+    }
+
+    .note-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    @media (max-width: 600px) {
+      form {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      button {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -40,12 +92,16 @@
 
   <div id="notesContainer"></div>
 
+  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
-    const supabase = supabase.createClient(
-      'https://ubsdjmcnonsormczvtuq.supabase.co', // 替换为你的 Supabase 项目 URL
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NDA0ODQsImV4cCI6MjA3ODQxNjQ4NH0.ZGD7FkjFdKitHThi22ieZcRipPVgysdTkvowP-UNjAI' // 替换为你的 Anon Key
-    );
+    // ✅ 替换为你的 Supabase 项目 URL 和 Anon Key
+    const supabaseUrl = 'https://ubsdjmcnonsormczvtuq.supabase.co'; // 替换为你的 Supabase 项目 URL
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NDA0ODQsImV4cCI6MjA3ODQxNjQ4NH0.ZGD7FkjFdKitHThi22ieZcRipPVgysdTkvowP-UNjAI'; // 替换为你的 Anon Key
+
+    // ✅ 初始化 Supabase 客户端
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
     // 格式化日期
     function formatDate(date) {
@@ -59,7 +115,7 @@
 
     // 加载所有笔记
     async function loadNotes() {
-      const { data, error } = await supabase.from('notes').select('*');
+      const { data, error } = await supabaseClient.from('notes').select('*');
       if (error) {
         console.error('加载笔记失败:', error);
         return;
@@ -67,14 +123,20 @@
 
       const container = document.getElementById('notesContainer');
       container.innerHTML = '';
+
       data.forEach(note => {
         const card = document.createElement('div');
         card.className = 'note-card';
+
         card.innerHTML = `
           <div class="note-content">${note.content}</div>
           ${note.remark ? `<div style="margin:8px 0;">备注：${note.remark}</div>` : ''}
-          <div style="font-size:0.9em; color:#666;">保存时间：${formatDate(new Date(note.created_at))}</div>
+          <div class="note-footer">
+            <span>保存时间：${formatDate(new Date(note.created_at))}</span>
+            <span class="delete-btn" onclick="deleteNote('${note.id}')">删除</span>
+          </div>
         `;
+
         container.appendChild(card);
       });
     }
@@ -91,7 +153,7 @@
         return;
       }
 
-      const { data, error } = await supabase.from('notes').insert([
+      const { data, error } = await supabaseClient.from('notes').insert([
         { content, remark, group_name: group }
       ]);
 
@@ -103,6 +165,20 @@
         this.reset();
       }
     });
+
+    // 删除笔记
+    async function deleteNote(id) {
+      const confirmDelete = confirm('确定要删除这条笔记吗？');
+      if (!confirmDelete) return;
+
+      const { error } = await supabaseClient.from('notes').delete().eq('id', id);
+      if (error) {
+        console.error('删除失败:', error);
+        alert('删除失败，请稍后再试');
+      } else {
+        await loadNotes();
+      }
+    }
 
     // 初始化
     document.addEventListener('DOMContentLoaded', loadNotes);
