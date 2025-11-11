@@ -187,19 +187,31 @@
       }
     });
 
-    async function deleteNote(id) {
-      const confirmDelete = confirm('确定要删除这条笔记吗？');
-      if (!confirmDelete) return;
+async function deleteNote(id) {
+  // 弹出密码输入框
+  const inputPassword = prompt('请输入删除密码：');
 
-      const { error } = await supabaseClient.from('notes').delete().eq('id', id);
-      if (error) {
-        console.error('删除失败:', error);
-        alert('删除失败，请稍后再试');
-      } else {
-        const selectedGroup = document.getElementById('groupFilter').value;
-        await loadNotes(selectedGroup);
-      }
-    }
+  // 用户点击取消或未输入
+  if (inputPassword === null) return;
+
+  // 去除前后空格并验证密码
+  if (inputPassword.trim() !== 'jOjsDp0BDAYlGW2r') {
+    alert('密码错误，删除已取消。');
+    return;
+  }
+
+  // 密码正确，执行删除操作
+  const { error } = await supabaseClient.from('notes').delete().eq('id', id);
+
+  if (error) {
+    console.error('删除失败:', error);
+    alert('删除失败，请稍后再试');
+  } else {
+    // 刷新笔记列表（保持当前分组）
+    const selectedGroup = document.getElementById('groupFilter').value;
+    await loadNotes(selectedGroup);
+  }
+}
 
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('groupFilter').addEventListener('change', function () {
@@ -212,4 +224,5 @@
   </script>
 </body>
 </html>
+
 
