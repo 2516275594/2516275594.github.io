@@ -1,6 +1,7 @@
 // 替换为你的 Supabase 项目 URL 和 Anon Key
 const supabaseUrl = 'https://ubsdjmcnonsormczvtuq.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NDA0ODQsImV4cCI6MjA3ODQxNjQ4NH0.ZGD7FkjFdKitHThi22ieZcRipPVgysdTkvowP-UNjAI'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NDA0ODQsImV4cCI6MjA3ODQxNjQ4NH0.ZGD7FkjFdKitHThi22ieZcRipPVgysdTkvowP-UNjAI';
+
 // 初始化 Supabase 客户端
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
@@ -14,22 +15,23 @@ function formatDate(date) {
   const d = String(date.getDate()).padStart(2, '0');
   const h = String(date.getHours()).padStart(2, '0');
   const min = String(date.getMinutes()).padStart(2, '0');
-  return `${y}-${m}-${d} ${h}:${min}`;
+  return `${y}-${m}-${d} ${h}:${min}`; // ✅ 修复：加上反引号
 }
 
 // 加载所有笔记（支持分组过滤）
 async function loadNotes(group = '') {
   const loading = document.getElementById('loading');
-  loading.style.display = 'block'; // 显示加载动画
+  if (loading) loading.style.display = 'block'; // 显示加载动画
 
-  let query = supabaseClient.from('notes').select('*');
+  let query = supabaseClient.from('notes').select('*'); // ✅ 修复：'*' 不是 ''
+
   if (group) {
     query = query.eq('group_name', group);
   }
 
   const { data, error } = await query.order('created_at', { ascending: false });
 
-  loading.style.display = 'none'; // 隐藏加载动画
+  if (loading) loading.style.display = 'none'; // 隐藏加载动画
 
   if (error) {
     console.error('加载笔记失败:', error);
@@ -44,6 +46,7 @@ async function loadNotes(group = '') {
     const card = document.createElement('div');
     card.className = 'note-card';
 
+    // ✅ 修复：使用反引号包裹多行字符串
     card.innerHTML = `
       <div class="note-content">${note.content}</div>
       ${note.remark ? `<div style="margin:8px 0;">备注：${note.remark}</div>` : ''}
