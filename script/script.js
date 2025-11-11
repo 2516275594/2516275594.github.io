@@ -19,16 +19,21 @@ function formatDate(date) {
 
 // 加载所有笔记（支持分组过滤）
 async function loadNotes(group = '') {
-  let query = supabaseClient.from('notes').select('*');
+  const loading = document.getElementById('loading');
+  loading.style.display = 'block'; // 显示加载动画
 
+  let query = supabaseClient.from('notes').select('*');
   if (group) {
     query = query.eq('group_name', group);
   }
 
   const { data, error } = await query.order('created_at', { ascending: false });
 
+  loading.style.display = 'none'; // 隐藏加载动画
+
   if (error) {
     console.error('加载笔记失败:', error);
+    alert('加载失败，请检查网络或权限设置');
     return;
   }
 
