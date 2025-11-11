@@ -1,5 +1,6 @@
 {
   "name": "proxy-scrape",
+  "type": "module",
   "scripts": {
     "scrape": "node scrape.js"
   },
