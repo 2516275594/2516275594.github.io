@@ -2,9 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>文本保存中心 - 带分组与删除密码</title>
+  <title>文本保存中心 - 内嵌数据版</title>
   <style>
-    /* 基础样式省略，与原方案一致 */
     body {
       font-family: Arial, sans-serif;
       max-width: 800px;
@@ -18,37 +17,9 @@
       padding: 15px 20px;
       border-radius: 4px;
     }
-    .note-footer {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.9em;
-      color: #666;
-    }
-    .delete-btn {
-      color: red;
-      cursor: pointer;
+    .note-content {
       font-weight: bold;
-    }
-    .group-select {
-      margin-top: 10px;
-    }
-    .password-modal {
-      position: fixed;
-      top: 20%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: white;
-      border: 1px solid #ccc;
-      padding: 20px;
-      z-index: 9999;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    }
-    .password-modal input {
-      padding: 8px;
-      width: 100%;
-    }
-    .password-modal button {
-      margin-top: 10px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -58,36 +29,17 @@
   <form id="noteForm">
     <input type="text" id="mainText" placeholder="输入要保存的文本..." required>
     <input type="text" id="noteText" placeholder="备注（可选）">
-    <select id="groupSelect"></select>
     <button type="submit">保存</button>
+    <button type="button" onclick="exportToHTML()">导出为 HTML</button>
   </form>
-
-  <div class="group-select">
-    <label for="groupFilter">选择分组：</label>
-    <select id="groupFilter"></select>
-    <input type="text" id="newGroup" placeholder="新分组名称">
-    <button onclick="addNewGroup()">添加分组</button>
-  </div>
 
   <div id="notesContainer"></div>
 
-  <div class="password-modal" id="passwordModal" style="display:none;">
-    <p>请输入删除密码：</p>
-    <input type="password" id="deletePasswordInput" />
-    <button onclick="confirmDelete()">确认删除</button>
-    <button onclick="closeModal()">取消</button>
-  </div>
-
   <script>
-    let noteToDelete = null;
-
-    // 初始化
-    document.addEventListener('DOMContentLoaded', () => {
-      loadGroups();
-      renderNotes();
-      document.getElementById('noteForm').addEventListener('submit', saveNote);
-      document.getElementById('groupFilter').addEventListener('change', renderNotes);
-    });
+    // 模拟数据（从 HTML 内部读取）
+    const savedNotes = [
+      { content: "示例内容", remark: "这是备注", date: "2025-04-05 14:30" }
+    ];
 
     function formatDate(date) {
       const y = date.getFullYear();
@@ -98,141 +50,134 @@
       return `${y}-${m}-${d} ${h}:${min}`;
     }
 
-    function saveNote(e) {
+    function renderNotes() {
+      const container = document.getElementById('notesContainer');
+      container.innerHTML = '';
+
+      savedNotes.forEach(note => {
+        const card = document.createElement('div');
+        card.className = 'note-card';
+        card.innerHTML = `
+          <div class="note-content">${note.content}</div>
+          ${note.remark ? `<div style="margin:8px 0;">备注：${note.remark}</div>` : ''}
+          <div style="font-size:0.9em; color:#666;">保存时间：${note.date}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    document.getElementById('noteForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const content = document.getElementById('mainText').value.trim();
       const remark = document.getElementById('noteText').value.trim();
-      const group = document.getElementById('groupSelect').value;
+      if (!content) return alert('请输入要保存的文本内容！');
 
-      if (!content) {
-        alert('请输入要保存的文本内容！');
-        return;
-      }
-
-      const date = formatDate(new Date());
-      const newNote = { content, remark, date, group };
-
-      const notes = JSON.parse(localStorage.getItem('savedNotes') || '[]');
-      notes.unshift(newNote);
-      localStorage.setItem('savedNotes', JSON.stringify(notes));
+      savedNotes.unshift({
+        content,
+        remark,
+        date: formatDate(new Date())
+      });
 
       renderNotes();
-      document.getElementById('noteForm').reset();
+      this.reset();
+    });
+
+    function exportToHTML() {
+      const html = `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>文本保存中心 - 内嵌数据版</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .note-card {
+      background: #f8f8f8;
+      border-left: 5px solid #4CAF50;
+      margin: 15px 0;
+      padding: 15px 20px;
+      border-radius: 4px;
+    }
+    .note-content {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📝 文本保存中心</h1>
+
+  <form id="noteForm">
+    <input type="text" id="mainText" placeholder="输入要保存的文本..." required>
+    <input type="text" id="noteText" placeholder="备注（可选）">
+    <button type="submit">保存</button>
+  </form>
+
+  <div id="notesContainer"></div>
+
+  <script>
+    const savedNotes = ${JSON.stringify(savedNotes, null, 2)};
+    function formatDate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      const h = String(date.getHours()).padStart(2, '0');
+      const min = String(date.getMinutes()).padStart(2, '0');
+      return \`\${y}-\${m}-\${d} \${h}:\${min}\`;
     }
 
     function renderNotes() {
       const container = document.getElementById('notesContainer');
       container.innerHTML = '';
-
-      const notes = JSON.parse(localStorage.getItem('savedNotes') || '[]');
-      const currentGroup = document.getElementById('groupFilter').value;
-
-      notes.filter(n => n.group === currentGroup).forEach(note => {
+      savedNotes.forEach(note => {
         const card = document.createElement('div');
         card.className = 'note-card';
-
-        card.innerHTML = `
-          <div class="note-content">${note.content}</div>
-          ${note.remark ? `<div style="margin:8px 0;">备注：${note.remark}</div>` : ''}
-          <div class="note-footer">
-            <span>保存时间：${note.date}</span>
-            <span class="delete-btn" onclick="openDeleteModal(this)">删除</span>
-          </div>
-        `;
-
-        card.dataset.note = JSON.stringify(note);
+        card.innerHTML = \`
+          <div class="note-content">\${note.content}</div>
+          \${note.remark ? \`<div style="margin:8px 0;">备注：\${note.remark}</div>\` : ''}
+          <div style="font-size:0.9em; color:#666;">保存时间：\${note.date}</div>
+        \`;
         container.appendChild(card);
       });
     }
 
-    function openDeleteModal(btn) {
-      noteToDelete = btn.closest('.note-card');
-      document.getElementById('passwordModal').style.display = 'block';
-    }
+    document.getElementById('noteForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const content = document.getElementById('mainText').value.trim();
+      const remark = document.getElementById('noteText').value.trim();
+      if (!content) return alert('请输入要保存的文本内容！');
 
-    function closeModal() {
-      document.getElementById('passwordModal').style.display = 'none';
-      document.getElementById('deletePasswordInput').value = '';
-    }
-
-    async function confirmDelete() {
-      const input = document.getElementById('deletePasswordInput').value;
-      const storedHash = localStorage.getItem('deletePasswordHash');
-
-      if (!storedHash) {
-        alert('未设置删除密码');
-        closeModal();
-        return;
-      }
-
-      const encoder = new TextEncoder();
-      const data = encoder.encode(input);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-      if (hashHex === storedHash) {
-        const note = JSON.parse(noteToDelete.dataset.note);
-        const notes = JSON.parse(localStorage.getItem('savedNotes') || '[]');
-        const index = notes.findIndex(n => n.content === note.content && n.date === note.date);
-        if (index > -1) {
-          notes.splice(index, 1);
-          localStorage.setItem('savedNotes', JSON.stringify(notes));
-          renderNotes();
-        }
-        closeModal();
-      } else {
-        alert('密码错误');
-      }
-    }
-
-    function loadGroups() {
-      const groups = JSON.parse(localStorage.getItem('noteGroups') || '["默认"]');
-      const select = document.getElementById('groupSelect');
-      const filter = document.getElementById('groupFilter');
-      select.innerHTML = '';
-      filter.innerHTML = '';
-
-      groups.forEach(group => {
-        const option = document.createElement('option');
-        option.value = group;
-        option.textContent = group;
-        select.appendChild(option);
-
-        const option2 = document.createElement('option');
-        option2.value = group;
-        option2.textContent = group;
-        filter.appendChild(option2);
+      savedNotes.unshift({
+        content,
+        remark,
+        date: formatDate(new Date())
       });
+
+      renderNotes();
+      this.reset();
+    });
+
+    document.addEventListener('DOMContentLoaded', renderNotes);
+  <\/script>
+</body>
+</html>
+      `;
+
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'saved-notes.html';
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
-    function addNewGroup() {
-      const input = document.getElementById('newGroup');
-      const name = input.value.trim();
-      if (!name) return;
-
-      const groups = JSON.parse(localStorage.getItem('noteGroups') || '["默认"]');
-      if (!groups.includes(name)) {
-        groups.push(name);
-        localStorage.setItem('noteGroups', JSON.stringify(groups));
-        loadGroups();
-        input.value = '';
-      }
-    }
-
-    function setDeletePassword() {
-      const password = prompt('请输入删除密码：');
-      if (!password) return;
-
-      const encoder = new TextEncoder();
-      const data = encoder.encode(password);
-      crypto.subtle.digest('SHA-256', data).then(hashBuffer => {
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        localStorage.setItem('deletePasswordHash', hashHex);
-        alert('删除密码已设置');
-      });
-    }
+    document.addEventListener('DOMContentLoaded', renderNotes);
   </script>
 </body>
 </html>
