@@ -1,42 +1,86 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>免费代理列表</title>
+    <meta charset="UTF-8">
+    <title>免费代理订阅链接</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        #proxies {
+            margin-top: 2rem;
+        }
+        .proxy-item {
+            border: 1px solid #ddd;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+        strong {
+            font-weight: bold;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-  <h1>免费代理订阅链接</h1>
-  <div id="proxies">正在加载...</div>
+    <h1>免费代理订阅链接</h1>
+    <div id="proxies">
+        <p>正在加载代理数据...</p>
+    </div>
 
-  <script>
-    async function loadProxies() {
-      try {
-        // ✅ 注意路径：根据你的项目结构调整
-        const response = await fetch('./data/proxies.json');
-        const proxies = await response.json();
+    <script>
+        async function loadProxies() {
+            try {
+                // 根据你的 GitHub Pages 结构选择路径：
+                // 选项1：相对路径（适用于用户主页仓库）
+                const response = await fetch('./data/proxies.json');
+                // 选项2：绝对路径（适用于项目仓库）
+                // const response = await fetch('/2516275594.github.io/data/proxies.json');
 
-        const container = document.getElementById('proxies');
-        container.innerHTML = ''; // 清空“正在加载”
+                const data = await response.json();
+                if (!data.length) {
+                    throw new Error('代理数据为空');
+                }
 
-        proxies.forEach(proxy => {
-          const div = document.createElement('div');
-          div.style.marginBottom = '20px';
-          div.innerHTML = `
-            <strong>类型：</strong> ${proxy.type} <br>
-            <strong>链接：</strong> 
-            <a href="${proxy.link}" target="_blank">${proxy.link}</a> <br>
-            <strong>更新时间：</strong> ${proxy.date}
-            <hr>
-          `;
-          container.appendChild(div);
-        });
-      } catch (err) {
-        console.error("加载数据失败:", err);
-        document.getElementById('proxies').innerHTML = "❌ 加载失败，请稍后再试";
-      }
-    }
+                const container = document.getElementById('proxies');
+                container.innerHTML = ''; // 清空“正在加载”
 
-    window.onload = loadProxies;
-  </script>
+                data.forEach(proxy => {
+                    const item = document.createElement('div');
+                    item.className = 'proxy-item';
+                    item.innerHTML = `
+                        <strong>类型：</strong> ${proxy.type}<br>
+                        <strong>链接：</strong> 
+                        <a href="${proxy.link}" target="_blank">${proxy.link}</a><br>
+                        <strong>更新时间：</strong> ${proxy.date}
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (error) {
+                console.error("加载代理数据失败:", error);
+                const container = document.getElementById('proxies');
+                container.innerHTML = `
+                    <p style="color: red;">
+                        ❌ 加载失败，请检查：<br>
+                        1. 确保 <code>data/proxies.json</code> 存在<br>
+                        2. 路径是否正确（查看控制台错误）<br>
+                        3. 强制刷新页面（Ctrl + F5）
+                    </p>
+                `;
+            }
+        }
+
+        // 页面加载完成后执行
+        window.onload = loadProxies;
+    </script>
 </body>
 </html>
