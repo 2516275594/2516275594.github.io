@@ -1,45 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Free Proxy List</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-    th { background-color: #f2f2f2; }
-  </style>
+  <title>免费代理列表</title>
 </head>
 <body>
-  <h1>Free Proxy List</h1>
-  <table id="proxy-table">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Link</th>
-        <th>Date</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <h1>免费代理订阅链接</h1>
+  <div id="proxies">正在加载...</div>
 
   <script>
-    fetch('data/proxies.json')
-      .then(response => response.json())
-      .then(data => {
-        const tbody = document.getElementById('proxy-table').querySelector('tbody');
-        data.forEach(proxy => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${proxy.type}</td>
-            <td><a href="${proxy.link}" target="_blank">${proxy.link}</a></td>
-            <td>${proxy.date}</td>
+    async function loadProxies() {
+      try {
+        // ✅ 注意路径：根据你的项目结构调整
+        const response = await fetch('./data/proxies.json');
+        const proxies = await response.json();
+
+        const container = document.getElementById('proxies');
+        container.innerHTML = ''; // 清空“正在加载”
+
+        proxies.forEach(proxy => {
+          const div = document.createElement('div');
+          div.style.marginBottom = '20px';
+          div.innerHTML = `
+            <strong>类型：</strong> ${proxy.type} <br>
+            <strong>链接：</strong> 
+            <a href="${proxy.link}" target="_blank">${proxy.link}</a> <br>
+            <strong>更新时间：</strong> ${proxy.date}
+            <hr>
           `;
-          tbody.appendChild(row);
+          container.appendChild(div);
         });
-      })
-      .catch(error => console.error('加载数据失败:', error));
+      } catch (err) {
+        console.error("加载数据失败:", err);
+        document.getElementById('proxies').innerHTML = "❌ 加载失败，请稍后再试";
+      }
+    }
+
+    window.onload = loadProxies;
   </script>
 </body>
 </html>
