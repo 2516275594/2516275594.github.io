@@ -2,7 +2,7 @@ name: Update Proxy Data
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # 每天午夜更新
+    - cron: '0 0 * * *'  # 每天凌晨运行
   workflow_dispatch:     # 手动触发
 
 jobs:
@@ -15,13 +15,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 18  # 使用 Node.js v18
 
       - name: Install Dependencies
-        run: npm install
+        run: npm install    # 安装依赖项
 
       - name: Run Scraper
-        run: node scrape.js
+        run: node scrape.js # 执行你的脚本
 
       - name: Commit and Push
         run: |
