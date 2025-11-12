@@ -17,6 +17,9 @@ jobs:
         with:
           python-version: 3.x  # 使用 Python 3.x
 
+      - name: Install Dependencies
+        run: |
+          pip install requests lxml
       - name: Install Dependencies  # 安装 Python 依赖
         run: |
           pip install requests beautifulsoup4
