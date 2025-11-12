@@ -1,0 +1,34 @@
+name: Update Proxy Data
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 每天凌晨运行（UTC时间）
+  workflow_dispatch:     # 支持手动触发
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest  # 使用 Ubuntu 系统
+    steps:
+      - name: Checkout  # 拉取仓库代码
+        uses: actions/checkout@v3
+
+      - name: Setup Python  # 安装 Python 环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x  # 使用 Python 3.x
+
+      - name: Install Dependencies  # 安装 Python 依赖
+        run: |
+          pip install requests beautifulsoup4
+
+      - name: Run Python Scraper  # 执行爬虫脚本
+        run: |
+          python scrape.py
+
+      - name: Commit and Push  # 提交生成的 JSON 文件
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/proxies.json
+          git commit -m "Update proxy data" || echo "No changes"
+          git push
