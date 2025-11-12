@@ -1,53 +1,43 @@
 import requests
-from lxml import html
+import re
 import json
 import os
 
-url = "https://github.com/crossxx-labs/free-proxy"
-
-# 发送请求
+# 使用 raw GitHub 内容 URL
+url = "https://raw.githubusercontent.com/crossxx-labs/free-proxy/refs/heads/main/README.md"
 response = requests.get(url)
 response.raise_for_status()
 
-# 使用 lxml 解析 HTML
-tree = html.fromstring(response.content)
+content = response.text
 
-# ✅ 使用 XPath 定位目标表格下的所有 tr 行
-# 注意：你提供的路径中有一个拼写错误 —— 应该是 accessibility，不是 accessiblity
-xpath_rows = "/html/body//article/markdown-accessibility-table[1]/table/tbody/tr"
+# ✅ 定义要匹配的行模式（支持空格、代码块、对齐等）
+pattern = r'\|\s*([^|]+?)\s*\|\s*`?(https://clash\.crossxx\.com/sub/(?:ssr|vmess|hysteria)/\d+)`?\s*\|\s*([\d\-:\s]+)\s*\|'
 
-rows = tree.xpath(xpath_rows)
+# 查找所有匹配的行
+matches = re.findall(pattern, content)
 
 proxies = []
-for row in rows:
-    # 获取 td 列
-    tds = row.xpath(".//td")
-    if len(tds) >= 3:
-        try:
-            proxy_type = tds[0].text_content().strip()
-            
-            # 提取 link：优先找 <code> 标签内的文本
-            code_elements = tds[1].xpath(".//code")
-            if code_elements:
-                link = code_elements[0].text_content().strip()
-            else:
-                link = tds[1].text_content().strip()
-            
-            date = tds[2].text_content().strip()
+for match in matches:
+    proxy_type = match[0].strip()        # 类型：免费 SSR / VMess / Hysteria2
+    link = match[1].strip()              # 链接
+    date = match[2].strip()              # 日期时间
 
-            proxies.append({
-                "type": proxy_type,
-                "link": link,
-                "date": date
-            })
-        except Exception as e:
-            print(f"解析行失败: {e}")
-            continue
+    proxies.append({
+        "type": proxy_type,
+        "link": link,
+        "date": date
+    })
 
-# 保存数据
+# 确保至少抓到一行
+if not proxies:
+    print("❌ 未找到匹配的代理数据，请检查正则或 README 内容")
+else:
+    print(f"✅ 成功抓取 {len(proxies)} 条代理数据")
+
+# 保存到 data/proxies.json
 output_dir = "data"
 os.makedirs(output_dir, exist_ok=True)
 with open(f"{output_dir}/proxies.json", "w", encoding="utf-8") as f:
     json.dump(proxies, f, indent=2, ensure_ascii=False)
 
-print(f"✅ 成功抓取 {len(proxies)} 条代理数据")
+print("数据已保存到 data/proxies.json")
