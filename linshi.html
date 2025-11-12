@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Free Proxy List</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h1>Free Proxy List</h1>
+  <table id="proxy-table">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Link</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    fetch('data/proxies.json')
+      .then(response => response.json())
+      .then(data => {
+        const tbody = document.getElementById('proxy-table').querySelector('tbody');
+        data.forEach(proxy => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${proxy.type}</td>
+            <td><a href="${proxy.link}" target="_blank">${proxy.link}</a></td>
+            <td>${proxy.date}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      })
+      .catch(error => console.error('加载数据失败:', error));
+  </script>
+</body>
+</html>
