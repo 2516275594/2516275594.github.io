@@ -3,31 +3,41 @@ from bs4 import BeautifulSoup
 import json
 import os
 
-# 爬取的页面
 url = "https://github.com/crossxx-labs/free-proxy"
 
-# 发送请求
 response = requests.get(url)
+response.raise_for_status()  # 确保请求成功
 soup = BeautifulSoup(response.text, "html.parser")
 
-# 提取表格数据
 proxies = []
 table = soup.find("table")
+
 if table:
     rows = table.find_all("tr")
     for row in rows[1:]:  # 跳过表头
         cols = row.find_all("td")
         if len(cols) >= 3:
-            proxy_type = cols[0].get_text(strip=True)
-            link = cols[1].find("code").get_text(strip=True)
-            date = cols[2].get_text(strip=True)
-            proxies.append({
-                "type": proxy_type,
-                "link": link,
-                "date": date
-            })
+            try:
+                proxy_type = cols[0].get_text(strip=True)
+                
+                # 安全获取 link（使用 .find() 后检查是否为 None）
+                code_tag = cols[1].find("code")
+                link = code_tag.get_text(strip=True) if code_tag else cols[1].get_text(strip=True)
+                
+                date = cols[2].get_text(strip=True)
+                
+                proxies.append({
+                    "type": proxy_type,
+                    "link": link,
+                    "date": date
+                })
+            except Exception as e:
+                print(f"解析行失败: {e}")
+                continue
+else:
+    print("未找到表格")
 
-# 保存为 JSON 文件
+# 保存数据
 output_dir = "data"
 os.makedirs(output_dir, exist_ok=True)
 with open(f"{output_dir}/proxies.json", "w") as f:
