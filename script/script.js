@@ -8,6 +8,10 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
 // 删除密码（可自定义）
 const DELETE_PASSWORD = 'jOjsDp0BDAYlGW2r';
 
+// 修改模式状态
+let isEditMode = false;
+let editModeTimeout;
+
 // 格式化日期
 function formatDate(date) {
   const y = date.getFullYear();
@@ -58,6 +62,108 @@ async function loadNotes(group = '') {
 
     container.appendChild(card);
   });
+
+  // 更新按钮状态
+  updateEditButtons();
+}
+
+// 进入修改模式
+document.getElementById('enterEditModeBtn').addEventListener('click', () => {
+  const inputPassword = prompt('请输入修改模式密码：');
+  if (inputPassword === null) return;
+  if (inputPassword.trim() !== DELETE_PASSWORD) {
+    alert('密码错误，修改模式已取消。');
+    return;
+  }
+
+  // 激活修改模式
+  isEditMode = true;
+  document.body.classList.add('edit-mode-activated');
+  document.body.classList.remove('edit-mode-deactivated');
+  document.getElementById('editModeIndicator').style.display = 'inline-block';
+
+  // 10分钟后自动退出修改模式
+  clearTimeout(editModeTimeout);
+  editModeTimeout = setTimeout(() => {
+    isEditMode = false;
+    document.body.classList.remove('edit-mode-activated');
+    document.body.classList.add('edit-mode-deactivated');
+    document.getElementById('editModeIndicator').style.display = 'none';
+    alert('修改模式已超时退出');
+  }, 10 * 60 * 1000); // 10分钟
+});
+
+// 更新按钮状态
+function updateEditButtons() {
+  const editBtns = document.querySelectorAll('.edit-btn');
+  const deleteBtns = document.querySelectorAll('.delete-btn');
+
+  if (isEditMode) {
+    editBtns.forEach(btn => {
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    });
+    deleteBtns.forEach(btn => {
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    });
+  } else {
+    editBtns.forEach(btn => {
+      btn.style.opacity = '0.5';
+      btn.style.pointerEvents = 'none';
+    });
+    deleteBtns.forEach(btn => {
+      btn.style.opacity = '0.5';
+      btn.style.pointerEvents = 'none';
+    });
+  }
+}
+
+// 删除笔记
+async function deleteNote(id) {
+  if (!isEditMode) {
+    alert('请先进入修改模式');
+    return;
+  }
+
+  const confirmDelete = confirm('确定要删除这条笔记吗？');
+  if (!confirmDelete) return;
+
+  const { error } = await supabaseClient.from('notes').delete().eq('id', id);
+  if (error) {
+    console.error('删除失败:', error);
+    alert('删除失败，请稍后再试');
+  } else {
+    const selectedGroup = document.getElementById('groupFilter').value;
+    await loadNotes(selectedGroup);
+  }
+}
+
+// 修改笔记
+async function editNote(id, currentContent, currentRemark) {
+  if (!isEditMode) {
+    alert('请先进入修改模式');
+    return;
+  }
+
+  const newContent = prompt('请输入新的文本内容：', currentContent);
+  if (newContent === null) return;
+
+  const newRemark = prompt('请输入新的备注（可选）：', currentRemark);
+  if (newRemark === null) return;
+
+  const { error } = await supabaseClient
+    .from('notes')
+    .update({ content: newContent, remark: newRemark })
+    .eq('id', id);
+
+  if (error) {
+    console.error('修改失败:', error);
+    alert('修改失败，请稍后再试');
+  } else {
+    const selectedGroup = document.getElementById('groupFilter').value;
+    await loadNotes(selectedGroup);
+  }
 }
 
 // 保存笔记
@@ -86,56 +192,11 @@ document.getElementById('noteForm').addEventListener('submit', async function (e
   }
 });
 
-// 删除笔记（带密码验证）
-async function deleteNote(id) {
-  const inputPassword = prompt('请输入删除密码：');
-  if (inputPassword === null) return;
-  if (inputPassword.trim() !== DELETE_PASSWORD) {
-    alert('密码错误，删除已取消。');
-    return;
-  }
-
-  const { error } = await supabaseClient.from('notes').delete().eq('id', id);
-  if (error) {
-    console.error('删除失败:', error);
-    alert('删除失败，请稍后再试');
-  } else {
-    const selectedGroup = document.getElementById('groupFilter').value;
-    await loadNotes(selectedGroup);
-  }
-}
-
-// 修改笔记（带密码验证）
-async function editNote(id, currentContent, currentRemark) {
-  const inputPassword = prompt('请输入修改密码：');
-  if (inputPassword === null) return;
-  if (inputPassword.trim() !== DELETE_PASSWORD) {
-    alert('密码错误，修改已取消。');
-    return;
-  }
-
-  const newContent = prompt('请输入新的文本内容：', currentContent);
-  if (newContent === null) return;
-
-  const newRemark = prompt('请输入新的备注（可选）：', currentRemark);
-  if (newRemark === null) return;
-
-  const { error } = await supabaseClient
-    .from('notes')
-    .update({ content: newContent, remark: newRemark })
-    .eq('id', id);
-
-  if (error) {
-    console.error('修改失败:', error);
-    alert('修改失败，请稍后再试');
-  } else {
-    const selectedGroup = document.getElementById('groupFilter').value;
-    await loadNotes(selectedGroup);
-  }
-}
-
 // 页面加载完成后绑定事件
 document.addEventListener('DOMContentLoaded', () => {
+  // 初始为修改模式禁用状态
+  document.body.classList.add('edit-mode-deactivated');
+
   // 绑定分组筛选事件
   document.getElementById('groupFilter').addEventListener('change', function () {
     const selectedGroup = this.value;
