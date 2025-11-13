@@ -147,12 +147,25 @@ async function deleteNote(id) {
   }
 }
 
-// 修改笔记
-function editNote(id, content, remark, group) {
-  currentEditId = id;
-  currentEditContent = content;
-  currentEditRemark = remark;
-  currentEditGroup = group;
+// 删除笔记
+async function deleteNote(id) {
+  if (!isEditMode) {
+    alert('请先进入修改模式');
+    return;
+  }
+
+  const confirmDelete = confirm('确定要删除这条笔记吗？');
+  if (!confirmDelete) return;
+
+  const { error } = await supabaseClient.from('notes').delete().eq('id', id);
+  if (error) {
+    console.error('删除失败:', error);
+    alert('删除失败，请稍后再试');
+  } else {
+    const selectedGroup = document.getElementById('groupFilter').value;
+    await loadNotes(selectedGroup);
+  }
+}
 
   // 显示密码验证模态框
   document.getElementById('passwordModal').style.display = 'block';
