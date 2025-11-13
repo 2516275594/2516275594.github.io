@@ -11,6 +11,7 @@ const DELETE_PASSWORD = 'jOjsDp0BDAYlGW2r';
 // 修改模式状态
 let isEditMode = false;
 let editModeTimeout;
+let currentEditId = null; // 存储当前要修改的笔记 ID
 
 // 格式化日期
 function formatDate(date) {
@@ -48,7 +49,6 @@ async function loadNotes(group = '') {
     const card = document.createElement('div');
     card.className = 'note-card';
 
-    // 使用 data-* 存储数据，避免 onclick 字符串拼接
     card.innerHTML = `
       <div class="note-content">${note.content}</div>
       ${note.remark ? `<div style="margin:8px 0;">备注：${note.remark}</div>` : ''}
@@ -62,6 +62,7 @@ async function loadNotes(group = '') {
               data-group='${JSON.stringify(note.group_name || "默认")}'>修改</span>
       </div>
     `;
+
     container.appendChild(card);
   });
 
@@ -88,9 +89,10 @@ document.getElementById('enterEditModeBtn').addEventListener('click', () => {
     document.body.classList.remove('edit-mode-activated');
     document.body.classList.add('edit-mode-deactivated');
     document.getElementById('editModeIndicator').style.display = 'none';
-    alert('修改模式已超时退出');
+    closeEditModal(); // 同时关闭可能打开的模态框
     updateEditButtons();
-  }, 10 * 60 * 1000);
+    alert('修改模式已超时退出');
+  }, 10 * 60 * 1000); // 10分钟
 
   updateEditButtons();
 });
@@ -141,38 +143,67 @@ async function deleteNote(id) {
   }
 }
 
-// 修改笔记
-async function editNote(id, currentContent, currentRemark, currentGroup) {
+// 打开修改模态框
+async function editNote(id, content, remark, group) {
   if (!isEditMode) {
     alert('请先进入修改模式');
     return;
   }
 
-  const newContent = prompt('请输入新的文本内容：', currentContent);
-  if (newContent === null) return;
+  currentEditId = id;
+  document.getElementById('editContent').value = content;
+  document.getElementById('editRemark').value = remark || '';
+  document.getElementById('editGroup').value = group || '默认';
 
-  const newRemark = prompt('请输入新的备注（可选）：', currentRemark);
-  if (newRemark === null) return;
+  document.getElementById('editModal').style.display = 'flex';
+}
 
-  const newGroup = prompt(`请输入新的分组（当前：${currentGroup}）：
-默认 / 工作 / 生活 / 学习`, currentGroup);
-  if (newGroup === null) return;
+// 关闭模态框
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+  currentEditId = null;
+}
+
+// 提交修改
+document.getElementById('editNoteForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const content = document.getElementById('editContent').value.trim();
+  const remark = document.getElementById('editRemark').value.trim();
+  const group = document.getElementById('editGroup').value;
+
+  if (!content) {
+    alert('文本内容不能为空！');
+    return;
+  }
 
   const { error } = await supabaseClient
     .from('notes')
-    .update({ content: newContent, remark: newRemark, group_name: newGroup })
-    .eq('id', id);
+    .update({ content, remark, group_name: group })
+    .eq('id', currentEditId);
 
   if (error) {
     console.error('修改失败:', error);
     alert('修改失败，请稍后再试');
   } else {
+    closeEditModal();
     const selectedGroup = document.getElementById('groupFilter').value;
     await loadNotes(selectedGroup);
   }
-}
+});
 
-// 保存笔记
+// 取消修改
+document.getElementById('cancelEditBtn').addEventListener('click', closeEditModal);
+
+// 点击遮罩层外部关闭模态框
+window.addEventListener('click', (e) => {
+  const modal = document.getElementById('editModal');
+  if (e.target === modal) {
+    closeEditModal();
+  }
+});
+
+// 保存新笔记
 document.getElementById('noteForm').addEventListener('submit', async function (e) {
   e.preventDefault();
   const content = document.getElementById('mainText').value.trim();
@@ -208,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadNotes();
 
-  // ✅ 关键：使用事件委托绑定动态按钮
+  // 事件委托：处理动态按钮点击
   document.getElementById('notesContainer').addEventListener('click', async (e) => {
     const target = e.target;
 
