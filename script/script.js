@@ -68,6 +68,7 @@ async function loadNotes(group = '') {
 }
 
 // 进入修改模式
+// 进入修改模式
 document.getElementById('enterEditModeBtn').addEventListener('click', () => {
   const inputPassword = prompt('请输入修改模式密码：');
   if (inputPassword === null) return;
@@ -82,6 +83,9 @@ document.getElementById('enterEditModeBtn').addEventListener('click', () => {
   document.body.classList.remove('edit-mode-deactivated');
   document.getElementById('editModeIndicator').style.display = 'inline-block';
 
+  // 更新按钮状态
+  updateEditButtons();
+
   // 10分钟后自动退出修改模式
   clearTimeout(editModeTimeout);
   editModeTimeout = setTimeout(() => {
@@ -90,9 +94,9 @@ document.getElementById('enterEditModeBtn').addEventListener('click', () => {
     document.body.classList.add('edit-mode-deactivated');
     document.getElementById('editModeIndicator').style.display = 'none';
     alert('修改模式已超时退出');
-  }, 10 * 60 * 1000); // 10分钟
+    updateEditButtons();
+  }, 10 * 60 * 1000);
 });
-
 // 更新按钮状态
 function updateEditButtons() {
   const editBtns = document.querySelectorAll('.edit-btn');
@@ -101,20 +105,20 @@ function updateEditButtons() {
   if (isEditMode) {
     editBtns.forEach(btn => {
       btn.style.opacity = '1';
-      btn.style.pointerEvents = 'auto';
+      btn.style.pointer-events = 'auto';
     });
     deleteBtns.forEach(btn => {
       btn.style.opacity = '1';
-      btn.style.pointerEvents = 'auto';
+      btn.style.pointer-events = 'auto';
     });
   } else {
     editBtns.forEach(btn => {
       btn.style.opacity = '0.5';
-      btn.style.pointerEvents = 'none';
+      btn.style.pointer-events = 'none';
     });
     deleteBtns.forEach(btn => {
       btn.style.opacity = '0.5';
-      btn.style.pointerEvents = 'none';
+      btn.style.pointer-events = 'none';
     });
   }
 }
