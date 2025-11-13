@@ -1,82 +1,121 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<title>ruaruaburua</title>
-<link rel="stylesheet" href="css/style.css">
-<style>
-/* 内联样式 */
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f4f4f4;
-  color: #333;
-  margin: 0;
-  padding: 0;
-}
+  <meta charset="UTF-8" />
+  <title>ruaruaburua</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* 页面基础样式 */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      position: relative;
+      min-height: 100vh;
+    }
 
-#header .top .time {
-  background-color: #333;
-  color: white;
-  padding: 10px 20px;
-  text-align: center;
-}
+    /* 顶部时间栏 */
+    #header .top .time {
+      background-color: #333;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+    }
 
-button {
-  display: block;
-  width: 200px;
-  height: 50px;
-  margin: 20px auto;
-  background-color: #5c67f2;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
+    /* 主要按钮容器 - 水平居中 flex 布局 */
+    .button-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;                   /* 按钮间距 */
+      margin: 40px auto;           /* 上下留白，整体居中 */
+      flex-wrap: wrap;             /* 小屏幕时换行 */
+    }
 
-button:hover {
-  background-color: #4a54e1;
-}
+    /* 按钮统一样式 */
+    .button-container button {
+      width: 180px;
+      height: 50px;
+      background-color: #5c67f2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      font-size: 16px;
+    }
 
-#xiugai {
-  width: 100px;
-  height: 30px;
-  background-color: #28a745;
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 12px;
-}
+    .button-container button:hover {
+      background-color: #4a54e1;
+    }
 
-#xiugai:hover {
-  background-color: #218838;
-}
-</style>
-<script>
-function showDate() {
-  const today = new Date();
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  document.getElementById('date').innerHTML = "今天是: " + today.toLocaleDateString('zh-CN', options);
-}
-</script>
+    /* 修改页面按钮 - 固定在右上角 */
+    #xiugai {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 100px;
+      height: 30px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      z-index: 100;
+    }
+
+    #xiugai:hover {
+      background-color: #218838;
+    }
+
+    /* 响应式：小屏幕下按钮垂直排列 */
+    @media (max-width: 600px) {
+      .button-container {
+        flex-direction: column;
+        gap: 15px;
+      }
+      .button-container button {
+        width: 200px;
+      }
+    }
+  </style>
+  <script>
+    // 显示当前日期
+    function showDate() {
+      const today = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('date').innerHTML = "今天是: " + today.toLocaleDateString('zh-CN', options);
+    }
+  </script>
 </head>
 <body onload="showDate()">
-<div id="header">
-  <div class="top">
-    <div class="time" id="date"></div>
+  <!-- 头部时间显示 -->
+  <div id="header">
+    <div class="top">
+      <div class="time" id="date"></div>
+    </div>
   </div>
-</div>
-<a href="../movie.html" target="_blank">
-  <button>看视频</button>
-</a>
-<a href="../note.html" target="_blank">
-  <button>记事本</button>
-</a>
-  <a href="../xianshi.html" target="_blank">
-  <button>限时免费</button>
-</a>
-<a href="#">
-  <button id="xiugai" onclick="window.open('https://github.com/dashboard', '_blank')">修改页面</button>
-</a>
+
+  <!-- 主要功能按钮（水平/响应式布局） -->
+  <div class="button-container">
+    <a href="../movie.html" target="_blank">
+      <button>看视频</button>
+    </a>
+    <a href="../note.html" target="_blank">
+      <button>记事本</button>
+    </a>
+    <a href="../xianshi.html" target="_blank">
+      <button>限时免费</button>
+    </a>
+  </div>
+
+  <!-- 修改页面按钮（固定在右上角） -->
+  <a href="#">
+    <button id="xiugai" onclick="window.open('https://github.com/dashboard', '_blank')">修改页面</button>
+  </a>
 </body>
 </html>
