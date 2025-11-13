@@ -50,13 +50,20 @@ async function loadNotes(group = '') {
     const card = document.createElement('div');
     card.className = 'note-card';
 
+    // ✅ 使用 JSON.stringify 安全转义所有字符串，避免语法错误
     card.innerHTML = `
       <div class="note-content">${note.content}</div>
       ${note.remark ? `<div style="margin:8px 0;">备注：${note.remark}</div>` : ''}
       <div class="note-footer">
         <span>保存时间：${formatDate(new Date(note.created_at))}</span>
-        <span class="delete-btn" onclick="deleteNote('${note.id}')">删除</span>
-        <span class="edit-btn" onclick="editNote('${note.id}', '${note.content}', '${note.remark || ''}')">修改</span>
+        <span class="delete-btn" onclick="deleteNote(${JSON.stringify(note.id)})">删除</span>
+        <span class="edit-btn" 
+              onclick="editNote(
+                ${JSON.stringify(note.id)}, 
+                ${JSON.stringify(note.content)}, 
+                ${JSON.stringify(note.remark || '')}, 
+                ${JSON.stringify(note.group_name || '默认')}
+              )">修改</span>
       </div>
     `;
 
@@ -90,7 +97,11 @@ document.getElementById('enterEditModeBtn').addEventListener('click', () => {
     document.body.classList.add('edit-mode-deactivated');
     document.getElementById('editModeIndicator').style.display = 'none';
     alert('修改模式已超时退出');
+    updateEditButtons();
   }, 10 * 60 * 1000); // 10分钟
+
+  // 确保按钮可点击
+  updateEditButtons();
 });
 
 // 更新按钮状态
@@ -139,8 +150,8 @@ async function deleteNote(id) {
   }
 }
 
-// 修改笔记
-async function editNote(id, currentContent, currentRemark) {
+// 修改笔记（支持修改内容、备注、分组）
+async function editNote(id, currentContent, currentRemark, currentGroup) {
   if (!isEditMode) {
     alert('请先进入修改模式');
     return;
@@ -152,9 +163,17 @@ async function editNote(id, currentContent, currentRemark) {
   const newRemark = prompt('请输入新的备注（可选）：', currentRemark);
   if (newRemark === null) return;
 
+  const newGroup = prompt(`请输入新的分组（当前：${currentGroup}）：
+默认 / 工作 / 生活 / 学习`, currentGroup);
+  if (newGroup === null) return;
+
   const { error } = await supabaseClient
     .from('notes')
-    .update({ content: newContent, remark: newRemark })
+    .update({ 
+      content: newContent, 
+      remark: newRemark,
+      group_name: newGroup 
+    })
     .eq('id', id);
 
   if (error) {
