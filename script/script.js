@@ -25,20 +25,18 @@ function formatDate(date) {
 // 加载所有笔记（支持分组过滤）
 async function loadNotes(group = '') {
   const loading = document.getElementById('loading');
-  if (loading) loading.style.display = 'block'; // 显示加载动画
+  if (loading) loading.style.display = 'block';
 
   let query = supabaseClient.from('notes').select('*');
-
   if (group) {
     query = query.eq('group_name', group);
   }
 
   const { data, error } = await query.order('created_at', { ascending: false });
-
-  if (loading) loading.style.display = 'none'; // 隐藏加载动画
+  if (loading) loading.style.display = 'none';
 
   if (error) {
-    console.error('加载笔记失败:', error);
+    console.error('加载失败:', error);
     alert('加载失败，请检查网络或权限设置');
     return;
   }
@@ -50,27 +48,23 @@ async function loadNotes(group = '') {
     const card = document.createElement('div');
     card.className = 'note-card';
 
-    // ✅ 使用 JSON.stringify 安全转义所有字符串，避免语法错误
+    // 使用 data-* 存储数据，避免 onclick 字符串拼接
     card.innerHTML = `
       <div class="note-content">${note.content}</div>
       ${note.remark ? `<div style="margin:8px 0;">备注：${note.remark}</div>` : ''}
       <div class="note-footer">
         <span>保存时间：${formatDate(new Date(note.created_at))}</span>
-        <span class="delete-btn" onclick="deleteNote(${JSON.stringify(note.id)})">删除</span>
+        <span class="delete-btn" data-id="${note.id}">删除</span>
         <span class="edit-btn" 
-              onclick="editNote(
-                ${JSON.stringify(note.id)}, 
-                ${JSON.stringify(note.content)}, 
-                ${JSON.stringify(note.remark || '')}, 
-                ${JSON.stringify(note.group_name || '默认')}
-              )">修改</span>
+              data-id="${note.id}" 
+              data-content='${JSON.stringify(note.content)}'
+              data-remark='${JSON.stringify(note.remark || "")}'
+              data-group='${JSON.stringify(note.group_name || "默认")}'>修改</span>
       </div>
     `;
-
     container.appendChild(card);
   });
 
-  // 更新按钮状态
   updateEditButtons();
 }
 
@@ -83,13 +77,11 @@ document.getElementById('enterEditModeBtn').addEventListener('click', () => {
     return;
   }
 
-  // 激活修改模式
   isEditMode = true;
   document.body.classList.add('edit-mode-activated');
   document.body.classList.remove('edit-mode-deactivated');
   document.getElementById('editModeIndicator').style.display = 'inline-block';
 
-  // 10分钟后自动退出修改模式
   clearTimeout(editModeTimeout);
   editModeTimeout = setTimeout(() => {
     isEditMode = false;
@@ -98,9 +90,8 @@ document.getElementById('enterEditModeBtn').addEventListener('click', () => {
     document.getElementById('editModeIndicator').style.display = 'none';
     alert('修改模式已超时退出');
     updateEditButtons();
-  }, 10 * 60 * 1000); // 10分钟
+  }, 10 * 60 * 1000);
 
-  // 确保按钮可点击
   updateEditButtons();
 });
 
@@ -150,7 +141,7 @@ async function deleteNote(id) {
   }
 }
 
-// 修改笔记（支持修改内容、备注、分组）
+// 修改笔记
 async function editNote(id, currentContent, currentRemark, currentGroup) {
   if (!isEditMode) {
     alert('请先进入修改模式');
@@ -169,11 +160,7 @@ async function editNote(id, currentContent, currentRemark, currentGroup) {
 
   const { error } = await supabaseClient
     .from('notes')
-    .update({ 
-      content: newContent, 
-      remark: newRemark,
-      group_name: newGroup 
-    })
+    .update({ content: newContent, remark: newRemark, group_name: newGroup })
     .eq('id', id);
 
   if (error) {
@@ -211,17 +198,31 @@ document.getElementById('noteForm').addEventListener('submit', async function (e
   }
 });
 
-// 页面加载完成后绑定事件
+// 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
-  // 初始为修改模式禁用状态
   document.body.classList.add('edit-mode-deactivated');
 
-  // 绑定分组筛选事件
   document.getElementById('groupFilter').addEventListener('change', function () {
-    const selectedGroup = this.value;
-    loadNotes(selectedGroup);
+    loadNotes(this.value);
   });
 
-  // 初始加载所有笔记
   loadNotes();
+
+  // ✅ 关键：使用事件委托绑定动态按钮
+  document.getElementById('notesContainer').addEventListener('click', async (e) => {
+    const target = e.target;
+
+    if (target.classList.contains('delete-btn')) {
+      const id = target.getAttribute('data-id');
+      await deleteNote(id);
+    }
+
+    if (target.classList.contains('edit-btn')) {
+      const id = target.getAttribute('data-id');
+      const content = JSON.parse(target.getAttribute('data-content'));
+      const remark = JSON.parse(target.getAttribute('data-remark'));
+      const group = JSON.parse(target.getAttribute('data-group'));
+      await editNote(id, content, remark, group);
+    }
+  });
 });
