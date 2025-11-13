@@ -207,6 +207,27 @@
         font-size: 22px;
       }
     }
+
+    /* 修改模式激活时的按钮样式 */
+    .edit-mode-activated .edit-btn,
+    .edit-mode-activated .delete-btn {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .edit-mode-deactivated .edit-btn,
+    .edit-mode-deactivated .delete-btn {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .edit-mode-indicator {
+      display: inline-block;
+      margin-left: 10px;
+      font-size: 12px;
+      color: green;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -224,7 +245,7 @@
     <button type="submit">保存</button>
   </form>
 
-  <div>
+  <div style="margin-bottom: 20px;">
     <label for="groupFilter">选择分组：</label>
     <select id="groupFilter">
       <option value="">全部</option>
@@ -233,6 +254,8 @@
       <option value="生活">生活</option>
       <option value="学习">学习</option>
     </select>
+    <button id="enterEditModeBtn">进入修改模式</button>
+    <span id="editModeIndicator" class="edit-mode-indicator" style="display: none;">已激活</span>
   </div>
 
   <div id="notesContainer"></div>
