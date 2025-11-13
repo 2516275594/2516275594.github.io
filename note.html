@@ -1,3 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>跨设备文本保存器</title>
+  <style>
+    /* 全局变量（现代蓝绿色系） */
+    :root {
+      --primary-color: #48BB78;
+      --secondary-color: #4F46E5;
+      --accent-color: #F59E0B;
+      --bg-color: #F9FAFB;
+      --card-bg: #FFFFFF;
+      --text-color: #1F2937;
+      --border-radius: 12px;
+      --transition: 0.3s ease;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+      transition: background-color var(--transition);
+    }
+    h1 {
+      text-align: center;
+      color: var(--primary-color);
+      font-weight: 700;
+      margin-bottom: 20px;
+      font-size: 28px;
+      letter-spacing: 1px;
+    }
+    form {
+      display: grid;
+      grid-template-columns: 3fr 2fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+      background: white;
+      padding: 16px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      transition: box-shadow var(--transition);
+    }
+    form:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    }
+    input[type="text"] {
+      padding: 12px 16px;
+      font-size: 16px;
+      border: 1px solid #D1D5DB;
+      border-radius: var(--border-radius);
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    input[type="text"]:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.2);
+    }
+    button {
+      padding: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: background var(--transition), transform var(--transition);
+    }
+    button:hover {
+      background: #2F855A;
+      transform: translateY(-2px);
+    }
+    button::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 300%;
+      height: 300%;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      transition: transform var(--transition);
+    }
+    button:hover::after {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .note-card {
+      background: var(--card-bg);
+      border-left: 6px solid var(--primary-color);
+      margin: 16px 0;
+      padding: 16px 20px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      transition: transform var(--transition), box-shadow var(--transition);
+      position: relative;
+    }
+    .note-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    }
+    .note-content {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-color);
+    }
+    .note-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9em;
+      color: #6B7280;
+      margin-top: 10px;
+    }
+    .delete-btn, .edit-btn {
+      cursor: pointer;
+      font-weight: 600;
+      transition: color var(--transition);
+    }
+    .delete-btn {
+      color: var(--accent-color);
+    }
+    .delete-btn:hover {
+      color: #D97706;
+    }
+    .edit-btn {
+      color: var(--secondary-color);
+      margin-left: 10px;
+    }
+    .edit-btn:hover {
+      color: #3730A3;
+    }
+    select {
+      padding: 10px;
+      font-size: 15px;
+      border: 1px solid #D1D5DB;
+      border-radius: var(--border-radius);
+      transition: border-color var(--transition);
+    }
+    select:focus {
+      border-color: var(--secondary-color);
+      outline: none;
+    }
+    #loading {
+      display: none;
+      text-align: center;
+      margin: 20px 0;
+      color: var(--primary-color);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    #loading::after {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #48BB78;
+      border-top: 2px solid transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: 8px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @media (max-width: 600px) {
+      form {
+        grid-template-columns: 1fr;
+      }
+      button {
+        width: 100%;
+      }
+      h1 {
+        font-size: 22px;
+      }
+    }
+    /* 修改模式按钮状态 */
+    .edit-mode-activated .edit-btn,
+    .edit-mode-activated .delete-btn {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .edit-mode-deactivated .edit-btn,
+    .edit-mode-deactivated .delete-btn {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .edit-mode-indicator {
+      display: inline-block;
+      margin-left: 10px;
+      font-size: 12px;
+      color: green;
+      font-weight: bold;
+    }
+
+    /* 模态框样式 */
+    #editModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    #editModal .modal-content {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    #editModal h3 {
+      margin-top: 0;
+      color: var(--text-color);
+    }
+    #editModal label {
+      display: block;
+      margin: 8px 0 4px;
+      font-weight: 500;
+      color: var(--text-color);
+    }
+    #editModal textarea,
+    #editModal input[type="text"],
+    #editModal select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+    #editModal textarea {
+      resize: vertical;
+    }
+    #editModal .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    #editModal .btn-cancel {
+      padding: 8px 16px;
+      background: #9CA3AF;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #editModal .btn-save {
+      padding: 8px 16px;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📝 文本保存器</h1>
+
+  <form id="noteForm">
+    <input type="text" id="mainText" placeholder="输入要保存的文本..." required>
+    <input type="text" id="noteText" placeholder="备注（可选）">
+    <select id="groupSelect">
+      <option value="默认">默认</option>
+      <option value="工作">工作</option>
+      <option value="生活">生活</option>
+      <option value="学习">学习</option>
+    </select>
+    <button type="submit">保存</button>
+  </form>
+
+  <div style="margin-bottom: 20px;">
+    <label for="groupFilter">选择分组：</label>
+    <select id="groupFilter">
+      <option value="">全部</option>
+      <option value="默认">默认</option>
+      <option value="工作">工作</option>
+      <option value="生活">生活</option>
+      <option value="学习">学习</option>
+    </select>
+    <button id="enterEditModeBtn">进入修改模式</button>
+    <span id="editModeIndicator" class="edit-mode-indicator" style="display: none;">已激活</span>
+  </div>
+
+  <div id="notesContainer"></div>
+  <div id="loading">正在加载数据...</div>
+
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- 外部脚本（路径保持不变） -->
+  <script src="script/script.js"></script>
+
 <!-- 修改笔记模态框 -->
 <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
   <div style="background: white; padding: 24px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
@@ -52,3 +357,6 @@
     </form>
   </div>
 </div>
+
+</body>
+</html>
