@@ -15,7 +15,7 @@ function formatDate(date) {
   const d = String(date.getDate()).padStart(2, '0');
   const h = String(date.getHours()).padStart(2, '0');
   const min = String(date.getMinutes()).padStart(2, '0');
-  return `${y}-${m}-${d} ${h}:${min}`; // ✅ 修复：加上反引号
+  return `${y}-${m}-${d} ${h}:${min}`;
 }
 
 // 加载所有笔记（支持分组过滤）
@@ -23,7 +23,7 @@ async function loadNotes(group = '') {
   const loading = document.getElementById('loading');
   if (loading) loading.style.display = 'block'; // 显示加载动画
 
-  let query = supabaseClient.from('notes').select('*'); // ✅ 修复：'*' 不是 ''
+  let query = supabaseClient.from('notes').select('*');
 
   if (group) {
     query = query.eq('group_name', group);
@@ -46,13 +46,13 @@ async function loadNotes(group = '') {
     const card = document.createElement('div');
     card.className = 'note-card';
 
-    // ✅ 修复：使用反引号包裹多行字符串
     card.innerHTML = `
       <div class="note-content">${note.content}</div>
       ${note.remark ? `<div style="margin:8px 0;">备注：${note.remark}</div>` : ''}
       <div class="note-footer">
         <span>保存时间：${formatDate(new Date(note.created_at))}</span>
         <span class="delete-btn" onclick="deleteNote('${note.id}')">删除</span>
+        <span class="edit-btn" onclick="editNote('${note.id}', '${note.content}', '${note.remark || ''}')">修改</span>
       </div>
     `;
 
@@ -89,19 +89,45 @@ document.getElementById('noteForm').addEventListener('submit', async function (e
 // 删除笔记（带密码验证）
 async function deleteNote(id) {
   const inputPassword = prompt('请输入删除密码：');
-
   if (inputPassword === null) return;
-
   if (inputPassword.trim() !== DELETE_PASSWORD) {
     alert('密码错误，删除已取消。');
     return;
   }
 
   const { error } = await supabaseClient.from('notes').delete().eq('id', id);
-
   if (error) {
     console.error('删除失败:', error);
     alert('删除失败，请稍后再试');
+  } else {
+    const selectedGroup = document.getElementById('groupFilter').value;
+    await loadNotes(selectedGroup);
+  }
+}
+
+// 修改笔记（带密码验证）
+async function editNote(id, currentContent, currentRemark) {
+  const inputPassword = prompt('请输入修改密码：');
+  if (inputPassword === null) return;
+  if (inputPassword.trim() !== DELETE_PASSWORD) {
+    alert('密码错误，修改已取消。');
+    return;
+  }
+
+  const newContent = prompt('请输入新的文本内容：', currentContent);
+  if (newContent === null) return;
+
+  const newRemark = prompt('请输入新的备注（可选）：', currentRemark);
+  if (newRemark === null) return;
+
+  const { error } = await supabaseClient
+    .from('notes')
+    .update({ content: newContent, remark: newRemark })
+    .eq('id', id);
+
+  if (error) {
+    console.error('修改失败:', error);
+    alert('修改失败，请稍后再试');
   } else {
     const selectedGroup = document.getElementById('groupFilter').value;
     await loadNotes(selectedGroup);
