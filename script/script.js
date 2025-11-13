@@ -11,10 +11,6 @@ const DELETE_PASSWORD = 'jOjsDp0BDAYlGW2r';
 // 修改模式状态
 let isEditMode = false;
 let editModeTimeout;
-let currentEditId = null;
-let currentEditContent = '';
-let currentEditRemark = '';
-let currentEditGroup = '默认';
 
 // 格式化日期
 function formatDate(date) {
@@ -60,7 +56,7 @@ async function loadNotes(group = '') {
       <div class="note-footer">
         <span>保存时间：${formatDate(new Date(note.created_at))}</span>
         <span class="delete-btn" onclick="deleteNote('${note.id}')">删除</span>
-        <span class="edit-btn" onclick="editNote('${note.id}', '${note.content}', '${note.remark || ''}', '${note.group_name || '默认'}')">修改</span>
+        <span class="edit-btn" onclick="editNote('${note.id}', '${note.content}', '${note.remark || ''}')">修改</span>
       </div>
     `;
 
@@ -71,6 +67,7 @@ async function loadNotes(group = '') {
   updateEditButtons();
 }
 
+// 进入修改模式
 // 进入修改模式
 document.getElementById('enterEditModeBtn').addEventListener('click', () => {
   const inputPassword = prompt('请输入修改模式密码：');
@@ -98,9 +95,8 @@ document.getElementById('enterEditModeBtn').addEventListener('click', () => {
     document.getElementById('editModeIndicator').style.display = 'none';
     alert('修改模式已超时退出');
     updateEditButtons();
-  }, 10 * 60 * 1000); // 10分钟
+  }, 10 * 60 * 1000);
 });
-
 // 更新按钮状态
 function updateEditButtons() {
   const editBtns = document.querySelectorAll('.edit-btn');
@@ -109,7 +105,7 @@ function updateEditButtons() {
   if (isEditMode) {
     editBtns.forEach(btn => {
       btn.style.opacity = '1';
-      btn.style.pointerEvents = 'auto';
+      btn.style.pointer-events = 'auto';
     });
     deleteBtns.forEach(btn => {
       btn.style.opacity = '1';
@@ -118,7 +114,7 @@ function updateEditButtons() {
   } else {
     editBtns.forEach(btn => {
       btn.style.opacity = '0.5';
-      btn.style.pointerEvents = 'none';
+      btn.style.pointer-events = 'none';
     });
     deleteBtns.forEach(btn => {
       btn.style.opacity = '0.5';
@@ -147,85 +143,31 @@ async function deleteNote(id) {
   }
 }
 
-// 删除笔记
-async function deleteNote(id) {
+// 修改笔记
+async function editNote(id, currentContent, currentRemark) {
   if (!isEditMode) {
     alert('请先进入修改模式');
     return;
   }
 
-  const confirmDelete = confirm('确定要删除这条笔记吗？');
-  if (!confirmDelete) return;
+  const newContent = prompt('请输入新的文本内容：', currentContent);
+  if (newContent === null) return;
 
-  const { error } = await supabaseClient.from('notes').delete().eq('id', id);
-  if (error) {
-    console.error('删除失败:', error);
-    alert('删除失败，请稍后再试');
-  } else {
-    const selectedGroup = document.getElementById('groupFilter').value;
-    await loadNotes(selectedGroup);
-  }
-}
-
-  // 显示密码验证模态框
-  document.getElementById('passwordModal').style.display = 'block';
-}
-
-// 验证密码
-document.getElementById('submitPasswordBtn').addEventListener('click', () => {
-  const inputPassword = document.getElementById('editPasswordInput').value.trim();
-  if (inputPassword !== DELETE_PASSWORD) {
-    alert('密码错误');
-    return;
-  }
-
-  // 隐藏密码框，显示编辑框
-  document.getElementById('passwordModal').style.display = 'none';
-  document.getElementById('editNoteModal').style.display = 'block';
-
-  // 填入当前内容
-  document.getElementById('editContentInput').value = currentEditContent;
-  document.getElementById('editRemarkInput').value = currentEditRemark;
-  document.getElementById('editGroupSelect').value = currentEditGroup; // 填入当前分组
-});
-
-// 保存修改
-document.getElementById('saveEditBtn').addEventListener('click', async () => {
-  const newContent = document.getElementById('editContentInput').value.trim();
-  const newRemark = document.getElementById('editRemarkInput').value.trim();
-  const newGroup = document.getElementById('editGroupSelect').value;
-
-  if (!newContent) {
-    alert('文本内容不能为空');
-    return;
-  }
+  const newRemark = prompt('请输入新的备注（可选）：', currentRemark);
+  if (newRemark === null) return;
 
   const { error } = await supabaseClient
     .from('notes')
-    .update({ 
-      content: newContent, 
-      remark: newRemark,
-      group_name: newGroup
-    })
-    .eq('id', currentEditId);
+    .update({ content: newContent, remark: newRemark })
+    .eq('id', id);
 
   if (error) {
     console.error('修改失败:', error);
     alert('修改失败，请稍后再试');
   } else {
-    closeAllModals();
     const selectedGroup = document.getElementById('groupFilter').value;
     await loadNotes(selectedGroup);
   }
-});
-
-// 关闭所有模态框
-function closeAllModals() {
-  document.getElementById('passwordModal').style.display = 'none';
-  document.getElementById('editNoteModal').style.display = 'none';
-  document.getElementById('editPasswordInput').value = '';
-  document.getElementById('editContentInput').value = '';
-  document.getElementById('editRemarkInput').value = '';
 }
 
 // 保存笔记
