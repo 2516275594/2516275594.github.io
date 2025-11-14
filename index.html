@@ -5,93 +5,38 @@
   <title>ruaruaburua</title>
   <link rel="stylesheet" href="css/style.css" />
   <style>
-    /* ===== 页面基础设置 ===== */
+    /* ===== 基础样式 ===== */
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Arial', sans-serif;
+      background-color: #fffaf6; /* 柔和米白色背景 */
+      color: #333;
       margin: 0;
       padding: 0;
-      color: #333;
       min-height: 100vh;
       position: relative;
       overflow: hidden;
       cursor: default;
     }
 
-    /* ===== Canvas 气泡背景层（最底层）===== */
-    #bubble-bg {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -3;
-    }
-
-    /* ===== 动态渐变层 ===== */
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(
-        -45deg,
-        #ee7752,
-        #e73c7a,
-        #23a6d5,
-        #2980b9,
-        #a855f7,
-        #f39c12
-      );
-      background-size: 400% 400%;
-      animation: gradientShift 15s ease infinite;
-      z-index: -2;
-    }
-
-    /* ===== 半透明遮罩层 ===== */
-    body::after {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.25);
-      z-index: -1;
-    }
-
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    /* ===== 水波纹样式 ===== */
-    .ripple {
-      position: fixed;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.6);
-      transform: scale(0);
-      animation: ripple-effect 0.8s linear forwards;
-      pointer-events: none; /* 不影响其他交互 */
-      z-index: 9999;
-    }
-
-    @keyframes ripple-effect {
-      to {
-        transform: scale(4);
-        opacity: 0;
-      }
-    }
-
     /* ===== 顶部时间栏 ===== */
     #header .top .time {
-      background-color: #333;
+      background-color: #5c67f2;
       color: white;
-      padding: 10px 20px;
+      padding: 15px 20px;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      font-size: 18px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 新增：每日一句 */
+    #daily-quote {
+      text-align: center;
+      padding: 15px;
+      font-size: 16px;
+      color: #666;
+      font-style: italic;
+      background-color: #f8f9fa;
+      border-bottom: 1px dashed #ddd;
     }
 
     /* ===== 主要按钮容器 ===== */
@@ -100,7 +45,7 @@
       justify-content: center;
       align-items: center;
       gap: 20px;
-      margin: 60px auto;
+      margin: 40px auto;
       flex-wrap: wrap;
     }
 
@@ -123,7 +68,7 @@
       box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
     }
 
-    /* ===== 修改页面按钮 ===== */
+    /* ===== 修改页面按钮（右上角）===== */
     #xiugai {
       position: absolute;
       top: 20px;
@@ -163,112 +108,17 @@
         font-size: 11px;
       }
       #header .top .time {
-        padding: 8px 15px;
+        padding: 10px 15px;
+        font-size: 16px;
+      }
+      #daily-quote {
         font-size: 14px;
+        padding: 10px;
       }
     }
   </style>
-  <script>
-    // 显示当前日期
-    function showDate() {
-      const today = new Date();
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      document.getElementById('date').innerHTML = "今天是: " + today.toLocaleDateString('zh-CN', options);
-    }
-
-    // 气泡动画逻辑
-    window.addEventListener('load', function () {
-      const canvas = document.getElementById('bubble-bg');
-      const ctx = canvas.getContext('2d');
-      let bubbles = [];
-      let width, height;
-
-      function resize() {
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvas.width = width;
-        canvas.height = height;
-      }
-      window.addEventListener('resize', resize);
-      resize();
-
-      function createBubble() {
-        return {
-          x: Math.random() * width,
-          y: height + Math.random() * 50,
-          radius: Math.random() * 15 + 5,
-          speed: Math.random() * 2 + 1,
-          alpha: Math.random() * 0.5 + 0.1,
-          color: `hsl(${Math.random() * 360}, 70%, 70%)`,
-        };
-      }
-
-      function initBubbles() {
-        const count = width > 768 ? 40 : 20;
-        for (let i = 0; i < count; i++) {
-          bubbles.push(createBubble());
-        }
-      }
-
-      function updateBubbles() {
-        bubbles.forEach((b, index) => {
-          b.y -= b.speed;
-          if (b.y < -b.radius) {
-            bubbles[index] = createBubble();
-          }
-        });
-      }
-
-      function drawBubbles() {
-        ctx.clearRect(0, 0, width, height);
-        bubbles.forEach(b => {
-          ctx.beginPath();
-          ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
-          ctx.fillStyle = b.color + Math.floor(b.alpha * 255).toString(16).padStart(2, '0');
-          ctx.globalAlpha = b.alpha;
-          ctx.fill();
-          ctx.globalAlpha = 1;
-          ctx.closePath();
-        });
-      }
-
-      function animate() {
-        updateBubbles();
-        drawBubbles();
-        requestAnimationFrame(animate);
-      }
-
-      initBubbles();
-      animate();
-      showDate(); // 启动日期显示
-    });
-
-    // 💧 水波纹效果（点击触发）
-    document.addEventListener('click', function (e) {
-      const ripple = document.createElement('div');
-      ripple.classList.add('ripple');
-
-      // 设置大小（根据屏幕调整）
-      const size = Math.max(window.innerWidth, window.innerHeight) * 0.15;
-      ripple.style.width = ripple.style.height = `${size}px`;
-
-      // 居中于鼠标位置
-      ripple.style.left = `${e.clientX - size / 2}px`;
-      ripple.style.top = `${e.clientY - size / 2}px`;
-
-      // 添加到页面
-      document.body.appendChild(ripple);
-
-      // 几秒后自动移除，避免 DOM 膨胀
-      setTimeout(() => {
-        ripple.remove();
-      }, 1000);
-    });
-  </script>
 </head>
 <body>
-  <!-- Canvas 气泡背景 -->
-  <canvas id="bubble-bg"></canvas>
 
   <!-- 头部时间 -->
   <div id="header">
@@ -276,6 +126,9 @@
       <div class="time" id="date"></div>
     </div>
   </div>
+
+  <!-- 每日一句 -->
+  <div id="daily-quote">今天也要开心呀～</div>
 
   <!-- 主要按钮 -->
   <div class="button-container">
@@ -290,9 +143,115 @@
     </a>
   </div>
 
-  <!-- 修改按钮 -->
+  <!-- 修改页面按钮 -->
   <a href="#">
     <button id="xiugai" onclick="window.open('https://github.com/dashboard', '_blank')">修改页面</button>
   </a>
+
+  <!-- 粒子 JS 脚本（光标粒子跟随） -->
+  <script type="text/javascript">
+    // === 每日一句：根据日期切换不同语句 ===
+    function setDailyQuote() {
+      const quotes = [
+        "今天也要开心呀～",
+        "阳光正好，微风不燥。",
+        "生活很苦，但你很甜。",
+        "别忘了微笑哦！😊",
+        "努力成为更好的自己！",
+        "每一天都是新的开始。",
+        "愿你被世界温柔以待。"
+      ];
+      const today = new Date();
+      const index = today.getDate() % quotes.length; // 用日期取模确保每天不同
+      document.getElementById('daily-quote').textContent = quotes[index];
+    }
+
+    // === 显示当前日期 ===
+    function showDate() {
+      const today = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('date').innerHTML = "今天是: " + today.toLocaleDateString('zh-CN', options);
+      setDailyQuote(); // 设置每日语录
+    }
+
+    // === 光标粒子跟随效果 ===
+    (function () {
+      const particles = [];
+      const maxParticles = 80;
+      let mouse = { x: 0, y: 0 };
+      let canvas, ctx;
+
+      // 初始化画布
+      function init() {
+        canvas = document.createElement('canvas');
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '9998';
+        document.body.appendChild(canvas);
+
+        ctx = canvas.getContext('2d');
+        resize();
+
+        window.addEventListener('resize', resize);
+        document.addEventListener('mousemove', e => {
+          mouse.x = e.clientX;
+          mouse.y = e.clientY;
+        });
+
+        // 启动动画
+        setInterval(createParticle, 60); // 每60ms生成一个粒子
+        animate();
+      }
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      function createParticle() {
+        if (particles.length >= maxParticles) particles.shift();
+
+        particles.push({
+          x: mouse.x,
+          y: mouse.y,
+          size: Math.random() * 5 + 1,
+          speedX: Math.random() * 3 - 1.5,
+          speedY: Math.random() * 3 - 1.5,
+          color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+          alpha: 1
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let p of particles) {
+          p.x += p.speedX;
+          p.y += p.speedY;
+          p.alpha -= 0.01;
+          p.size *= 0.97;
+
+          if (p.alpha <= 0) continue;
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = `${p.color}${Math.floor(p.alpha * 255).toString(16).padStart(2, '0')}`;
+          ctx.fill();
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      // 页面加载完成后初始化
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+
 </body>
 </html>
