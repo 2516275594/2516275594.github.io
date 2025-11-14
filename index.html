@@ -5,53 +5,102 @@
   <title>ruaruaburua</title>
   <link rel="stylesheet" href="css/style.css" />
   <style>
-    /* 页面基础样式 */
+    /* ===== 动态流动渐变背景 ===== */
     body {
       font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      color: #333;
       margin: 0;
       padding: 0;
-      position: relative;
+      color: #333;
       min-height: 100vh;
+      position: relative;
+      overflow: hidden; /* 防止滚动干扰 */
     }
 
-    /* 顶部时间栏 */
+    /* 动态背景层 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        -45deg,
+        #ee7752,
+        #e73c7a,
+        #23a6d5,
+        #2980b9,
+        #a855f7
+      );
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      z-index: -2; /* 在内容下方 */
+    }
+
+    /* 半透明遮罩层，提升文字可读性 */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.2);
+      z-index: -1;
+    }
+
+    /* 渐变动画：颜色缓慢流动 */
+    @keyframes gradientShift {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    /* ===== 顶部时间栏 ===== */
     #header .top .time {
       background-color: #333;
       color: white;
       padding: 10px 20px;
       text-align: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     }
 
-    /* 主要按钮容器 - 水平居中 flex 布局 */
+    /* ===== 主要按钮容器 - 水平居中 flex 布局 ===== */
     .button-container {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 20px;                   /* 按钮间距 */
-      margin: 40px auto;           /* 上下留白，整体居中 */
-      flex-wrap: wrap;             /* 小屏幕时换行 */
+      gap: 20px;
+      margin: 60px auto;
+      flex-wrap: wrap;
     }
 
-    /* 按钮统一样式 */
     .button-container button {
       width: 180px;
       height: 50px;
       background-color: #5c67f2;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.3s ease;
+      transition: all 0.3s ease;
       font-size: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
 
     .button-container button:hover {
       background-color: #4a54e1;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
     }
 
-    /* 修改页面按钮 - 固定在右上角 */
+    /* ===== 修改页面按钮（右上角）===== */
     #xiugai {
       position: absolute;
       top: 20px;
@@ -66,13 +115,15 @@
       cursor: pointer;
       transition: background-color 0.3s ease;
       z-index: 100;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
     #xiugai:hover {
       background-color: #218838;
+      transform: scale(1.05);
     }
 
-    /* 响应式：小屏幕下按钮垂直排列 */
+    /* ===== 响应式：小屏幕适配 ===== */
     @media (max-width: 600px) {
       .button-container {
         flex-direction: column;
@@ -81,10 +132,20 @@
       .button-container button {
         width: 200px;
       }
+      #xiugai {
+        top: 10px;
+        right: 10px;
+        width: 90px;
+        height: 28px;
+        font-size: 11px;
+      }
+      #header .top .time {
+        padding: 8px 15px;
+        font-size: 14px;
+      }
     }
   </style>
   <script>
-    // 显示当前日期
     function showDate() {
       const today = new Date();
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -93,14 +154,14 @@
   </script>
 </head>
 <body onload="showDate()">
-  <!-- 头部时间显示 -->
+  <!-- 头部时间 -->
   <div id="header">
     <div class="top">
       <div class="time" id="date"></div>
     </div>
   </div>
 
-  <!-- 主要功能按钮（水平/响应式布局） -->
+  <!-- 主要功能按钮 -->
   <div class="button-container">
     <a href="../movie.html" target="_blank">
       <button>看视频</button>
@@ -113,7 +174,7 @@
     </a>
   </div>
 
-  <!-- 修改页面按钮（固定在右上角） -->
+  <!-- 修改页面按钮 -->
   <a href="#">
     <button id="xiugai" onclick="window.open('https://github.com/dashboard', '_blank')">修改页面</button>
   </a>
