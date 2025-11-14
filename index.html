@@ -14,6 +14,7 @@
       min-height: 100vh;
       position: relative;
       overflow: hidden;
+      cursor: default;
     }
 
     /* ===== Canvas 气泡背景层（最底层）===== */
@@ -23,7 +24,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      z-index: -3; /* 最底层 */
+      z-index: -3;
     }
 
     /* ===== 动态渐变层 ===== */
@@ -48,7 +49,7 @@
       z-index: -2;
     }
 
-    /* ===== 半透明遮罩层，提升文字清晰度 ===== */
+    /* ===== 半透明遮罩层 ===== */
     body::after {
       content: '';
       position: fixed;
@@ -64,6 +65,24 @@
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
+    }
+
+    /* ===== 水波纹样式 ===== */
+    .ripple {
+      position: fixed;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.6);
+      transform: scale(0);
+      animation: ripple-effect 0.8s linear forwards;
+      pointer-events: none; /* 不影响其他交互 */
+      z-index: 9999;
+    }
+
+    @keyframes ripple-effect {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
     }
 
     /* ===== 顶部时间栏 ===== */
@@ -158,13 +177,12 @@
     }
 
     // 气泡动画逻辑
-    window.onload = function () {
+    window.addEventListener('load', function () {
       const canvas = document.getElementById('bubble-bg');
       const ctx = canvas.getContext('2d');
       let bubbles = [];
       let width, height;
 
-      // 调整画布尺寸
       function resize() {
         width = window.innerWidth;
         height = window.innerHeight;
@@ -174,7 +192,6 @@
       window.addEventListener('resize', resize);
       resize();
 
-      // 创建气泡
       function createBubble() {
         return {
           x: Math.random() * width,
@@ -186,26 +203,22 @@
         };
       }
 
-      // 初始化一些气泡
       function initBubbles() {
-        bubbles = [];
-        const count = width > 768 ? 40 : 20; // 大屏多一点
+        const count = width > 768 ? 40 : 20;
         for (let i = 0; i < count; i++) {
           bubbles.push(createBubble());
         }
       }
 
-      // 更新气泡位置
       function updateBubbles() {
         bubbles.forEach((b, index) => {
           b.y -= b.speed;
           if (b.y < -b.radius) {
-            bubbles[index] = createBubble(); // 重新生成
+            bubbles[index] = createBubble();
           }
         });
       }
 
-      // 绘制气泡
       function drawBubbles() {
         ctx.clearRect(0, 0, width, height);
         bubbles.forEach(b => {
@@ -219,7 +232,6 @@
         });
       }
 
-      // 动画循环
       function animate() {
         updateBubbles();
         drawBubbles();
@@ -228,10 +240,30 @@
 
       initBubbles();
       animate();
+      showDate(); // 启动日期显示
+    });
 
-      // 页面加载完再显示内容（避免闪烁）
-      showDate();
-    };
+    // 💧 水波纹效果（点击触发）
+    document.addEventListener('click', function (e) {
+      const ripple = document.createElement('div');
+      ripple.classList.add('ripple');
+
+      // 设置大小（根据屏幕调整）
+      const size = Math.max(window.innerWidth, window.innerHeight) * 0.15;
+      ripple.style.width = ripple.style.height = `${size}px`;
+
+      // 居中于鼠标位置
+      ripple.style.left = `${e.clientX - size / 2}px`;
+      ripple.style.top = `${e.clientY - size / 2}px`;
+
+      // 添加到页面
+      document.body.appendChild(ripple);
+
+      // 几秒后自动移除，避免 DOM 膨胀
+      setTimeout(() => {
+        ripple.remove();
+      }, 1000);
+    });
   </script>
 </head>
 <body>
