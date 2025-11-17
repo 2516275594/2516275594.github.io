@@ -157,6 +157,19 @@
             border: 1px solid #fcc;
         }
 
+        .debug-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            display: none;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
         .cors-warning {
             background: #fff3cd;
             color: #856404;
@@ -185,7 +198,7 @@
 <body>
     <div class="container">
         <div class="cors-warning">
-            <strong>提示：</strong>正在使用CORS代理服务访问API，可能会影响加载速度。如需更快的访问，请参考下方说明设置自己的代理服务器。
+            <strong>提示：</strong>正在尝试多种方式访问API，如果遇到问题请检查网络连接。
         </div>
         
         <h1>随机图片展示</h1>
@@ -212,6 +225,13 @@
                 </svg>
                 下载图片
             </button>
+            <button class="btn" id="debugBtn" onclick="toggleDebug()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6m-9-9h6m6 0h6"></path>
+                </svg>
+                调试信息
+            </button>
         </div>
 
         <div class="info-panel" id="infoPanel">
@@ -230,54 +250,31 @@
         </div>
 
         <div class="error-message" id="errorMessage"></div>
-
-        <div style="margin-top: 30px; padding: 20px; background: #e3f2fd; border-radius: 10px; text-align: left;">
-            <h3 style="margin-bottom: 10px; color: #1976d2;">技术说明</h3>
-            <p style="margin-bottom: 10px; color: #555;">
-                由于浏览器的同源策略限制，无法直接访问跨域API。这里使用了CORS代理服务来解决此问题。
-            </p>
-            <p style="margin-bottom: 10px; color: #555;">
-                如果您需要更稳定的解决方案，可以：
-            </p>
-            <ol style="margin-left: 20px; color: #555;">
-                <li>部署自己的代理服务器（Node.js示例代码已提供）</li>
-                <li>使用支持CORS的API服务</li>
-                <li>在服务器端直接调用API</li>
-            </ol>
-            <details style="margin-top: 15px;">
-                <summary style="cursor: pointer; color: #1976d2;">查看Node.js代理服务器代码</summary>
-                <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin-top: 10px; overflow-x: auto;">
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
-
-const app = express();
-app.use(cors());
-
-app.get('/proxy/api/img/tu/girl', async (req, res) => {
-    try {
-        const response = await axios.get('https://api.52vmy.cn/api/img/tu/girl');
-        res.json(response.data);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`代理服务器运行在 http://localhost:${PORT}`);
-});
-                </pre>
-            </details>
-        </div>
+        <div class="debug-panel" id="debugPanel"></div>
     </div>
 
     <script>
         let currentImageUrl = null;
+        let debugMode = false;
+        let lastResponse = null;
 
-        // 使用CORS代理服务
-        const CORS_PROXY_URL = 'https://cors-anywhere.herokuapp.com/';
-        const API_URL = 'https://api.52vmy.cn/api/img/tu/girl';
+        // 尝试不同的代理方式
+        const PROXY_METHODS = [
+            {
+                name: '直接访问',
+                url: 'https://api.52vmy.cn/api/img/tu/girl'
+            },
+            {
+                name: 'CORS Anywhere',
+                url: 'https://cors-anywhere.herokuapp.com/https://api.52vmy.cn/api/img/tu/girl'
+            },
+            {
+                name: 'AllOrigins',
+                url: 'https://api.allorigins.win/get?url=https://api.52vmy.cn/api/img/tu/girl'
+            }
+        ];
+
+        let currentMethodIndex = 0;
 
         async function fetchImage() {
             const fetchBtn = document.getElementById('fetchBtn');
@@ -298,16 +295,41 @@ app.listen(PORT, () => {
             downloadBtn.style.display = 'none';
 
             try {
-                // 使用CORS代理
-                const response = await fetch(`${CORS_PROXY_URL}${API_URL}`);
-                const data = await response.json();
-
-                // 更新信息面板
-                document.getElementById('codeValue').textContent = data.code;
-                document.getElementById('msgValue').textContent = data.msg;
-                document.getElementById('urlValue').textContent = data.url;
+                // 尝试当前方法
+                const method = PROXY_METHODS[currentMethodIndex];
+                let data;
                 
-                if (data.code === 200 && data.url) {
+                if (method.name === 'AllOrigins') {
+                    // 处理AllOrigins的特殊响应格式
+                    const response = await fetch(method.url);
+                    const responseData = await response.json();
+                    if (responseData.contents) {
+                        data = JSON.parse(responseData.contents);
+                    } else {
+                        throw new Error('AllOrigins响应格式错误');
+                    }
+                } else {
+                    // 直接获取JSON
+                    const response = await fetch(method.url);
+                    const text = await response.text();
+                    
+                    // 尝试解析为JSON
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        // 如果不是JSON，显示原始响应内容用于调试
+                        throw new Error(`响应不是有效的JSON: ${text.substring(0, 200)}...`);
+                    }
+                }
+
+                lastResponse = data;
+                
+                // 更新信息面板
+                document.getElementById('codeValue').textContent = data.code || 'N/A';
+                document.getElementById('msgValue').textContent = data.msg || 'N/A';
+                document.getElementById('urlValue').textContent = data.url || 'N/A';
+                
+                if (data.url) {
                     currentImageUrl = data.url;
                     
                     // 创建新图片对象来预加载
@@ -329,15 +351,29 @@ app.listen(PORT, () => {
                     };
                     img.src = data.url;
                 } else {
-                    throw new Error(data.msg || '获取图片失败');
+                    throw new Error('API返回的URL为空');
                 }
             } catch (error) {
                 console.error('获取图片时出错:', error);
-                errorMessage.textContent = `错误: ${error.message}`;
-                errorMessage.style.display = 'block';
-                loadingSpinner.style.display = 'none';
-                placeholderText.style.display = 'block';
-                placeholderText.textContent = '获取图片失败，请重试';
+                
+                // 如果当前方法失败，尝试下一个方法
+                if (currentMethodIndex < PROXY_METHODS.length - 1) {
+                    currentMethodIndex++;
+                    errorMessage.textContent = `方法 ${PROXY_METHODS[currentMethodIndex - 1].name} 失败，正在尝试 ${PROXY_METHODS[currentMethodIndex].name}...`;
+                    errorMessage.style.display = 'block';
+                    
+                    // 延迟后重试
+                    setTimeout(() => {
+                        fetchImage();
+                    }, 1000);
+                    return;
+                } else {
+                    errorMessage.textContent = `所有方法都失败了: ${error.message}`;
+                    errorMessage.style.display = 'block';
+                    loadingSpinner.style.display = 'none';
+                    placeholderText.style.display = 'block';
+                    placeholderText.textContent = '获取图片失败，请检查网络连接';
+                }
             } finally {
                 fetchBtn.disabled = false;
             }
@@ -353,6 +389,32 @@ app.listen(PORT, () => {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        function toggleDebug() {
+            debugMode = !debugMode;
+            const debugPanel = document.getElementById('debugPanel');
+            
+            if (debugMode) {
+                debugPanel.style.display = 'block';
+                let debugContent = `<h3>调试信息</h3>`;
+                
+                if (lastResponse) {
+                    debugContent += `<p><strong>最后响应:</strong></p>`;
+                    debugContent += `<pre>${JSON.stringify(lastResponse, null, 2)}</pre>`;
+                }
+                
+                debugContent += `<p><strong>尝试的方法:</strong></p>`;
+                PROXY_METHODS.forEach((method, index) => {
+                    debugContent += `<p>${index + 1}. ${method.name}: ${method.url}</p>`;
+                });
+                
+                debugContent += `<p><strong>当前方法:</strong> ${PROXY_METHODS[currentMethodIndex].name}</p>`;
+                
+                debugPanel.innerHTML = debugContent;
+            } else {
+                debugPanel.style.display = 'none';
+            }
         }
 
         // 页面加载时自动获取第一张图片
