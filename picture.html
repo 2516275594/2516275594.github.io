@@ -157,6 +157,15 @@
             border: 1px solid #fcc;
         }
 
+        .cors-warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ffeaa7;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -175,6 +184,10 @@
 </head>
 <body>
     <div class="container">
+        <div class="cors-warning">
+            <strong>提示：</strong>正在使用CORS代理服务访问API，可能会影响加载速度。如需更快的访问，请参考下方说明设置自己的代理服务器。
+        </div>
+        
         <h1>随机图片展示</h1>
         
         <div class="image-container">
@@ -217,10 +230,54 @@
         </div>
 
         <div class="error-message" id="errorMessage"></div>
+
+        <div style="margin-top: 30px; padding: 20px; background: #e3f2fd; border-radius: 10px; text-align: left;">
+            <h3 style="margin-bottom: 10px; color: #1976d2;">技术说明</h3>
+            <p style="margin-bottom: 10px; color: #555;">
+                由于浏览器的同源策略限制，无法直接访问跨域API。这里使用了CORS代理服务来解决此问题。
+            </p>
+            <p style="margin-bottom: 10px; color: #555;">
+                如果您需要更稳定的解决方案，可以：
+            </p>
+            <ol style="margin-left: 20px; color: #555;">
+                <li>部署自己的代理服务器（Node.js示例代码已提供）</li>
+                <li>使用支持CORS的API服务</li>
+                <li>在服务器端直接调用API</li>
+            </ol>
+            <details style="margin-top: 15px;">
+                <summary style="cursor: pointer; color: #1976d2;">查看Node.js代理服务器代码</summary>
+                <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin-top: 10px; overflow-x: auto;">
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+
+const app = express();
+app.use(cors());
+
+app.get('/proxy/api/img/tu/girl', async (req, res) => {
+    try {
+        const response = await axios.get('https://api.52vmy.cn/api/img/tu/girl');
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`代理服务器运行在 http://localhost:${PORT}`);
+});
+                </pre>
+            </details>
+        </div>
     </div>
 
     <script>
         let currentImageUrl = null;
+
+        // 使用CORS代理服务
+        const CORS_PROXY_URL = 'https://cors-anywhere.herokuapp.com/';
+        const API_URL = 'https://api.52vmy.cn/api/img/tu/girl';
 
         async function fetchImage() {
             const fetchBtn = document.getElementById('fetchBtn');
@@ -241,7 +298,8 @@
             downloadBtn.style.display = 'none';
 
             try {
-                const response = await fetch('https://api.52vmy.cn/api/img/tu/girl');
+                // 使用CORS代理
+                const response = await fetch(`${CORS_PROXY_URL}${API_URL}`);
                 const data = await response.json();
 
                 // 更新信息面板
