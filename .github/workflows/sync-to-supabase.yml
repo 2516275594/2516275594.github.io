@@ -3,7 +3,7 @@ name: Sync Proxies to Supabase
 on:
   # 每天凌晨 2:00 UTC 运行（即北京时间 10:00）
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '8 */1 * * *'
   # 也可以手动触发
   workflow_dispatch:
   # 推送到 main 分支时也运行
