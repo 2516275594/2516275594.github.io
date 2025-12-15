@@ -28,8 +28,8 @@ jobs:
 
       - name: Upload data to Supabase
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_URL: ${{ https://ubsdjmcnonsormczvtuq.supabase.co }}
+          SUPABASE_KEY: ${{ secrets.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Mjg0MDQ4NCwiZXhwIjoyMDc4NDE2NDg0fQ.xfWJwVXgBs9m6BgY6Kc1OmRjzki8PxgdhWEUHeMVFG8 }}
         run: |
           cat << 'EOF' > upload.mjs
           import fetch from 'node-fetch';
