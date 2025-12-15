@@ -1,0 +1,89 @@
+name: Sync Proxies to Supabase
+
+on:
+  # 每天凌晨 2:00 UTC 运行（即北京时间 10:00）
+  schedule:
+    - cron: '8 */1 * * *'
+  # 也可以手动触发
+  workflow_dispatch:
+  # 推送到 main 分支时也运行
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install node-fetch
+
+      - name: Upload data to Supabase
+        env:
+          SUPABASE_URL: ${{ https://ubsdjmcnonsormczvtuq.supabase.co }}
+          SUPABASE_KEY: ${{  }}
+        run: |
+          cat << 'EOF' > upload.mjs
+          import fetch from 'node-fetch';
+
+          const SUPABASE_URL = process.env.SUPABASE_URL;
+          const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
+          // 读取 JSON 文件
+          const fs = await import('fs').then(m => m.default);
+          const data = JSON.parse(fs.readFileSync('data/proxies.json'));
+
+          // 清空旧数据并插入新数据
+          const clearRes = await fetch(
+            \`\${SUPABASE_URL}/rest/v1/proxies\`,
+            {
+              method: 'DELETE',
+              headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_KEY,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates'
+              },
+              body: JSON.stringify({})
+            }
+          );
+
+          if (!clearRes.ok) {
+            console.error('清空失败:', await clearRes.text());
+            process.exit(1);
+          }
+
+          console.log('✅ 旧数据已清除');
+
+          const insertRes = await fetch(
+            \`\${SUPABASE_URL}/rest/v1/proxies\`,
+            {
+              method: 'POST',
+              headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_KEY,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=ignore-duplicates'
+              },
+              body: JSON.stringify(data)
+            }
+          );
+
+          if (!insertRes.ok) {
+            console.error('插入失败:', await insertRes.text());
+            process.exit(1);
+          }
+
+          console.log('🎉 数据成功同步到 Supabase！');
+          EOF
+
+          # 运行脚本
+          node upload.mjs
