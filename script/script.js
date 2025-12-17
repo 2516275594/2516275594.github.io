@@ -1,17 +1,20 @@
-// 替换为你的 Supabase 项目 URL 和 Anon Key
+// ===== 配置区 =====
 const supabaseUrl = 'https://ubsdjmcnonsormczvtuq.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NDA0ODQsImV4cCI6MjA3ODQxNjQ4NH0.ZGD7FkjFdKitHThi22ieZcRipPVgysdTkvowP-UNjAI';
-
-// 初始化 Supabase 客户端
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
-
-// 删除密码（可自定义）
 const DELETE_PASSWORD = 'jOjsDp0BDAYlGW2r';
 
-// 修改模式状态
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+
 let isEditMode = false;
 let editModeTimeout;
-let currentEditId = null; // 存储当前要修改的笔记 ID
+let currentEditId = null;
+
+// 分页相关变量
+let currentPage = 1;
+let pageSize = 10; // 默认每页10条
+let filteredData = []; // 缓存查询结果用于分页
+let totalPageCount = 1;
+let currentGroup = ''; // 当前筛选分组
 
 // 格式化日期
 function formatDate(date) {
@@ -23,32 +26,41 @@ function formatDate(date) {
   return `${y}-${m}-${d} ${h}:${min}`;
 }
 
-// 加载所有笔记（支持分组过滤）
-async function loadNotes(group = '') {
+// 加载笔记（带分组和分页）
+async function loadNotes(group = '', page = 1) {
+  currentGroup = group;
   const loading = document.getElementById('loading');
   if (loading) loading.style.display = 'block';
 
   let query = supabaseClient.from('notes').select('*');
-  if (group) {
-    query = query.eq('group_name', group);
-  }
+  if (group) query = query.eq('group_name', group);
 
   const { data, error } = await query.order('created_at', { ascending: false });
-  if (loading) loading.style.display = 'none';
 
   if (error) {
     console.error('加载失败:', error);
     alert('加载失败，请检查网络或权限设置');
+    if (loading) loading.style.display = 'none';
     return;
   }
 
+  // 缓存数据用于分页
+  filteredData = data || [];
+  pageSize = parseInt(document.getElementById('pageSizeSelect')?.value || 10, 10);
+  totalPageCount = Math.ceil(filteredData.length / pageSize);
+  currentPage = Math.min(Math.max(page, 1), totalPageCount) || 1;
+
+  const start = (currentPage - 1) * pageSize;
+  const end = start + pageSize;
+  const paginatedData = filteredData.slice(start, end);
+
+  // 显示笔记
   const container = document.getElementById('notesContainer');
   container.innerHTML = '';
 
-  data.forEach(note => {
+  paginatedData.forEach(note => {
     const card = document.createElement('div');
     card.className = 'note-card';
-
     card.innerHTML = `
       <div class="note-content">${note.content}</div>
       ${note.remark ? `<div style="margin:8px 0;">备注：${note.remark}</div>` : ''}
@@ -62,102 +74,90 @@ async function loadNotes(group = '') {
               data-group='${JSON.stringify(note.group_name || "默认")}'>修改</span>
       </div>
     `;
-
     container.appendChild(card);
   });
 
   updateEditButtons();
+  renderPagination(); // 渲染分页控件
+  if (loading) loading.style.display = 'none';
 }
 
-// 更新按钮状态
-function updateEditButtons() {
-  const editBtns = document.querySelectorAll('.edit-btn');
-  const deleteBtns = document.querySelectorAll('.delete-btn');
+// 渲染分页 UI
+function renderPagination() {
+  const statusEl = document.getElementById('pageStatus');
+  const pageNumsEl = document.getElementById('pageNumbers');
+  const prevBtn = document.getElementById('prevPage');
+  const nextBtn = document.getElementById('nextPage');
 
-  if (isEditMode) {
-    editBtns.forEach(btn => {
-      btn.style.opacity = '1';
-      btn.style.pointerEvents = 'auto';
-    });
-    deleteBtns.forEach(btn => {
-      btn.style.opacity = '1';
-      btn.style.pointerEvents = 'auto';
-    });
-  } else {
-    editBtns.forEach(btn => {
-      btn.style.opacity = '0.5';
-      btn.style.pointerEvents = 'none';
-    });
-    deleteBtns.forEach(btn => {
-      btn.style.opacity = '0.5';
-      btn.style.pointerEvents = 'none';
-    });
+  if (!statusEl || !pageNumsEl || !prevBtn || !nextBtn) return;
+
+  // 更新状态文本
+  statusEl.textContent = `第 ${currentPage} 页，共 ${totalPageCount || 1} 页`;
+
+  // 上一页按钮
+  prevBtn.disabled = currentPage <= 1;
+  prevBtn.style.opacity = currentPage <= 1 ? '0.5' : '1';
+  prevBtn.style.cursor = currentPage <= 1 ? 'not-allowed' : 'pointer';
+
+  // 下一页按钮
+  nextBtn.disabled = currentPage >= totalPageCount;
+  nextBtn.style.opacity = currentPage >= totalPageCount ? '0.5' : '1';
+  nextBtn.style.cursor = currentPage >= totalPageCount ? 'not-allowed' : 'pointer';
+
+  // 页码按钮（最多显示5个）
+  pageNumsEl.innerHTML = '';
+  const maxVisible = 5;
+  let start = Math.max(1, currentPage - 2);
+  let end = Math.min(totalPageCount, start + maxVisible - 1);
+
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+
+  for (let i = start; i <= end; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    btn.style.margin = '0 4px';
+    if (i === currentPage) {
+      btn.style.background = '#48BB78';
+      btn.style.color = 'white';
+      btn.style.fontWeight = 'bold';
+    } else {
+      btn.style.background = '#f1f5f9';
+      btn.style.color = '#333';
+    }
+    btn.onclick = () => loadNotes(currentGroup, i);
+    pageNumsEl.appendChild(btn);
   }
 }
 
-// 删除笔记
-async function deleteNote(id) {
-  if (!isEditMode) {
-    alert('请先进入修改模式');
-    return;
-  }
-
-  const confirmDelete = confirm('确定要删除这条笔记吗？');
-  if (!confirmDelete) return;
-
-  const { error } = await supabaseClient.from('notes').delete().eq('id', id);
-  if (error) {
-    console.error('删除失败:', error);
-    alert('删除失败，请稍后再试');
-  } else {
-    const selectedGroup = document.getElementById('groupFilter').value;
-    await loadNotes(selectedGroup);
-  }
-}
-
-// 打开修改模态框
-async function editNote(id, content, remark, group) {
-  if (!isEditMode) {
-    alert('请先进入修改模式');
-    return;
-  }
-
-  currentEditId = id;
-  document.getElementById('editContent').value = content;
-  document.getElementById('editRemark').value = remark || '';
-  document.getElementById('editGroup').value = group || '默认';
-
-  document.getElementById('editModal').style.display = 'flex';
-}
-
-// 关闭模态框
-function closeEditModal() {
-  document.getElementById('editModal').style.display = 'none';
-  currentEditId = null;
-}
-
-// 页面加载完成后初始化（关键！所有 DOM 操作必须放在这里）
+// 页面加载完成
 document.addEventListener('DOMContentLoaded', async () => {
-  // ✅ 确保 DOM 已加载，再获取元素
-
   const noteForm = document.getElementById('noteForm');
   const enterEditModeBtn = document.getElementById('enterEditModeBtn');
   const groupFilter = document.getElementById('groupFilter');
   const cancelEditBtn = document.getElementById('cancelEditBtn');
   const editNoteForm = document.getElementById('editNoteForm');
 
-  // 检查是否找到所有关键元素
+  // 分页控件
+  const pageSizeSelect = document.getElementById('pageSizeSelect');
+  const prevPage = document.getElementById('prevPage');
+  const nextPage = document.getElementById('nextPage');
+  const gotoPageBtn = document.getElementById('gotoPageBtn');
+  const gotoPageInput = document.getElementById('gotoPageInput');
+
+  // 检查必要元素是否存在
   if (!noteForm || !enterEditModeBtn || !groupFilter || !cancelEditBtn || !editNoteForm) {
-    console.error('页面元素未找到，请检查 HTML 是否正确加载');
-    alert('系统错误：页面组件缺失，请刷新重试');
+    alert('页面组件加载失败，请刷新重试');
+    console.error('缺失关键DOM元素');
     return;
   }
 
-  // 添加类名表示初始状态
+  // 初始化样式状态
   document.body.classList.add('edit-mode-deactivated');
 
-  // 绑定表单提交：保存新笔记
-  noteForm.addEventListener('submit', async function (e) {
+  // ========== 表单提交：保存新笔记 ==========
+  noteForm.addEventListener('submit', async e => {
     e.preventDefault();
     const content = document.getElementById('mainText').value.trim();
     const remark = document.getElementById('noteText').value.trim();
@@ -168,60 +168,77 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    const { data, error } = await supabaseClient.from('notes').insert([
-      { content, remark, group_name: group }
-    ]);
-
+    const { error } = await supabaseClient.from('notes').insert([{ content, remark, group_name: group }]);
     if (error) {
       console.error('保存失败:', error);
       alert('保存失败，请稍后再试');
     } else {
-      const selectedGroup = groupFilter.value;
-      await loadNotes(selectedGroup);
-      this.reset();
+      document.getElementById('mainText').value = '';
+      document.getElementById('noteText').value = '';
+      await loadNotes(currentGroup, 1); // 刷新并回到第一页
     }
   });
 
-  // 进入修改模式按钮
+  // ========== 进入修改模式 ==========
   enterEditModeBtn.addEventListener('click', () => {
-    const inputPassword = prompt('请输入修改模式密码：');
-    if (inputPassword === null) return;
-    if (inputPassword.trim() !== DELETE_PASSWORD) {
-      alert('密码错误，修改模式已取消。');
+    const pwd = prompt('请输入修改模式密码：');
+    if (pwd === null) return;
+    if (pwd !== DELETE_PASSWORD) {
+      alert('密码错误');
       return;
     }
 
     isEditMode = true;
-    document.body.classList.add('edit-mode-activated');
-    document.body.classList.remove('edit-mode-deactivated');
-    document.getElementById('editModeIndicator').style.display = 'inline-block';
-
     clearTimeout(editModeTimeout);
     editModeTimeout = setTimeout(() => {
       isEditMode = false;
-      document.body.classList.remove('edit-mode-activated');
-      document.body.classList.add('edit-mode-deactivated');
       document.getElementById('editModeIndicator').style.display = 'none';
-      closeEditModal();
       updateEditButtons();
+      closeEditModal();
       alert('修改模式已超时退出');
-    }, 10 * 60 * 1000); // 10分钟
+    }, 10 * 60 * 1000);
 
+    document.getElementById('editModeIndicator').style.display = 'inline-block';
     updateEditButtons();
   });
 
-  // 分组筛选
-  groupFilter.addEventListener('change', function () {
-    loadNotes(this.value);
+  // ========== 分组筛选 ==========
+  groupFilter.addEventListener('change', () => loadNotes(groupFilter.value, 1));
+
+  // ========== 每页数量切换 ==========
+  pageSizeSelect?.addEventListener('change', () => loadNotes(currentGroup, 1));
+
+  // ========== 分页按钮 ==========
+  prevPage?.addEventListener('click', () => {
+    if (currentPage > 1) loadNotes(currentGroup, currentPage - 1);
   });
 
-  // 取消修改按钮
+  nextPage?.addEventListener('click', () => {
+    if (currentPage < totalPageCount) loadNotes(currentGroup, currentPage + 1);
+  });
+
+  gotoPageBtn?.addEventListener('click', () => {
+    const page = parseInt(gotoPageInput.value, 10);
+    if (page >= 1 && page <= totalPageCount) {
+      loadNotes(currentGroup, page);
+      gotoPageInput.value = '';
+    } else {
+      alert(`请输入 1 到 ${totalPageCount} 之间的页码`);
+    }
+  });
+
+  // ========== 取消修改 ==========
   cancelEditBtn.addEventListener('click', closeEditModal);
 
-  // 提交修改表单
-  editNoteForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  window.addEventListener('click', e => {
+    if (e.target === document.getElementById('editModal')) {
+      closeEditModal();
+    }
+  });
 
+  // ========== 提交修改 ==========
+  editNoteForm.addEventListener('submit', async e => {
+    e.preventDefault();
     const content = document.getElementById('editContent').value.trim();
     const remark = document.getElementById('editRemark').value.trim();
     const group = document.getElementById('editGroup').value;
@@ -238,40 +255,51 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (error) {
       console.error('修改失败:', error);
-      alert('修改失败，请稍后再试');
+      alert('修改失败');
     } else {
       closeEditModal();
-      const selectedGroup = groupFilter.value;
-      await loadNotes(selectedGroup);
+      await loadNotes(currentGroup, currentPage);
     }
   });
 
-  // 点击遮罩层关闭模态框
-  window.addEventListener('click', (e) => {
-    const modal = document.getElementById('editModal');
-    if (e.target === modal) {
-      closeEditModal();
-    }
-  });
-
-  // 事件委托：处理动态按钮点击（删除和修改）
-  document.getElementById('notesContainer').addEventListener('click', async (e) => {
+  // ========== 事件委托：删除 & 修改 ==========
+  document.getElementById('notesContainer').addEventListener('click', async e => {
     const target = e.target;
 
     if (target.classList.contains('delete-btn')) {
+      if (!isEditMode) return alert('请先进入修改模式');
+      if (!confirm('确定删除？')) return;
       const id = target.getAttribute('data-id');
-      await deleteNote(id);
+      const { error } = await supabaseClient.from('notes').delete().eq('id', id);
+      if (!error) await loadNotes(currentGroup, currentPage);
     }
 
     if (target.classList.contains('edit-btn')) {
-      const id = target.getAttribute('data-id');
-      const content = JSON.parse(target.getAttribute('data-content'));
-      const remark = JSON.parse(target.getAttribute('data-remark'));
-      const group = JSON.parse(target.getAttribute('data-group'));
-      await editNote(id, content, remark, group);
+      if (!isEditMode) return alert('请先进入修改模式');
+      currentEditId = target.getAttribute('data-id');
+      document.getElementById('editContent').value = JSON.parse(target.getAttribute('data-content'));
+      document.getElementById('editRemark').value = JSON.parse(target.getAttribute('data-remark'));
+      document.getElementById('editGroup').value = JSON.parse(target.getAttribute('data-group'));
+      document.getElementById('editModal').style.display = 'flex';
     }
   });
 
-  // 初始加载数据
-  await loadNotes();
+  // ========== 初始加载 ==========
+  await loadNotes('', 1);
 });
+
+// 更新按钮可点击状态
+function updateEditButtons() {
+  const editBtns = document.querySelectorAll('.edit-btn');
+  const deleteBtns = document.querySelectorAll('.delete-btn');
+  const opacity = isEditMode ? '1' : '0.5';
+  const pointer = isEditMode ? 'auto' : 'none';
+  editBtns.forEach(btn => { btn.style.opacity = opacity; btn.style.pointerEvents = pointer; });
+  deleteBtns.forEach(btn => { btn.style.opacity = opacity; btn.style.pointerEvents = pointer; });
+}
+
+// 关闭模态框
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+  currentEditId = null;
+}
