@@ -2,8 +2,8 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    - cron: '0 */12 * * *'  # 每12小时运行一次
-  workflow_dispatch:  # 允许手动触发
+    - cron: '0 */12 * * *'  # 每12小时运行一次，UTC时间
+  workflow_dispatch:
 
 jobs:
   keep-alive:
@@ -16,30 +16,14 @@ jobs:
     - name: Setup Node.js 20
       uses: actions/setup-node@v4
       with:
-        node-version: '20'  # 升级到Node.js 20
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm install @supabase/supabase-js --save
-        
-    - name: Debug environment variables
-      run: |
-        echo "SUPABASE_URL length: ${#SUPABASE_URL}"
-        echo "SUPABASE_ANON_KEY length: ${#SUPABASE_ANON_KEY}"
-        echo "Checking if env variables are set..."
-        if [ -n "$SUPABASE_URL" ]; then
-          echo "SUPABASE_URL is set (first 20 chars): ${SUPABASE_URL:0:20}..."
-        else
-          echo "SUPABASE_URL is NOT set!"
-        fi
-      env:
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        node-version: '20'
+        # 移除 cache 配置，我们不需要它
+      
+    - name: Install Supabase client
+      run: npm install @supabase/supabase-js
       
     - name: Run keep-alive script
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-      run: |
-        echo "Running script..."
-        node script/keep-alive.js
+      run: node script/keep-alive.js
