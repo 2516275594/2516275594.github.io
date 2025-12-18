@@ -96,8 +96,7 @@
   <script>
     let imgUrl = '';
 
-    /* 1. 随机图 API，直连 + 带 CORS */
-    const API = 'https://source.unsplash.com/random/800x600?nature,water';
+    const API = 'https://api.btstu.cn/sjbwz/api.php?format=json&r=';
 
     async function loadImg() {
       const loading = document.getElementById('loading');
@@ -106,10 +105,12 @@
       pic.style.display = 'none';
 
       try {
-        /* Unsplash 重定向到真实图片，先 HEAD 取地址，避免 canvas 污染 */
-        const res = await fetch(API + '&sig=' + Date.now(), { method: 'HEAD' });
+        const res = await fetch(API + Date.now());
         if (!res.ok) throw new Error('网络异常');
-        imgUrl = res.url;                 // 最终真实地址
+        const data = await res.json();
+        if (!data.imgurl) throw new Error('接口返回异常');
+        imgUrl = data.imgurl;
+
         const temp = new Image();
         temp.crossOrigin = 'anonymous';
         temp.onload = () => {
