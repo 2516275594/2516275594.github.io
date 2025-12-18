@@ -97,9 +97,8 @@
     let imgUrl = '';
     let corsImgUrl = '';
 
-    /* 换代理：allorigins 目前可用 */
-    const PROXY_JSON = 'https://api.allorigins.win/raw?url=';
-    const PROXY_IMG  = 'https://api.codetabs.com/v1/proxy?quest=';
+    /* 小歪随机图，自带随机，允许跨域 */
+    const API_JSON = 'https://api.ixiaowai.cn/api/api.php?return=json&r=';
 
     async function loadImg() {
       const loading = document.getElementById('loading');
@@ -108,14 +107,12 @@
       pic.style.display = 'none';
 
       try {
-        const jsonLink = PROXY_JSON +
-                         encodeURIComponent('https://api.52vmy.cn/api/img/tu/girl?r=' + Date.now());
-        const res = await fetch(jsonLink);
+        const res = await fetch(API_JSON + Date.now());
         if (!res.ok) throw new Error('网络异常');
         const data = await res.json();
-        if (data.code !== 200 || !data.url) throw new Error('接口返回异常');
-        imgUrl = data.url;
-        corsImgUrl = PROXY_IMG + encodeURIComponent(imgUrl);
+        if (!data.imgurl) throw new Error('接口返回异常');
+        imgUrl = data.imgurl;
+        corsImgUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(imgUrl);
 
         const temp = new Image();
         temp.crossOrigin = 'anonymous';
