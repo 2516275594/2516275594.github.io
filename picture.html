@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>随机图</title>
+  <title>随机妹子图</title>
   <style>
     :root {
       --bg: linear-gradient(135deg, #1f1c2c 0%, #928dab 100%);
@@ -83,7 +83,7 @@
 </head>
 <body>
   <div class="box">
-    <h1>随机图</h1>
+    <h1>随机妹子图</h1>
     <div class="btn-group">
       <button onclick="loadImg()">换一张</button>
       <button onclick="saveImg()">保存</button>
@@ -97,7 +97,8 @@
     let imgUrl = '';
     let corsImgUrl = '';
 
-    const PROXY_JSON = 'https://corsproxy.io/?';
+    /* 换代理：allorigins 目前可用 */
+    const PROXY_JSON = 'https://api.allorigins.win/raw?url=';
     const PROXY_IMG  = 'https://api.codetabs.com/v1/proxy?quest=';
 
     async function loadImg() {
@@ -107,7 +108,6 @@
       pic.style.display = 'none';
 
       try {
-        /* 关键：加时间戳防止缓存 */
         const jsonLink = PROXY_JSON +
                          encodeURIComponent('https://api.52vmy.cn/api/img/tu/girl?r=' + Date.now());
         const res = await fetch(jsonLink);
