@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>随机图</title>
+  <title>随机图片</title>
   <style>
     :root {
       --bg: linear-gradient(135deg, #1f1c2c 0%, #928dab 100%);
       --card: #ffffff0f;
-      --accent: #ff7eb3;
-      --accent2: #ff758c;
+      --accent: #00c9ff;
+      --accent2: #92fe9d;
     }
     * {
       box-sizing: border-box;
@@ -56,11 +56,11 @@
       background: linear-gradient(45deg, var(--accent), var(--accent2));
       cursor: pointer;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
-      box-shadow: 0 4px 15px rgba(255, 117, 140, 0.4);
+      box-shadow: 0 4px 15px rgba(0, 201, 255, 0.4);
     }
     button:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 117, 140, 0.6);
+      box-shadow: 0 6px 20px rgba(0, 201, 255, 0.6);
     }
     button:active {
       transform: translateY(0);
@@ -83,7 +83,7 @@
 </head>
 <body>
   <div class="box">
-    <h1>随机图</h1>
+    <h1>随机图片</h1>
     <div class="btn-group">
       <button onclick="loadImg()">换一张</button>
       <button onclick="saveImg()">保存</button>
@@ -95,10 +95,9 @@
 
   <script>
     let imgUrl = '';
-    let corsImgUrl = '';
 
-    /* 实测大陆可通、带 CORS 的随机图 API */
-    const API_JSON = 'https://img.paulzzh.com/tech?type=json&r=';
+    /* 1. 随机图 API，直连 + 带 CORS */
+    const API = 'https://source.unsplash.com/random/800x600?nature,water';
 
     async function loadImg() {
       const loading = document.getElementById('loading');
@@ -107,29 +106,26 @@
       pic.style.display = 'none';
 
       try {
-        const res = await fetch(API_JSON + Date.now());
+        /* Unsplash 重定向到真实图片，先 HEAD 取地址，避免 canvas 污染 */
+        const res = await fetch(API + '&sig=' + Date.now(), { method: 'HEAD' });
         if (!res.ok) throw new Error('网络异常');
-        const data = await res.json();
-        if (!data.imgurl) throw new Error('接口返回异常');
-        imgUrl = data.imgurl;
-        corsImgUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(imgUrl);
-
+        imgUrl = res.url;                 // 最终真实地址
         const temp = new Image();
         temp.crossOrigin = 'anonymous';
         temp.onload = () => {
-          pic.src = corsImgUrl;
+          pic.src = imgUrl;
           pic.style.display = 'block';
           loading.textContent = '';
         };
         temp.onerror = () => { throw new Error('图片加载失败'); };
-        temp.src = corsImgUrl;
+        temp.src = imgUrl;
       } catch (e) {
         loading.innerHTML = '<span class="error">失败：' + e.message + '</span>';
       }
     }
 
     function saveImg() {
-      if (!corsImgUrl) return alert('先加载图片');
+      if (!imgUrl) return alert('先加载图片');
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
@@ -141,11 +137,11 @@
         canvas.toBlob(blob => {
           const a = document.createElement('a');
           a.href = URL.createObjectURL(blob);
-          a.download = 'girl-' + Date.now() + '.jpg';
+          a.download = 'random-' + Date.now() + '.jpg';
           a.click();
         }, 'image/jpeg');
       };
-      img.src = corsImgUrl;
+      img.src = imgUrl;
     }
 
     loadImg();
