@@ -98,7 +98,7 @@
     let corsImgUrl = '';
 
     const PROXY_JSON = 'https://corsproxy.io/?';
-    const PROXY_IMG = 'https://api.codetabs.com/v1/proxy?quest=';
+    const PROXY_IMG  = 'https://api.codetabs.com/v1/proxy?quest=';
 
     async function loadImg() {
       const loading = document.getElementById('loading');
@@ -107,7 +107,9 @@
       pic.style.display = 'none';
 
       try {
-        const jsonLink = PROXY_JSON + encodeURIComponent('https://api.52vmy.cn/api/img/tu/girl');
+        /* 关键：加时间戳防止缓存 */
+        const jsonLink = PROXY_JSON +
+                         encodeURIComponent('https://api.52vmy.cn/api/img/tu/girl?r=' + Date.now());
         const res = await fetch(jsonLink);
         if (!res.ok) throw new Error('网络异常');
         const data = await res.json();
