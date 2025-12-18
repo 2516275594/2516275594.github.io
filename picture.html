@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>随机图片</title>
+  <meta charset="UTF-8"/>
+  <title>随机图</title>
   <style>
-    body{margin:0;padding:40px;background:#111;color:#eee;font-family:Arial;text-align:center}
+    body{margin:0;padding:40px;background:#111;color:#eee;text-align:center;font-family:Arial}
     img{max-width:90%;max-height:70vh;border-radius:8px;box-shadow:0 0 20px rgba(0,0,0,.6)}
     button{padding:10px 24px;margin:10px 6px;font-size:16px;border:none;border-radius:4px;cursor:pointer;background:#3498db;color:#fff}
     button:hover{background:#2980b9}
@@ -13,16 +13,21 @@
   </style>
 </head>
 <body>
-  <h1>随机图片</h1>
+  <h1>随机图</h1>
   <div>
     <button onclick="loadImg()">换一张</button>
     <button onclick="saveImg()">保存</button>
   </div>
   <div id="loading">加载中…</div>
-  <img id="pic" style="display:none" alt="随机图" />
+  <img id="pic" style="display:none" crossorigin="anonymous"/>
 
   <script>
-    let url = '';
+    let imgUrl = '';                       // 原始直链
+    let corsImgUrl = '';                   // 代理后的图片地址
+
+    /* 代理池：JSON 代理 + 图片代理 */
+    const PROXY_JSON = 'https://corsproxy.io/?';          // 取 JSON
+    const PROXY_IMG  = 'https://api.codetabs.com/v1/proxy?quest='; // 取图片（允许跨域）
 
     async function loadImg() {
       const loading = document.getElementById('loading');
@@ -31,38 +36,54 @@
       pic.style.display = 'none';
 
       try {
-        // 换代理：corsproxy.io
-        const proxy = 'https://corsproxy.io/?';
-        const target = encodeURIComponent('https://api.52vmy.cn/api/img/tu/girl');
-        const res = await fetch(proxy + target);
-        if (!res.ok) throw new Error('代理请求失败');
-        const json = await res.json();
-        if (json.code !== 200 || !json.url) throw new Error('接口返回异常');
-        url = json.url;
+        /* 1. 拿 JSON */
+        const jsonUrl = PROXY_JSON + encodeURIComponent('https://api.52vmy.cn/api/img/tu/girl');
+        const res = await fetch(jsonUrl);
+        if (!res.ok) throw new Error('网络异常');
+        const data = await res.json();
+        if (data.code !== 200 || !data.url) throw new Error('接口返回异常');
+        imgUrl = data.url;
 
-        // 预加载
+        /* 2. 把图片也代理一层，解决 CORS */
+        corsImgUrl = PROXY_IMG + encodeURIComponent(imgUrl);
+
+        /* 3. 预加载 */
         const temp = new Image();
+        temp.crossOrigin = 'anonymous';
         temp.onload = () => {
-          pic.src = url;
+          pic.src = corsImgUrl;
           pic.style.display = 'block';
           loading.textContent = '';
         };
         temp.onerror = () => { throw new Error('图片加载失败'); };
-        temp.src = url;
+        temp.src = corsImgUrl;
       } catch (e) {
         loading.innerHTML = '<span class="error">失败：' + e.message + '</span>';
       }
     }
 
+    /* 下载：用 canvas 把跨域图片转 blob 再下 */
     function saveImg() {
-      if (!url) return alert('先加载图片');
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'girl-' + Date.now() + '.jpg';
-      a.click();
+      if (!corsImgUrl) return alert('先加载图片');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(blob => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'girl-' + Date.now() + '.jpg';
+          a.click();
+        }, 'image/jpeg');
+      };
+      img.src = corsImgUrl;
     }
 
-    // 自动第一张
+    /* 自动第一张 */
     loadImg();
   </script>
 </body>
