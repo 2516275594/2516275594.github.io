@@ -97,8 +97,8 @@
     let imgUrl = '';
     let corsImgUrl = '';
 
-    /* 小歪随机图，自带随机，允许跨域 */
-    const API_JSON = 'https://api.ixiaowai.cn/api/api.php?return=json&r=';
+    /* 实测大陆可通、带 CORS 的随机图 API */
+    const API_JSON = 'https://img.paulzzh.com/tech?type=json&r=';
 
     async function loadImg() {
       const loading = document.getElementById('loading');
