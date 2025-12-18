@@ -157,6 +157,25 @@
             border: 1px solid #fcc;
         }
 
+        .cors-warning {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #bbdefb;
+        }
+
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -175,6 +194,10 @@
 </head>
 <body>
     <div class="container">
+        <div class="cors-warning">
+            <strong>重要提示：</strong>首次使用CORS代理需要先启用服务。
+        </div>
+        
         <h1>随机图片展示</h1>
         
         <div class="image-container">
@@ -217,13 +240,33 @@
         </div>
 
         <div class="error-message" id="errorMessage"></div>
+
+        <div class="instructions">
+            <h3>使用说明：</h3>
+            <ol>
+                <li>首次使用时，请先点击下面的链接启用CORS代理服务</li>
+                <li>然后点击"获取新图片"按钮</li>
+                <li>如果仍然失败，请刷新页面重试</li>
+            </ol>
+            <p><strong>启用CORS代理：</strong> 
+                <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" style="color: #1976d2; text-decoration: underline;">
+                    点击这里启用CORS Anywhere服务
+                </a>
+            </p>
+        </div>
     </div>
 
     <script>
         let currentImageUrl = null;
 
-        // API地址使用AllOrigins代理
-        const API_URL = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://api.52vmy.cn/api/img/tu/girl');
+        // 使用多个代理服务增加成功率
+        const PROXY_SERVICES = [
+            'https://api.allorigins.win/get?url=',
+            'https://cors-anywhere.herokuapp.com/',
+            'https://thingproxy.freeboard.io/fetch/'
+        ];
+
+        let currentProxyIndex = 0;
 
         async function fetchImage() {
             const fetchBtn = document.getElementById('fetchBtn');
@@ -244,22 +287,44 @@
             downloadBtn.style.display = 'none';
 
             try {
-                console.log('正在请求:', API_URL);
+                // 目标API地址
+                const targetUrl = 'https://api.52vmy.cn/api/img/tu/girl';
                 
-                // 请求AllOrigins代理API
-                const response = await fetch(API_URL);
-                const data = await response.json();
-
-                console.log('AllOrigins响应:', data);
-
-                if (!data.contents) {
-                    throw new Error('AllOrigins响应中没有contents字段');
+                // 根据当前代理服务构建请求URL
+                let requestUrl;
+                switch(currentProxyIndex) {
+                    case 0:
+                        // AllOrigins方式
+                        requestUrl = `${PROXY_SERVICES[0]}${encodeURIComponent(targetUrl)}`;
+                        break;
+                    case 1:
+                        // CORS Anywhere方式
+                        requestUrl = `${PROXY_SERVICES[1]}${targetUrl}`;
+                        break;
+                    case 2:
+                        // ThingProxy方式
+                        requestUrl = `${PROXY_SERVICES[2]}${targetUrl}`;
+                        break;
+                    default:
+                        requestUrl = `${PROXY_SERVICES[0]}${encodeURIComponent(targetUrl)}`;
                 }
 
-                // 解析contents中的JSON字符串
-                const apiData = JSON.parse(data.contents);
+                console.log(`尝试使用代理 ${currentProxyIndex + 1}:`, requestUrl);
+                
+                const response = await fetch(requestUrl);
+                let apiData;
 
-                console.log('解析的API数据:', apiData);
+                if (currentProxyIndex === 0) {
+                    // AllOrigins返回的是包含contents的对象
+                    const proxyResponse = await response.json();
+                    if (!proxyResponse.contents) {
+                        throw new Error('AllOrigins响应中没有contents字段');
+                    }
+                    apiData = JSON.parse(proxyResponse.contents);
+                } else {
+                    // 其他代理直接返回原始JSON
+                    apiData = await response.json();
+                }
 
                 // 更新信息面板
                 document.getElementById('codeValue').textContent = apiData.code || 'N/A';
@@ -267,12 +332,15 @@
                 document.getElementById('urlValue').textContent = apiData.url || 'N/A';
                 
                 if (apiData.url) {
-                    currentImageUrl = apiData.url;
+                    // 尝试添加referrer策略来绕过防盗链
+                    const imageUrl = apiData.url;
                     
                     // 创建新图片对象来预加载
                     const img = new Image();
+                    img.referrerPolicy = "no-referrer"; // 重要：设置referrer策略
+                    
                     img.onload = function() {
-                        imageDisplay.src = apiData.url;
+                        imageDisplay.src = imageUrl;
                         imageDisplay.style.display = 'block';
                         loadingSpinner.style.display = 'none';
                         infoPanel.style.display = 'block';
@@ -283,23 +351,47 @@
                             imageDisplay.style.opacity = '1';
                         }, 10);
                     };
+                    
                     img.onerror = function() {
-                        throw new Error('图片加载失败');
+                        console.error('图片加载失败:', imageUrl);
+                        // 如果图片加载失败，尝试下一个代理
+                        if (currentProxyIndex < PROXY_SERVICES.length - 1) {
+                            currentProxyIndex++;
+                            fetchImage();
+                        } else {
+                            showError('图片加载失败，请检查网络连接或尝试其他代理');
+                        }
                     };
-                    img.src = apiData.url;
+                    
+                    img.src = imageUrl;
                 } else {
                     throw new Error('API返回的URL为空');
                 }
             } catch (error) {
-                console.error('获取图片时出错:', error);
-                errorMessage.textContent = `错误: ${error.message}`;
-                errorMessage.style.display = 'block';
-                loadingSpinner.style.display = 'none';
-                placeholderText.style.display = 'block';
-                placeholderText.textContent = '获取图片失败，请重试';
+                console.error('获取数据时出错:', error);
+                
+                // 如果当前代理失败，尝试下一个
+                if (currentProxyIndex < PROXY_SERVICES.length - 1) {
+                    currentProxyIndex++;
+                    fetchImage();
+                } else {
+                    showError(`所有代理都失败了: ${error.message}`);
+                }
             } finally {
                 fetchBtn.disabled = false;
             }
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const placeholderText = document.getElementById('placeholderText');
+            
+            errorMessage.textContent = `错误: ${message}`;
+            errorMessage.style.display = 'block';
+            loadingSpinner.style.display = 'none';
+            placeholderText.style.display = 'block';
+            placeholderText.textContent = '获取图片失败，请重试';
         }
 
         function downloadImage() {
@@ -309,6 +401,7 @@
             link.href = currentImageUrl;
             link.download = `random-image-${Date.now()}.jpg`;
             link.target = '_blank';
+            link.referrerPolicy = "no-referrer";
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
