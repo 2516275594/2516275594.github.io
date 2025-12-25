@@ -2,7 +2,7 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    - cron: '0 */12 * * *'  # 每12小时运行一次，UTC时间
+    - cron: '37 */9 * * *'  # 每12小时运行一次，UTC时间
   workflow_dispatch:
 
 jobs:
