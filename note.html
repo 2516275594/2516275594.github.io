@@ -193,6 +193,16 @@
       border-radius: 6px;
       cursor: pointer;
     }
+    /* 修改弹窗文本框加高加宽 */
+    #editModal textarea#editContent {
+      width: 100%;          /* 占满弹窗宽度 */
+      min-height: 160px;    /* 默认 6-7 行高度 */
+      font-size: 16px;      /* 移动端不自动放大 */
+      line-height: 1.5;
+      resize: vertical;     /* 只允许上下拖动 */
+      box-sizing: border-box;
+      padding: 10px;
+    }
   </style>
 </head>
 <body>
@@ -285,5 +295,6 @@
 
 </body>
 </html>
+
 
 
