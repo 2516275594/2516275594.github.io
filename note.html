@@ -194,7 +194,55 @@
       cursor: pointer;
     }
     #enterEditModeBtn{
-     padding: 2px 4px;
+      /* 极致缩小 */
+  padding: 3px 8px;
+  font-size: 0.75em;
+  min-width: 60px; /* 最小宽度 */
+  
+  /* 极致幽灵化 */
+  background-color: transparent;
+  color: rgba(128, 128, 128, 0.5); /* 灰色幽灵文字 */
+  border: 1px dotted rgba(128, 128, 128, 0.3); /* 点线边框 */
+  
+  /* 深度淡化 */
+  opacity: 0.4;
+  font-weight: 300; /* 细字体 */
+  letter-spacing: 0.5px; /* 字间距 */
+  
+  /* 弱投影效果 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  
+  /* 平滑过渡 */
+  transition: all 0.5s ease;
+}
+
+/* 悬停时的幽灵渐显效果 */
+#enterEditModeBtn:hover {
+  opacity: 0.7;
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  color: rgba(64, 64, 64, 0.8);
+  background-color: rgba(240, 240, 240, 0.3);
+  box-shadow: 
+    0 0 10px rgba(128, 128, 128, 0.1),
+    inset 0 0 5px rgba(255, 255, 255, 0.5);
+  
+  /* 添加脉动动画 */
+  animation: ghost-pulse 2s infinite;
+}
+
+/* 幽灵脉动动画 */
+@keyframes ghost-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 0 rgba(128, 128, 128, 0.1),
+      inset 0 0 5px rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 5px rgba(128, 128, 128, 0),
+      inset 0 0 5px rgba(255, 255, 255, 0.5);
+  }
+}
     }
   </style>
 </head>
@@ -288,6 +336,7 @@
 
 </body>
 </html>
+
 
 
 
