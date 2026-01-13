@@ -26,6 +26,31 @@ function formatDate(date) {
   return `${y}-${m}-${d} ${h}:${min}`;
 }
 
+// 显示模态框
+function showEditModal() {
+  const modal = document.getElementById('editModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    // 延迟添加show类，触发CSS过渡动画
+    setTimeout(() => {
+      modal.classList.add('show');
+    }, 10);
+  }
+}
+
+// 关闭模态框
+function closeEditModal() {
+  const modal = document.getElementById('editModal');
+  if (modal) {
+    modal.classList.remove('show');
+    // 等待过渡动画完成后再隐藏元素
+    setTimeout(() => {
+      modal.style.display = 'none';
+    }, 300);
+    currentEditId = null;
+  }
+}
+
 // 加载笔记（带分组和分页）
 async function loadNotes(group = '', page = 1) {
   currentGroup = group;
@@ -280,7 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('editContent').value = JSON.parse(target.getAttribute('data-content'));
       document.getElementById('editRemark').value = JSON.parse(target.getAttribute('data-remark'));
       document.getElementById('editGroup').value = JSON.parse(target.getAttribute('data-group'));
-      document.getElementById('editModal').style.display = 'flex';
+      showEditModal();
     }
   });
 
@@ -296,10 +321,4 @@ function updateEditButtons() {
   const pointer = isEditMode ? 'auto' : 'none';
   editBtns.forEach(btn => { btn.style.opacity = opacity; btn.style.pointerEvents = pointer; });
   deleteBtns.forEach(btn => { btn.style.opacity = opacity; btn.style.pointerEvents = pointer; });
-}
-
-// 关闭模态框
-function closeEditModal() {
-  document.getElementById('editModal').style.display = 'none';
-  currentEditId = null;
 }
