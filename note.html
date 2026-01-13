@@ -131,118 +131,280 @@
       font-weight: bold;
     }
 
-    /* 模态框样式 */
+    /* 优化后的模态框样式 */
     #editModal {
       display: none;
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
       z-index: 1000;
       justify-content: center;
       align-items: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
+    
+    #editModal.show {
+      opacity: 1;
+    }
+    
     #editModal .modal-content {
-      background: white;
-      padding: 24px;
-      border-radius: 12px;
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      padding: 32px;
+      border-radius: 18px;
       width: 90%;
       max-width: 500px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.15),
+        0 4px 12px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      transform: translateY(30px) scale(0.95);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      position: relative;
+      overflow: hidden;
     }
+    
+    #editModal.show .modal-content {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    
+    /* 模态框顶部装饰 */
+    #editModal .modal-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, 
+        var(--primary-color) 0%, 
+        var(--secondary-color) 50%, 
+        var(--accent-color) 100%);
+      border-radius: 18px 18px 0 0;
+    }
+    
     #editModal h3 {
       margin-top: 0;
+      margin-bottom: 24px;
       color: var(--text-color);
+      font-size: 24px;
+      font-weight: 700;
+      text-align: center;
+      position: relative;
+      padding-bottom: 16px;
     }
+    
+    #editModal h3::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 4px;
+      background: var(--primary-color);
+      border-radius: 2px;
+    }
+    
     #editModal label {
       display: block;
-      margin: 8px 0 4px;
-      font-weight: 500;
+      margin: 16px 0 8px;
+      font-weight: 600;
       color: var(--text-color);
+      font-size: 15px;
     }
+    
     #editModal textarea,
     #editModal input[type="text"],
     #editModal select {
       width: 100%;
-      padding: 10px;
-      border: 1px solid #D1D5DB;
-      border-radius: 8px;
-      font-size: 15px;
+      padding: 14px 16px;
+      border: 2px solid #E5E7EB;
+      border-radius: 10px;
+      font-size: 16px;
       box-sizing: border-box;
+      transition: all 0.2s ease;
+      background: #ffffff;
+      font-family: inherit;
+      color: var(--text-color);
     }
-    #editModal textarea { resize: vertical; }
+    
+    #editModal textarea:focus,
+    #editModal input[type="text"]:focus,
+    #editModal select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 4px rgba(72, 187, 120, 0.1);
+    }
+    
+    #editModal textarea {
+      resize: vertical;
+      min-height: 120px;
+      line-height: 1.5;
+      padding: 16px;
+      border: 2px solid #E5E7EB;
+      background: #ffffff;
+      transition: all 0.2s ease;
+      font-size: 16px;
+    }
+    
+    #editModal textarea:focus {
+      border-color: var(--primary-color);
+      box-shadow: 
+        0 0 0 4px rgba(72, 187, 120, 0.1),
+        0 2px 6px rgba(0, 0, 0, 0.05) inset;
+    }
+    
+    /* 文本区域美化 */
+    #editContent {
+      width: 100%;
+      min-height: 140px;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--text-color);
+      background: #ffffff;
+      border: 2px solid #E5E7EB;
+      border-radius: 10px;
+      resize: vertical;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+    
+    #editContent:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 
+        0 0 0 4px rgba(72, 187, 120, 0.15),
+        0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    
+    #editContent:hover:not(:focus) {
+      border-color: #CBD5E1;
+    }
+    
     #editModal .form-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 10px;
-      margin-top: 20px;
+      gap: 16px;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #F1F5F9;
     }
-    #editModal .btn-cancel {
-      padding: 8px 16px;
-      background: #9CA3AF;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
+    
+    #editModal .btn-cancel,
     #editModal .btn-save {
-      padding: 8px 16px;
-      background: var(--primary-color);
-      color: white;
+      padding: 12px 28px;
       border: none;
-      border-radius: 6px;
+      border-radius: 10px;
       cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      transition: all 0.2s ease;
+      min-width: 100px;
+      text-align: center;
     }
-    #enterEditModeBtn{
+    
+    #editModal .btn-cancel {
+      background: #F1F5F9;
+      color: #64748B;
+    }
+    
+    #editModal .btn-cancel:hover {
+      background: #E2E8F0;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    #editModal .btn-save {
+      background: linear-gradient(135deg, var(--primary-color) 0%, #38A169 100%);
+      color: white;
+    }
+    
+    #editModal .btn-save:hover {
+      background: linear-gradient(135deg, #38A169 0%, #2F855A 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(72, 187, 120, 0.3);
+    }
+    
+    #editModal .btn-cancel:active,
+    #editModal .btn-save:active {
+      transform: translateY(0);
+    }
+    
+    /* 响应式调整 */
+    @media (max-width: 600px) {
+      #editModal .modal-content {
+        padding: 24px 20px;
+        width: 95%;
+      }
+      
+      #editModal .form-actions {
+        flex-direction: column;
+        gap: 12px;
+      }
+      
+      #editModal .btn-cancel,
+      #editModal .btn-save {
+        width: 100%;
+      }
+    }
+    
+    #enterEditModeBtn {
       /* 极致缩小 */
-  padding: 2px 4px;
-  font-size: 0.75em;
-  min-width: 60px; /* 最小宽度 */
-  
-  /* 极致幽灵化 */
-  background-color: transparent;
-  color: rgba(128, 128, 128, 0.5); /* 灰色幽灵文字 */
-  border: 1px dotted rgba(128, 128, 128, 0.3); /* 点线边框 */
-  
-  /* 深度淡化 */
-  opacity: 0.4;
-  font-weight: 300; /* 细字体 */
-  letter-spacing: 0.5px; /* 字间距 */
-  
-  /* 弱投影效果 */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  
-  /* 平滑过渡 */
-  transition: all 0.5s ease;
-}
-
-/* 悬停时的幽灵渐显效果 */
-#enterEditModeBtn:hover {
-  opacity: 0.7;
-  border: 1px solid rgba(128, 128, 128, 0.5);
-  color: rgba(64, 64, 64, 0.8);
-  background-color: rgba(240, 240, 240, 0.3);
-  box-shadow: 
-    0 0 10px rgba(128, 128, 128, 0.1),
-    inset 0 0 5px rgba(255, 255, 255, 0.5);
-  
-  /* 添加脉动动画 */
-  animation: ghost-pulse 2s infinite;
-}
-
-/* 幽灵脉动动画 */
-@keyframes ghost-pulse {
-  0%, 100% {
-    box-shadow: 
-      0 0 0 0 rgba(128, 128, 128, 0.1),
-      inset 0 0 5px rgba(255, 255, 255, 0.5);
-  }
-  50% {
-    box-shadow: 
-      0 0 0 5px rgba(128, 128, 128, 0),
-      inset 0 0 5px rgba(255, 255, 255, 0.5);
-  }
-}
+      padding: 4px 10px;
+      font-size: 0.75em;
+      min-width: 60px;
+      
+      /* 极致幽灵化 */
+      background-color: transparent;
+      color: rgba(128, 128, 128, 0.5);
+      border: 1px dotted rgba(128, 128, 128, 0.3);
+      
+      /* 深度淡化 */
+      opacity: 0.4;
+      font-weight: 300;
+      letter-spacing: 0.5px;
+      
+      /* 弱投影效果 */
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      
+      /* 平滑过渡 */
+      transition: all 0.5s ease;
+    }
+    
+    /* 悬停时的幽灵渐显效果 */
+    #enterEditModeBtn:hover {
+      opacity: 0.7;
+      border: 1px solid rgba(128, 128, 128, 0.5);
+      color: rgba(64, 64, 64, 0.8);
+      background-color: rgba(240, 240, 240, 0.3);
+      box-shadow: 
+        0 0 10px rgba(128, 128, 128, 0.1),
+        inset 0 0 5px rgba(255, 255, 255, 0.5);
+      
+      /* 添加脉动动画 */
+      animation: ghost-pulse 2s infinite;
+    }
+    
+    /* 幽灵脉动动画 */
+    @keyframes ghost-pulse {
+      0%, 100% {
+        box-shadow: 
+          0 0 0 0 rgba(128, 128, 128, 0.1),
+          inset 0 0 5px rgba(255, 255, 255, 0.5);
+      }
+      50% {
+        box-shadow: 
+          0 0 0 5px rgba(128, 128, 128, 0),
+          inset 0 0 5px rgba(255, 255, 255, 0.5);
+      }
     }
   </style>
 </head>
@@ -313,7 +475,7 @@
       <h3>修改笔记</h3>
       <form id="editNoteForm">
         <label>文本内容：</label>
-        <textarea id="editContent" rows="3" required></textarea>
+        <textarea id="editContent" rows="3" required style="height: 180px;"></textarea>
 
         <label>备注（可选）：</label>
         <input type="text" id="editRemark">
@@ -336,12 +498,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
