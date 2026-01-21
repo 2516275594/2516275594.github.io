@@ -588,6 +588,14 @@
     <!-- Supabase客户端库 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
+    <!-- 数据库配置信息 -->
+    <script>
+        // 数据库配置信息 (实际项目中应放在单独的config.js文件中)
+        const SUPABASE_URL = 'https://ubsdjmcnonsormczvtuq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NDA0ODQsImV4cCI6MjA3ODQxNjQ4NH0.ZGD7FkjFdKitHThi22ieZcRipPVgysdTkvowP-UNjAI';
+    </script>
+    
+    <!-- 主应用逻辑 -->
     <script>
         // 使用IIFE封装应用逻辑，避免全局变量冲突
         (function() {
@@ -616,14 +624,10 @@
             document.addEventListener('DOMContentLoaded', initApp);
             
             async function initApp() {
-                // 配置Supabase连接信息
-                const supabaseUrl = 'https://ubsdjmcnonsormczvtuq.supabase.co';
-                const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NDA0ODQsImV4cCI6MjA3ODQxNjQ4NH0.ZGD7FkjFdKitHThi22ieZcRipPVgysdTkvowP-UNjAI';
-                
                 // 检查配置
-                if (!supabaseUrl || !supabaseAnonKey || 
-                    supabaseUrl === 'https://your-project.supabase.co' || 
-                    supabaseAnonKey === 'your-anon-key') {
+                if (!SUPABASE_URL || !SUPABASE_ANON_KEY || 
+                    SUPABASE_URL === 'https://your-project.supabase.co' || 
+                    SUPABASE_ANON_KEY === 'your-anon-key') {
                     showNotification('请先配置Supabase连接信息', 'error');
                     connectionStatusEl.textContent = '配置错误';
                     statusDotEl.style.backgroundColor = 'var(--error)';
@@ -632,7 +636,7 @@
                 
                 try {
                     // 初始化Supabase客户端
-                    supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     
                     // 测试数据库连接
                     const { data, error } = await supabase.from('text_files').select('id').limit(1);
