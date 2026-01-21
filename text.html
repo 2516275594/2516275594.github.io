@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文本文件管理器</title>
+    <title>Supabase文本文件管理器</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -299,6 +300,39 @@
             text-align: right;
         }
         
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #7f8c8d;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 5px;
+            margin: 10px 20px;
+            display: none;
+        }
+        
         /* 响应式设计 */
         @media (max-width: 768px) {
             .container {
@@ -335,6 +369,8 @@
     </style>
 </head>
 <body>
+    <div class="error-message" id="errorMessage"></div>
+    
     <div class="container">
         <!-- 左侧文件列表 -->
         <div class="file-list-container">
@@ -351,6 +387,10 @@
             </div>
             <div class="file-list" id="fileList">
                 <!-- 文件列表将在这里动态生成 -->
+                <div class="loading" id="loadingFiles">
+                    <div class="loading-spinner"></div>
+                    <p>正在加载文件...</p>
+                </div>
             </div>
         </div>
         
@@ -410,39 +450,130 @@
         </div>
     </div>
 
+    <!-- 引入外部JavaScript文件 -->
+    <script src="script/script.js"></script>
+    
     <script>
         // 文件管理对象
         const fileManager = {
+            supabase: null,
             files: [],
             currentFile: null,
             
-            // 从localStorage加载文件列表
-            loadFiles() {
-                const filesJSON = localStorage.getItem('textFiles');
-                if (filesJSON) {
-                    this.files = JSON.parse(filesJSON);
-                } else {
-                    // 如果没有文件，创建一些示例文件
-                    this.files = [
-                        { id: 1, name: '欢迎使用.txt', content: '欢迎使用文本文件管理器！\n\n这是一个简单的工具，可以帮助您创建、编辑和保存文本文件。\n\n所有文件都保存在您的浏览器本地存储中，不会上传到任何服务器。', date: new Date().toLocaleString() },
-                        { id: 2, name: '待办事项.txt', content: '今日待办事项：\n1. 完成项目报告\n2. 回复客户邮件\n3. 团队会议准备\n4. 学习新技能', date: new Date().toLocaleString() },
-                        { id: 3, name: '笔记.txt', content: '重要笔记：\n- 项目截止日期：12月15日\n- 客户联系方式：client@example.com\n- 会议时间：每周三下午3点', date: new Date().toLocaleString() }
-                    ];
-                    this.saveFiles();
+            // 初始化Supabase客户端
+            async initSupabase() {
+                try {
+                    // 从外部文件导入Supabase配置
+                    if (typeof supabaseUrl === 'undefined' || typeof supabaseAnonKey === 'undefined') {
+                        throw new Error('Supabase配置未找到，请确保script/script.js文件存在并正确配置了supabaseUrl和supabaseAnonKey变量');
+                    }
+                    
+                    this.supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+                    console.log('Supabase客户端初始化成功');
+                    return true;
+                } catch (error) {
+                    console.error('Supabase初始化失败:', error);
+                    this.showError('无法连接到数据库：' + error.message);
+                    return false;
                 }
-                
-                this.renderFileList();
             },
             
-            // 保存文件列表到localStorage
-            saveFiles() {
-                localStorage.setItem('textFiles', JSON.stringify(this.files));
+            // 显示错误消息
+            showError(message) {
+                const errorElement = document.getElementById('errorMessage');
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+                
+                setTimeout(() => {
+                    errorElement.style.display = 'none';
+                }, 5000);
+            },
+            
+            // 从Supabase加载文件列表
+            async loadFiles() {
+                const loadingElement = document.getElementById('loadingFiles');
+                
+                try {
+                    if (!this.supabase) {
+                        const initSuccess = await this.initSupabase();
+                        if (!initSuccess) return;
+                    }
+                    
+                    const { data, error } = await this.supabase
+                        .from('text_files')
+                        .select('*')
+                        .order('updated_at', { ascending: false });
+                    
+                    if (error) throw error;
+                    
+                    loadingElement.style.display = 'none';
+                    
+                    this.files = data || [];
+                    
+                    // 如果没有任何文件，创建示例文件
+                    if (this.files.length === 0) {
+                        await this.createSampleFiles();
+                        // 重新加载文件列表
+                        await this.loadFiles();
+                        return;
+                    }
+                    
+                    this.renderFileList();
+                } catch (error) {
+                    loadingElement.style.display = 'none';
+                    console.error('加载文件失败:', error);
+                    this.showError('加载文件失败：' + error.message);
+                    
+                    // 显示错误状态
+                    document.getElementById('fileList').innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h3>加载文件失败</h3>
+                            <p>${error.message}</p>
+                        </div>
+                    `;
+                }
+            },
+            
+            // 创建示例文件
+            async createSampleFiles() {
+                const sampleFiles = [
+                    { name: '欢迎使用.txt', content: '欢迎使用Supabase文本文件管理器！\n\n这是一个简单的工具，可以帮助您创建、编辑和保存文本文件。\n\n所有文件都存储在Supabase云端数据库中。', updated_at: new Date().toISOString() },
+                    { name: '待办事项.txt', content: '今日待办事项：\n1. 完成项目报告\n2. 回复客户邮件\n3. 团队会议准备\n4. 学习新技能', updated_at: new Date().toISOString() },
+                    { name: '笔记.txt', content: '重要笔记：\n- 项目截止日期：12月15日\n- 客户联系方式：client@example.com\n- 会议时间：每周三下午3点', updated_at: new Date().toISOString() }
+                ];
+                
+                try {
+                    for (const file of sampleFiles) {
+                        const { error } = await this.supabase
+                            .from('text_files')
+                            .insert([file]);
+                        
+                        if (error) throw error;
+                    }
+                    
+                    console.log('示例文件创建成功');
+                } catch (error) {
+                    console.error('创建示例文件失败:', error);
+                    this.showError('创建示例文件失败：' + error.message);
+                }
             },
             
             // 渲染文件列表
             renderFileList() {
                 const fileListElement = document.getElementById('fileList');
                 fileListElement.innerHTML = '';
+                
+                if (this.files.length === 0) {
+                    fileListElement.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-folder-open"></i>
+                            <h3>暂无文件</h3>
+                            <p>点击"新建文件"按钮创建第一个文件</p>
+                        </div>
+                    `;
+                    return;
+                }
                 
                 this.files.forEach(file => {
                     const fileItem = document.createElement('div');
@@ -453,8 +584,12 @@
                         fileItem.classList.add('active');
                     }
                     
+                    // 格式化日期
+                    const updatedDate = new Date(file.updated_at);
+                    const formattedDate = updatedDate.toLocaleDateString('zh-CN');
+                    
                     fileItem.innerHTML = `
-                        <div class="file-name">${file.name}</div>
+                        <div class="file-name" title="${file.name}">${file.name}</div>
                         <div class="file-actions-icons">
                             <i class="fas fa-edit rename-file" title="重命名"></i>
                             <i class="fas fa-trash delete-file" title="删除"></i>
@@ -503,7 +638,12 @@
                     
                     // 设置编辑器内容
                     document.getElementById('textEditor').value = file.content;
-                    document.getElementById('fileInfo').textContent = `${file.name} - 最后修改: ${file.date}`;
+                    
+                    // 格式化日期
+                    const updatedDate = new Date(file.updated_at);
+                    const formattedDate = updatedDate.toLocaleDateString('zh-CN') + ' ' + updatedDate.toLocaleTimeString('zh-CN');
+                    
+                    document.getElementById('fileInfo').textContent = `${file.name} - 最后修改: ${formattedDate}`;
                     
                     // 更新字符计数
                     this.updateCharacterCount();
@@ -515,7 +655,7 @@
             },
             
             // 创建新文件
-            createFile(fileName) {
+            async createFile(fileName) {
                 if (!fileName.trim()) {
                     alert('文件名不能为空');
                     return;
@@ -526,72 +666,112 @@
                     fileName += '.txt';
                 }
                 
-                // 检查文件名是否已存在
-                if (this.files.some(f => f.name === fileName)) {
-                    alert('文件名已存在，请使用其他名称');
-                    return;
+                try {
+                    const newFile = {
+                        name: fileName,
+                        content: '',
+                        updated_at: new Date().toISOString()
+                    };
+                    
+                    const { data, error } = await this.supabase
+                        .from('text_files')
+                        .insert([newFile])
+                        .select();
+                    
+                    if (error) throw error;
+                    
+                    // 重新加载文件列表
+                    await this.loadFiles();
+                    
+                    // 选中新创建的文件
+                    if (data && data.length > 0) {
+                        this.selectFile(data[0].id);
+                    }
+                } catch (error) {
+                    console.error('创建文件失败:', error);
+                    this.showError('创建文件失败：' + error.message);
                 }
-                
-                const newFile = {
-                    id: Date.now(), // 使用时间戳作为ID
-                    name: fileName,
-                    content: '',
-                    date: new Date().toLocaleString()
-                };
-                
-                this.files.push(newFile);
-                this.saveFiles();
-                this.renderFileList();
-                this.selectFile(newFile.id);
             },
             
             // 保存当前文件
-            saveCurrentFile() {
+            async saveCurrentFile() {
                 if (!this.currentFile) return;
                 
                 const content = document.getElementById('textEditor').value;
-                this.currentFile.content = content;
-                this.currentFile.date = new Date().toLocaleString();
                 
-                this.saveFiles();
-                this.renderFileList();
-                
-                // 显示保存成功提示
-                const saveBtn = document.getElementById('saveFileBtn');
-                const originalText = saveBtn.innerHTML;
-                saveBtn.innerHTML = '<i class="fas fa-check"></i> 已保存';
-                saveBtn.style.backgroundColor = '#27ae60';
-                
-                setTimeout(() => {
-                    saveBtn.innerHTML = originalText;
-                    saveBtn.style.backgroundColor = '';
-                }, 1500);
+                try {
+                    const { error } = await this.supabase
+                        .from('text_files')
+                        .update({
+                            content: content,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', this.currentFile.id);
+                    
+                    if (error) throw error;
+                    
+                    // 更新本地数据
+                    this.currentFile.content = content;
+                    this.currentFile.updated_at = new Date().toISOString();
+                    
+                    // 更新文件列表中的日期
+                    const fileIndex = this.files.findIndex(f => f.id === this.currentFile.id);
+                    if (fileIndex !== -1) {
+                        this.files[fileIndex] = { ...this.currentFile };
+                    }
+                    
+                    this.renderFileList();
+                    
+                    // 显示保存成功提示
+                    const saveBtn = document.getElementById('saveFileBtn');
+                    const originalText = saveBtn.innerHTML;
+                    saveBtn.innerHTML = '<i class="fas fa-check"></i> 已保存';
+                    saveBtn.style.backgroundColor = '#27ae60';
+                    
+                    setTimeout(() => {
+                        saveBtn.innerHTML = originalText;
+                        saveBtn.style.backgroundColor = '';
+                    }, 1500);
+                } catch (error) {
+                    console.error('保存文件失败:', error);
+                    this.showError('保存文件失败：' + error.message);
+                }
             },
             
             // 删除文件
-            deleteFile(fileId) {
+            async deleteFile(fileId) {
                 if (!confirm('确定要删除此文件吗？')) return;
                 
-                this.files = this.files.filter(f => f.id !== fileId);
-                
-                // 如果删除的是当前选中的文件
-                if (this.currentFile && this.currentFile.id === fileId) {
-                    this.currentFile = null;
-                    // 显示空状态
-                    document.getElementById('emptyState').style.display = 'flex';
-                    document.getElementById('textEditor').style.display = 'none';
-                    document.getElementById('characterCount').style.display = 'none';
-                    document.getElementById('fileInfo').textContent = '选择一个文件或创建新文件开始编辑';
-                    document.getElementById('saveFileBtn').disabled = true;
-                    document.getElementById('renameFileBtn').disabled = true;
+                try {
+                    const { error } = await this.supabase
+                        .from('text_files')
+                        .delete()
+                        .eq('id', fileId);
+                    
+                    if (error) throw error;
+                    
+                    // 如果删除的是当前选中的文件
+                    if (this.currentFile && this.currentFile.id === fileId) {
+                        this.currentFile = null;
+                        // 显示空状态
+                        document.getElementById('emptyState').style.display = 'flex';
+                        document.getElementById('textEditor').style.display = 'none';
+                        document.getElementById('characterCount').style.display = 'none';
+                        document.getElementById('fileInfo').textContent = '选择一个文件或创建新文件开始编辑';
+                        document.getElementById('saveFileBtn').disabled = true;
+                        document.getElementById('renameFileBtn').disabled = true;
+                    }
+                    
+                    // 重新加载文件列表
+                    await this.loadFiles();
+                } catch (error) {
+                    console.error('删除文件失败:', error);
+                    this.showError('删除文件失败：' + error.message);
                 }
-                
-                this.saveFiles();
-                this.renderFileList();
             },
             
             // 重命名文件
-            renameFile(fileId, newName) {
+            async renameFile(fileId, newName) {
                 if (!newName.trim()) {
                     alert('文件名不能为空');
                     return;
@@ -602,23 +782,32 @@
                     newName += '.txt';
                 }
                 
-                // 检查文件名是否已存在（排除自己）
-                if (this.files.some(f => f.name === newName && f.id !== fileId)) {
-                    alert('文件名已存在，请使用其他名称');
-                    return;
-                }
-                
-                const file = this.files.find(f => f.id === fileId);
-                if (file) {
-                    file.name = newName;
-                    file.date = new Date().toLocaleString();
+                try {
+                    const { error } = await this.supabase
+                        .from('text_files')
+                        .update({
+                            name: newName,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', fileId);
                     
-                    this.saveFiles();
-                    this.renderFileList();
+                    if (error) throw error;
+                    
+                    // 更新本地数据
+                    if (this.currentFile && this.currentFile.id === fileId) {
+                        this.currentFile.name = newName;
+                        this.currentFile.updated_at = new Date().toISOString();
+                    }
+                    
+                    // 重新加载文件列表
+                    await this.loadFiles();
                     
                     if (this.currentFile && this.currentFile.id === fileId) {
                         this.selectFile(fileId);
                     }
+                } catch (error) {
+                    console.error('重命名文件失败:', error);
+                    this.showError('重命名文件失败：' + error.message);
                 }
             },
             
@@ -626,7 +815,9 @@
             showRenameModal(fileId) {
                 const file = this.files.find(f => f.id === fileId);
                 if (file) {
-                    document.getElementById('renameFileName').value = file.name.replace('.txt', '');
+                    // 移除.txt扩展名以方便编辑
+                    const fileNameWithoutExt = file.name.replace(/\.txt$/i, '');
+                    document.getElementById('renameFileName').value = fileNameWithoutExt;
                     document.getElementById('renameFileModal').style.display = 'flex';
                     
                     // 设置重命名确认事件
@@ -650,9 +841,12 @@
         };
         
         // 初始化应用
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 初始化Supabase
+            await fileManager.initSupabase();
+            
             // 加载文件
-            fileManager.loadFiles();
+            await fileManager.loadFiles();
             
             // 新建文件按钮事件
             document.getElementById('newFileBtn').addEventListener('click', () => {
@@ -666,15 +860,15 @@
             });
             
             // 确认新建文件
-            document.getElementById('createNewFile').addEventListener('click', () => {
+            document.getElementById('createNewFile').addEventListener('click', async () => {
                 const fileName = document.getElementById('newFileName').value;
-                fileManager.createFile(fileName);
+                await fileManager.createFile(fileName);
                 document.getElementById('newFileModal').style.display = 'none';
             });
             
             // 保存文件按钮事件
-            document.getElementById('saveFileBtn').addEventListener('click', () => {
-                fileManager.saveCurrentFile();
+            document.getElementById('saveFileBtn').addEventListener('click', async () => {
+                await fileManager.saveCurrentFile();
             });
             
             // 重命名文件按钮事件
@@ -685,9 +879,9 @@
             });
             
             // 删除文件按钮事件
-            document.getElementById('deleteFileBtn').addEventListener('click', () => {
+            document.getElementById('deleteFileBtn').addEventListener('click', async () => {
                 if (fileManager.currentFile) {
-                    fileManager.deleteFile(fileManager.currentFile.id);
+                    await fileManager.deleteFile(fileManager.currentFile.id);
                 }
             });
             
@@ -721,9 +915,6 @@
                     document.getElementById('confirmRename').click();
                 }
             });
-            
-            // 初始化字符计数
-            fileManager.updateCharacterCount();
         });
     </script>
 </body>
