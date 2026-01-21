@@ -203,6 +203,13 @@
             border-left-color: var(--primary);
         }
 
+        .file-name-container {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            overflow: hidden;
+        }
+
         .file-name {
             font-weight: 500;
             overflow: hidden;
@@ -210,6 +217,22 @@
             white-space: nowrap;
             flex: 1;
             padding-right: 10px;
+        }
+
+        .file-name-input {
+            flex: 1;
+            padding: 0.3rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.95rem;
+            background: white;
+            color: var(--text);
+            outline: none;
+        }
+
+        .file-name-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
         }
 
         .file-actions {
@@ -244,6 +267,11 @@
         .delete-btn:hover {
             color: var(--error);
             background-color: #fee2e2;
+        }
+
+        .edit-btn:hover {
+            color: var(--primary-dark);
+            background-color: #e0e7ff;
         }
 
         .content-area {
@@ -567,6 +595,7 @@
             let supabase;
             let currentFileId = null;
             let files = [];
+            let editingFileId = null;
             
             // DOM元素引用
             const connectionStatusEl = document.getElementById('connection-status');
@@ -707,9 +736,19 @@
                     fileItem.className = `file-item ${currentFileId === file.id ? 'active' : ''}`;
                     fileItem.dataset.id = file.id;
                     
+                    const isEditing = editingFileId === file.id;
+                    
                     fileItem.innerHTML = `
-                        <div class="file-name">${file.filename}</div>
+                        <div class="file-name-container">
+                            ${isEditing ? 
+                                `<input type="text" class="file-name-input" value="${file.filename}" data-id="${file.id}">` : 
+                                `<div class="file-name">${file.filename}</div>`
+                            }
+                        </div>
                         <div class="file-actions">
+                            <button class="action-btn edit-btn" title="编辑文件名">
+                                <i class="fas fa-edit"></i>
+                            </button>
                             <button class="action-btn delete-btn" title="删除文件">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -718,13 +757,22 @@
                     
                     // 点击文件项选择文件
                     fileItem.addEventListener('click', (e) => {
-                        if (!e.target.closest('.delete-btn')) {
-                            selectFile(file.id);
-                            // 在移动端选择文件后自动隐藏侧边栏
-                            if (window.innerWidth <= 768) {
-                                sidebarEl.classList.add('sidebar-collapsed');
-                            }
+                        // 如果点击的是操作按钮或编辑模式下的输入框，则不触发选择
+                        if (e.target.closest('.action-btn') || e.target.classList.contains('file-name-input')) {
+                            return;
                         }
+                        selectFile(file.id);
+                        // 在移动端选择文件后自动隐藏侧边栏
+                        if (window.innerWidth <= 768) {
+                            sidebarEl.classList.add('sidebar-collapsed');
+                        }
+                    });
+                    
+                    // 编辑按钮事件
+                    const editBtn = fileItem.querySelector('.edit-btn');
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        startEditing(file.id);
                     });
                     
                     // 删除按钮事件
@@ -734,8 +782,98 @@
                         deleteFile(file.id);
                     });
                     
+                    // 处理文件名编辑状态
+                    if (isEditing) {
+                        const inputEl = fileItem.querySelector('.file-name-input');
+                        inputEl.focus();
+                        inputEl.select();
+                        
+                        // 处理文件名输入框事件
+                        inputEl.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                finishEditing(file.id, inputEl.value);
+                            } else if (e.key === 'Escape') {
+                                cancelEditing(file.id);
+                            }
+                        });
+                        
+                        inputEl.addEventListener('blur', () => {
+                            finishEditing(file.id, inputEl.value);
+                        });
+                    }
+                    
                     fileListEl.appendChild(fileItem);
                 });
+            }
+            
+            // 开始编辑文件名
+            function startEditing(fileId) {
+                editingFileId = fileId;
+                renderFileList();
+            }
+            
+            // 完成编辑文件名
+            async function finishEditing(fileId, newName) {
+                if (!newName.trim()) {
+                    showNotification('文件名不能为空', 'warning');
+                    return;
+                }
+                
+                const file = files.find(f => f.id === fileId);
+                if (!file) return;
+                
+                // 如果文件名没有变化，直接取消编辑
+                if (file.filename === newName) {
+                    cancelEditing(fileId);
+                    return;
+                }
+                
+                try {
+                    // 如果是新文件（未保存的），直接更新内存中的文件名
+                    if (fileId.startsWith('new-')) {
+                        file.filename = newName;
+                        cancelEditing(fileId);
+                        
+                        // 如果当前选中的是这个文件，更新顶部标题
+                        if (currentFileId === fileId) {
+                            currentFilenameEl.textContent = newName;
+                        }
+                        
+                        showNotification('文件名已更新', 'success');
+                        return;
+                    }
+                    
+                    // 更新数据库中的文件名
+                    const { error } = await supabase
+                        .from('text_files')
+                        .update({ filename: newName })
+                        .eq('id', fileId);
+                    
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    // 更新本地文件列表
+                    file.filename = newName;
+                    cancelEditing(fileId);
+                    
+                    // 如果当前选中的是这个文件，更新顶部标题
+                    if (currentFileId === fileId) {
+                        currentFilenameEl.textContent = newName;
+                    }
+                    
+                    showNotification('文件名更新成功', 'success');
+                } catch (error) {
+                    console.error('更新文件名失败:', error);
+                    showNotification('文件名更新失败: ' + error.message, 'error');
+                    cancelEditing(fileId);
+                }
+            }
+            
+            // 取消编辑文件名
+            function cancelEditing(fileId) {
+                editingFileId = null;
+                renderFileList();
             }
             
             // 选择文件
@@ -946,6 +1084,16 @@
                 document.querySelector('.content-area').addEventListener('click', () => {
                     if (window.innerWidth <= 768 && !sidebarEl.classList.contains('sidebar-collapsed')) {
                         sidebarEl.classList.add('sidebar-collapsed');
+                    }
+                });
+                
+                // 添加Ctrl+S保存快捷键
+                document.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        if (!saveBtnEl.disabled) {
+                            saveFile();
+                        }
                     }
                 });
             }
