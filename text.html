@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文本管理器</title>
+    <title>Supabase文本管理器</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -524,7 +524,7 @@
             </div>
             <div class="logo">
                 <i class="fas fa-file-alt"></i>
-                <h1>文本管理器</h1>
+                <h1>Supabase文本管理器</h1>
             </div>
             <div class="status-indicator">
                 <div class="status-dot"></div>
@@ -589,7 +589,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <!-- 数据库配置信息 -->
-    <script src="script/script.js"></script>
+    <script>
+        // 数据库配置信息 (实际项目中应放在单独的config.js文件中)
+        const SUPABASE_URL = 'https://your-project.supabase.co';
+        const SUPABASE_ANON_KEY = 'your-anon-key';
+    </script>
     
     <!-- 主应用逻辑 -->
     <script>
