@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本文件管理器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 左侧文件列表区域 */
+        .file-list-container {
+            width: 30%;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .file-list-header {
+            padding: 20px;
+            border-bottom: 1px solid #34495e;
+            background-color: #1a252f;
+        }
+        
+        .file-list-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 1.4rem;
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .file-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .file-item {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background-color: #34495e;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        
+        .file-item:hover {
+            background-color: #3d566e;
+        }
+        
+        .file-item.active {
+            background-color: #3498db;
+        }
+        
+        .file-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .file-actions-icons {
+            display: flex;
+            gap: 10px;
+            opacity: 0.7;
+        }
+        
+        .file-actions-icons i {
+            cursor: pointer;
+            padding: 3px;
+        }
+        
+        .file-actions-icons i:hover {
+            opacity: 1;
+        }
+        
+        .file-item:hover .file-actions-icons {
+            opacity: 1;
+        }
+        
+        /* 右侧编辑区域 */
+        .editor-container {
+            width: 70%;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .editor-header {
+            padding: 20px;
+            border-bottom: 1px solid #e1e4e8;
+            background-color: #f8f9fa;
+        }
+        
+        .editor-header h3 {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .file-info {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #d68910;
+        }
+        
+        .editor-area {
+            flex: 1;
+            padding: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .editor-area textarea {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            resize: none;
+            font-size: 1rem;
+            line-height: 1.5;
+            font-family: 'Consolas', 'Monaco', monospace;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #e1e4e8;
+        }
+        
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #7f8c8d;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #bdc3c7;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            color: #2c3e50;
+        }
+        
+        .modal-body input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .character-count {
+            margin-top: 10px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            text-align: right;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .file-list-container, .editor-container {
+                width: 100%;
+                height: 50%;
+            }
+            
+            .file-list-header h2, .editor-header h3 {
+                font-size: 1.1rem;
+            }
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #34495e;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #4a6583;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5a7a9c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧文件列表 -->
+        <div class="file-list-container">
+            <div class="file-list-header">
+                <h2><i class="fas fa-file-alt"></i> 文本文件列表</h2>
+                <div class="file-actions">
+                    <button class="btn btn-primary" id="newFileBtn">
+                        <i class="fas fa-plus"></i> 新建文件
+                    </button>
+                    <button class="btn btn-danger" id="deleteFileBtn" disabled>
+                        <i class="fas fa-trash"></i> 删除
+                    </button>
+                </div>
+            </div>
+            <div class="file-list" id="fileList">
+                <!-- 文件列表将在这里动态生成 -->
+            </div>
+        </div>
+        
+        <!-- 右侧编辑器 -->
+        <div class="editor-container">
+            <div class="editor-header">
+                <h3><i class="fas fa-edit"></i> 文本编辑器</h3>
+                <div class="file-info" id="fileInfo">选择一个文件或创建新文件开始编辑</div>
+                <div class="editor-actions">
+                    <button class="btn btn-success" id="saveFileBtn" disabled>
+                        <i class="fas fa-save"></i> 保存更改
+                    </button>
+                    <button class="btn btn-warning" id="renameFileBtn" disabled>
+                        <i class="fas fa-pencil-alt"></i> 重命名
+                    </button>
+                </div>
+            </div>
+            <div class="editor-area" id="editorArea">
+                <div class="empty-state" id="emptyState">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>没有选择文件</h3>
+                    <p>从左侧选择一个文件，或创建一个新文件开始编辑。</p>
+                </div>
+                <textarea id="textEditor" placeholder="在这里输入文本内容..." style="display: none;"></textarea>
+            </div>
+            <div class="character-count" id="characterCount" style="display: none;">
+                字符数: <span id="charCount">0</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 新建文件模态框 -->
+    <div class="modal" id="newFileModal">
+        <div class="modal-content">
+            <div class="modal-header">新建文本文件</div>
+            <div class="modal-body">
+                <input type="text" id="newFileName" placeholder="输入文件名（例如：笔记.txt）" autofocus>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelNewFile">取消</button>
+                <button class="btn btn-primary" id="createNewFile">创建</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 重命名文件模态框 -->
+    <div class="modal" id="renameFileModal">
+        <div class="modal-content">
+            <div class="modal-header">重命名文件</div>
+            <div class="modal-body">
+                <input type="text" id="renameFileName" placeholder="输入新文件名" autofocus>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelRename">取消</button>
+                <button class="btn btn-primary" id="confirmRename">重命名</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 文件管理对象
+        const fileManager = {
+            files: [],
+            currentFile: null,
+            
+            // 从localStorage加载文件列表
+            loadFiles() {
+                const filesJSON = localStorage.getItem('textFiles');
+                if (filesJSON) {
+                    this.files = JSON.parse(filesJSON);
+                } else {
+                    // 如果没有文件，创建一些示例文件
+                    this.files = [
+                        { id: 1, name: '欢迎使用.txt', content: '欢迎使用文本文件管理器！\n\n这是一个简单的工具，可以帮助您创建、编辑和保存文本文件。\n\n所有文件都保存在您的浏览器本地存储中，不会上传到任何服务器。', date: new Date().toLocaleString() },
+                        { id: 2, name: '待办事项.txt', content: '今日待办事项：\n1. 完成项目报告\n2. 回复客户邮件\n3. 团队会议准备\n4. 学习新技能', date: new Date().toLocaleString() },
+                        { id: 3, name: '笔记.txt', content: '重要笔记：\n- 项目截止日期：12月15日\n- 客户联系方式：client@example.com\n- 会议时间：每周三下午3点', date: new Date().toLocaleString() }
+                    ];
+                    this.saveFiles();
+                }
+                
+                this.renderFileList();
+            },
+            
+            // 保存文件列表到localStorage
+            saveFiles() {
+                localStorage.setItem('textFiles', JSON.stringify(this.files));
+            },
+            
+            // 渲染文件列表
+            renderFileList() {
+                const fileListElement = document.getElementById('fileList');
+                fileListElement.innerHTML = '';
+                
+                this.files.forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.dataset.id = file.id;
+                    
+                    if (this.currentFile && this.currentFile.id === file.id) {
+                        fileItem.classList.add('active');
+                    }
+                    
+                    fileItem.innerHTML = `
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-actions-icons">
+                            <i class="fas fa-edit rename-file" title="重命名"></i>
+                            <i class="fas fa-trash delete-file" title="删除"></i>
+                        </div>
+                    `;
+                    
+                    fileItem.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('rename-file') && !e.target.classList.contains('delete-file')) {
+                            this.selectFile(file.id);
+                        }
+                    });
+                    
+                    // 重命名按钮事件
+                    const renameBtn = fileItem.querySelector('.rename-file');
+                    renameBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.showRenameModal(file.id);
+                    });
+                    
+                    // 删除按钮事件
+                    const deleteBtn = fileItem.querySelector('.delete-file');
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.deleteFile(file.id);
+                    });
+                    
+                    fileListElement.appendChild(fileItem);
+                });
+                
+                // 更新删除按钮状态
+                document.getElementById('deleteFileBtn').disabled = !this.currentFile;
+                document.getElementById('renameFileBtn').disabled = !this.currentFile;
+            },
+            
+            // 选择文件
+            selectFile(fileId) {
+                const file = this.files.find(f => f.id === fileId);
+                if (file) {
+                    this.currentFile = file;
+                    this.renderFileList();
+                    
+                    // 显示编辑器
+                    document.getElementById('emptyState').style.display = 'none';
+                    document.getElementById('textEditor').style.display = 'block';
+                    document.getElementById('characterCount').style.display = 'block';
+                    
+                    // 设置编辑器内容
+                    document.getElementById('textEditor').value = file.content;
+                    document.getElementById('fileInfo').textContent = `${file.name} - 最后修改: ${file.date}`;
+                    
+                    // 更新字符计数
+                    this.updateCharacterCount();
+                    
+                    // 启用保存按钮
+                    document.getElementById('saveFileBtn').disabled = false;
+                    document.getElementById('renameFileBtn').disabled = false;
+                }
+            },
+            
+            // 创建新文件
+            createFile(fileName) {
+                if (!fileName.trim()) {
+                    alert('文件名不能为空');
+                    return;
+                }
+                
+                // 确保文件有.txt扩展名
+                if (!fileName.toLowerCase().endsWith('.txt')) {
+                    fileName += '.txt';
+                }
+                
+                // 检查文件名是否已存在
+                if (this.files.some(f => f.name === fileName)) {
+                    alert('文件名已存在，请使用其他名称');
+                    return;
+                }
+                
+                const newFile = {
+                    id: Date.now(), // 使用时间戳作为ID
+                    name: fileName,
+                    content: '',
+                    date: new Date().toLocaleString()
+                };
+                
+                this.files.push(newFile);
+                this.saveFiles();
+                this.renderFileList();
+                this.selectFile(newFile.id);
+            },
+            
+            // 保存当前文件
+            saveCurrentFile() {
+                if (!this.currentFile) return;
+                
+                const content = document.getElementById('textEditor').value;
+                this.currentFile.content = content;
+                this.currentFile.date = new Date().toLocaleString();
+                
+                this.saveFiles();
+                this.renderFileList();
+                
+                // 显示保存成功提示
+                const saveBtn = document.getElementById('saveFileBtn');
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fas fa-check"></i> 已保存';
+                saveBtn.style.backgroundColor = '#27ae60';
+                
+                setTimeout(() => {
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.style.backgroundColor = '';
+                }, 1500);
+            },
+            
+            // 删除文件
+            deleteFile(fileId) {
+                if (!confirm('确定要删除此文件吗？')) return;
+                
+                this.files = this.files.filter(f => f.id !== fileId);
+                
+                // 如果删除的是当前选中的文件
+                if (this.currentFile && this.currentFile.id === fileId) {
+                    this.currentFile = null;
+                    // 显示空状态
+                    document.getElementById('emptyState').style.display = 'flex';
+                    document.getElementById('textEditor').style.display = 'none';
+                    document.getElementById('characterCount').style.display = 'none';
+                    document.getElementById('fileInfo').textContent = '选择一个文件或创建新文件开始编辑';
+                    document.getElementById('saveFileBtn').disabled = true;
+                    document.getElementById('renameFileBtn').disabled = true;
+                }
+                
+                this.saveFiles();
+                this.renderFileList();
+            },
+            
+            // 重命名文件
+            renameFile(fileId, newName) {
+                if (!newName.trim()) {
+                    alert('文件名不能为空');
+                    return;
+                }
+                
+                // 确保文件有.txt扩展名
+                if (!newName.toLowerCase().endsWith('.txt')) {
+                    newName += '.txt';
+                }
+                
+                // 检查文件名是否已存在（排除自己）
+                if (this.files.some(f => f.name === newName && f.id !== fileId)) {
+                    alert('文件名已存在，请使用其他名称');
+                    return;
+                }
+                
+                const file = this.files.find(f => f.id === fileId);
+                if (file) {
+                    file.name = newName;
+                    file.date = new Date().toLocaleString();
+                    
+                    this.saveFiles();
+                    this.renderFileList();
+                    
+                    if (this.currentFile && this.currentFile.id === fileId) {
+                        this.selectFile(fileId);
+                    }
+                }
+            },
+            
+            // 显示重命名模态框
+            showRenameModal(fileId) {
+                const file = this.files.find(f => f.id === fileId);
+                if (file) {
+                    document.getElementById('renameFileName').value = file.name.replace('.txt', '');
+                    document.getElementById('renameFileModal').style.display = 'flex';
+                    
+                    // 设置重命名确认事件
+                    const confirmRename = document.getElementById('confirmRename');
+                    confirmRename.onclick = () => {
+                        const newName = document.getElementById('renameFileName').value;
+                        this.renameFile(fileId, newName);
+                        document.getElementById('renameFileModal').style.display = 'none';
+                    };
+                }
+            },
+            
+            // 更新字符计数
+            updateCharacterCount() {
+                if (!this.currentFile) return;
+                
+                const content = document.getElementById('textEditor').value;
+                const charCount = content.length;
+                document.getElementById('charCount').textContent = charCount;
+            }
+        };
+        
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            // 加载文件
+            fileManager.loadFiles();
+            
+            // 新建文件按钮事件
+            document.getElementById('newFileBtn').addEventListener('click', () => {
+                document.getElementById('newFileName').value = '';
+                document.getElementById('newFileModal').style.display = 'flex';
+            });
+            
+            // 取消新建文件
+            document.getElementById('cancelNewFile').addEventListener('click', () => {
+                document.getElementById('newFileModal').style.display = 'none';
+            });
+            
+            // 确认新建文件
+            document.getElementById('createNewFile').addEventListener('click', () => {
+                const fileName = document.getElementById('newFileName').value;
+                fileManager.createFile(fileName);
+                document.getElementById('newFileModal').style.display = 'none';
+            });
+            
+            // 保存文件按钮事件
+            document.getElementById('saveFileBtn').addEventListener('click', () => {
+                fileManager.saveCurrentFile();
+            });
+            
+            // 重命名文件按钮事件
+            document.getElementById('renameFileBtn').addEventListener('click', () => {
+                if (fileManager.currentFile) {
+                    fileManager.showRenameModal(fileManager.currentFile.id);
+                }
+            });
+            
+            // 删除文件按钮事件
+            document.getElementById('deleteFileBtn').addEventListener('click', () => {
+                if (fileManager.currentFile) {
+                    fileManager.deleteFile(fileManager.currentFile.id);
+                }
+            });
+            
+            // 取消重命名
+            document.getElementById('cancelRename').addEventListener('click', () => {
+                document.getElementById('renameFileModal').style.display = 'none';
+            });
+            
+            // 编辑器内容变化事件
+            document.getElementById('textEditor').addEventListener('input', () => {
+                fileManager.updateCharacterCount();
+            });
+            
+            // 点击模态框外部关闭模态框
+            window.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal')) {
+                    e.target.style.display = 'none';
+                }
+            });
+            
+            // 按Enter键创建文件（在新建文件模态框中）
+            document.getElementById('newFileName').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('createNewFile').click();
+                }
+            });
+            
+            // 按Enter键重命名文件
+            document.getElementById('renameFileName').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('confirmRename').click();
+                }
+            });
+            
+            // 初始化字符计数
+            fileManager.updateCharacterCount();
+        });
+    </script>
+</body>
+</html>
