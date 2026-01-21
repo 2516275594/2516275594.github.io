@@ -12,298 +12,264 @@
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
+        
         body {
             background-color: #f5f7fa;
             color: #333;
             line-height: 1.6;
-            height: 100vh;
-            overflow: hidden;
         }
-
+        
         .container {
             display: flex;
             height: 100vh;
             max-width: 1400px;
             margin: 0 auto;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
         }
-
+        
         .sidebar {
             width: 30%;
-            background-color: #fff;
-            border-right: 1px solid #eaeaea;
+            background-color: #ffffff;
+            border-right: 1px solid #e1e5eb;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
-
+        
         .main-content {
             width: 70%;
-            background-color: #fff;
+            background-color: #ffffff;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
-
+        
         .header {
             padding: 20px;
-            background-color: #4f46e5;
+            background-color: #3b82f6;
             color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-
+        
         .header h1 {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: 600;
         }
-
-        .header i {
-            font-size: 1.5rem;
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
         }
-
-        .file-list-container {
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #10b981;
+        }
+        
+        .status-dot.offline {
+            background-color: #ef4444;
+        }
+        
+        .text-list-container {
             flex: 1;
             overflow-y: auto;
             padding: 15px;
         }
-
-        .file-list-header {
+        
+        .text-list-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
-
-        .file-list-header h2 {
-            font-size: 1.4rem;
-            color: #4f46e5;
-        }
-
-        #newFileBtn {
-            background-color: #4f46e5;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 15px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.2s;
-        }
-
-        #newFileBtn:hover {
-            background-color: #4338ca;
-        }
-
-        .file-list {
-            list-style: none;
-        }
-
-        .file-item {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .file-item:hover {
-            background-color: #f8fafc;
-        }
-
-        .file-item.active {
-            background-color: #eef2ff;
-            border-left: 4px solid #4f46e5;
-        }
-
-        .file-item-title {
-            font-weight: 500;
-            font-size: 1.1rem;
-            margin-bottom: 5px;
+        
+        .text-list-header h2 {
+            font-size: 1.2rem;
             color: #374151;
         }
-
-        .file-item-date {
-            font-size: 0.85rem;
-            color: #6b7280;
-        }
-
-        .file-item-delete {
-            color: #ef4444;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 4px;
-            transition: background-color 0.2s;
-        }
-
-        .file-item-delete:hover {
-            background-color: #fee2e2;
-        }
-
-        .editor-container {
-            flex: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .editor-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .editor-header h2 {
-            font-size: 1.4rem;
-            color: #4f46e5;
-        }
-
-        #fileNameInput {
-            font-size: 1.5rem;
-            font-weight: 600;
-            border: none;
-            outline: none;
-            color: #374151;
-            background: transparent;
-            padding: 5px 0;
-            width: 70%;
-            border-bottom: 2px solid transparent;
-        }
-
-        #fileNameInput:focus {
-            border-bottom: 2px solid #4f46e5;
-        }
-
-        .editor-actions {
-            display: flex;
-            gap: 10px;
-        }
-
+        
         .btn {
-            padding: 10px 20px;
+            padding: 8px 16px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 500;
             transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
-
+        
         .btn-primary {
-            background-color: #4f46e5;
+            background-color: #3b82f6;
             color: white;
         }
-
+        
         .btn-primary:hover {
-            background-color: #4338ca;
+            background-color: #2563eb;
         }
-
+        
         .btn-secondary {
-            background-color: #e5e7eb;
+            background-color: #f3f4f6;
             color: #374151;
         }
-
+        
         .btn-secondary:hover {
-            background-color: #d1d5db;
+            background-color: #e5e7eb;
         }
-
+        
         .btn-danger {
             background-color: #ef4444;
             color: white;
         }
-
+        
         .btn-danger:hover {
             background-color: #dc2626;
         }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        
+        .text-list {
+            list-style: none;
         }
-
-        .btn:disabled:hover {
-            background-color: inherit;
+        
+        .text-item {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-
-        #textEditor {
-            flex: 1;
-            padding: 20px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 1rem;
-            line-height: 1.6;
-            outline: none;
-            resize: none;
-            overflow-y: auto;
+        
+        .text-item:hover {
             background-color: #f9fafb;
-            transition: border-color 0.2s;
         }
-
-        #textEditor:focus {
-            border-color: #4f46e5;
+        
+        .text-item.active {
+            background-color: #e0f2fe;
+            border-left: 4px solid #3b82f6;
         }
-
+        
+        .text-item-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #111827;
+        }
+        
+        .text-item-preview {
+            font-size: 0.85rem;
+            color: #6b7280;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        
+        .text-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .text-item-action-btn {
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        
+        .text-item-action-btn:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .editor-header {
+            margin-bottom: 20px;
+        }
+        
+        .editor-header input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+        }
+        
+        .editor-header input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .editor-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .editor-body textarea {
+            flex: 1;
+            padding: 15px;
+            font-size: 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            resize: none;
+            line-height: 1.6;
+        }
+        
+        .editor-body textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .editor-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .editor-info {
+            color: #6b7280;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+        
         .empty-state {
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            color: #9ca3af;
             text-align: center;
-            color: #6b7280;
             padding: 40px;
         }
-
+        
         .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            color: #d1d5db;
+            font-size: 3rem;
+            margin-bottom: 15px;
         }
-
+        
         .empty-state h3 {
-            font-size: 1.8rem;
+            font-size: 1.3rem;
             margin-bottom: 10px;
+            color: #6b7280;
         }
-
-        .status-message {
-            padding: 15px;
-            margin: 15px;
-            border-radius: 6px;
-            display: none;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-message.success {
-            background-color: #d1fae5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
-            display: flex;
-        }
-
-        .status-message.error {
-            background-color: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
-            display: flex;
-        }
-
-        .status-message.info {
-            background-color: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #bfdbfe;
-            display: flex;
-        }
-
+        
         .loading {
             display: flex;
             justify-content: center;
@@ -312,17 +278,44 @@
             font-size: 1.2rem;
             color: #6b7280;
         }
-
+        
         .loading i {
             margin-right: 10px;
             animation: spin 1s linear infinite;
         }
-
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
+        
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-error {
+            background-color: #fee;
+            color: #dc2626;
+            border-left: 4px solid #dc2626;
+        }
+        
+        .alert-success {
+            background-color: #f0fdf4;
+            color: #16a34a;
+            border-left: 4px solid #16a34a;
+        }
+        
+        .alert-info {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border-left: 4px solid #2563eb;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 flex-direction: column;
@@ -330,79 +323,83 @@
             
             .sidebar, .main-content {
                 width: 100%;
-                height: 50%;
             }
             
             .sidebar {
-                border-right: none;
-                border-bottom: 1px solid #eaeaea;
+                height: 40%;
+            }
+            
+            .main-content {
+                height: 60%;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- 左侧边栏 - 文件列表 -->
+        <!-- 左侧边栏：文本列表 -->
         <div class="sidebar">
             <div class="header">
                 <h1><i class="fas fa-file-alt"></i> 文本管理器</h1>
-                <i class="fas fa-database"></i>
+                <div class="status-indicator">
+                    <span class="status-dot" id="dbStatus"></span>
+                    <span id="dbStatusText">连接中...</span>
+                </div>
             </div>
             
-            <div class="file-list-container">
-                <div class="file-list-header">
-                    <h2>文本文件</h2>
-                    <button id="newFileBtn">
-                        <i class="fas fa-plus"></i> 新建文件
+            <div class="text-list-container">
+                <div class="text-list-header">
+                    <h2>我的文本文件</h2>
+                    <button class="btn btn-primary" id="newTextBtn">
+                        <i class="fas fa-plus"></i> 新建文本
                     </button>
                 </div>
                 
-                <div id="statusMessage" class="status-message">
-                    <i class="fas fa-info-circle"></i>
-                    <span id="statusText">状态信息</span>
-                </div>
+                <div id="alertContainer"></div>
                 
-                <div id="loadingIndicator" class="loading">
-                    <i class="fas fa-spinner"></i> 正在加载文件列表...
-                </div>
-                
-                <ul id="fileList" class="file-list">
-                    <!-- 文件列表将通过JavaScript动态生成 -->
+                <ul class="text-list" id="textList">
+                    <!-- 文本列表将动态生成 -->
                 </ul>
             </div>
         </div>
         
-        <!-- 右侧主内容区 - 编辑器 -->
+        <!-- 右侧主内容：编辑器 -->
         <div class="main-content">
             <div class="header">
-                <h1><i class="fas fa-edit"></i> 文本编辑器</h1>
-                <i class="fas fa-save"></i>
+                <h2 id="editorTitle">选择或创建文本</h2>
+                <div class="editor-actions" id="editorActions" style="display: none;">
+                    <button class="btn btn-primary" id="saveBtn">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                </div>
             </div>
             
             <div class="editor-container">
                 <div id="editorEmptyState" class="empty-state">
                     <i class="fas fa-file-alt"></i>
-                    <h3>选择或创建文件</h3>
-                    <p>从左侧选择文件进行编辑，或点击"新建文件"创建新文本文件</p>
+                    <h3>选择左侧的文本或创建新文件</h3>
+                    <p>开始编辑您的文本内容</p>
                 </div>
                 
                 <div id="editorContent" style="display: none;">
                     <div class="editor-header">
-                        <input type="text" id="fileNameInput" placeholder="请输入文件名...">
-                        <div class="editor-actions">
-                            <button id="saveBtn" class="btn btn-primary" disabled>
-                                <i class="fas fa-save"></i> 保存
-                            </button>
-                            <button id="cancelBtn" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> 取消
-                            </button>
-                            <button id="deleteBtn" class="btn btn-danger" disabled>
-                                <i class="fas fa-trash"></i> 删除
-                            </button>
-                        </div>
+                        <input type="text" id="fileNameInput" placeholder="输入文件名称..." maxlength="100">
                     </div>
                     
-                    <textarea id="textEditor" placeholder="在此处输入文本内容..."></textarea>
+                    <div class="editor-body">
+                        <textarea id="fileContentTextarea" placeholder="输入文本内容..."></textarea>
+                    </div>
+                    
+                    <div class="editor-footer">
+                        <div class="editor-info">
+                            <i class="fas fa-info-circle"></i>
+                            <span>字符数: <span id="charCount">0</span></span>
+                        </div>
+                        <div>
+                            <button class="btn btn-secondary" id="cancelBtn">取消</button>
+                            <button class="btn btn-primary" id="saveChangesBtn">保存更改</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -410,64 +407,88 @@
 
     <!-- 配置Supabase连接信息 -->
     <script>
-        // Supabase配置 - 请替换为你的实际连接信息
-        const supabaseUrl = 'https://ubsdjmcnonsormczvtuq.supabase.co';
-        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NDA0ODQsImV4cCI6MjA3ODQxNjQ4NH0.ZGD7FkjFdKitHThi22ieZcRipPVgysdTkvowP-UNjAI';
-        
-        // 注意：在实际部署中，建议将这些信息存储在环境变量中
-        // 这里为了演示，直接写在代码中
+        // 这里应该是一个单独的config.js文件，但为了演示我们直接写在HTML中
+        // 在实际部署中，请将这些信息放在单独的config.js文件中
+        const supabaseUrl = 'https://ubsdjmcnonsormczvtuq.supabase.co'; // 替换为您的Supabase URL
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NDA0ODQsImV4cCI6MjA3ODQxNjQ4NH0.ZGD7FkjFdKitHThi22ieZcRipPVgysdTkvowP-UNjAI'; // 替换为您的Supabase匿名密钥
     </script>
-    
+
     <!-- 引入Supabase客户端库 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+
     <script>
         // 初始化Supabase客户端
-        const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
         
-        // 当前选中的文件ID
-        let currentFileId = null;
-        // 文件是否已修改
-        let isModified = false;
-        // 所有文件列表
-        let files = [];
+        // 应用状态
+        let currentTextId = null;
+        let texts = [];
+        let isDatabaseConnected = false;
+        let isEditing = false;
         
         // DOM元素
-        const fileListElement = document.getElementById('fileList');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const statusMessage = document.getElementById('statusMessage');
-        const statusText = document.getElementById('statusText');
+        const dbStatus = document.getElementById('dbStatus');
+        const dbStatusText = document.getElementById('dbStatusText');
+        const textList = document.getElementById('textList');
         const editorEmptyState = document.getElementById('editorEmptyState');
         const editorContent = document.getElementById('editorContent');
+        const editorTitle = document.getElementById('editorTitle');
+        const editorActions = document.getElementById('editorActions');
         const fileNameInput = document.getElementById('fileNameInput');
-        const textEditor = document.getElementById('textEditor');
-        const saveBtn = document.getElementById('saveBtn');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const deleteBtn = document.getElementById('deleteBtn');
-        const newFileBtn = document.getElementById('newFileBtn');
+        const fileContentTextarea = document.getElementById('fileContentTextarea');
+        const charCount = document.getElementById('charCount');
+        const alertContainer = document.getElementById('alertContainer');
         
-        // 页面加载完成后初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            // 从Supabase加载文件列表
-            loadFiles();
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 测试数据库连接
+            await testDatabaseConnection();
             
-            // 绑定事件监听器
-            newFileBtn.addEventListener('click', createNewFile);
-            saveBtn.addEventListener('click', saveFile);
-            cancelBtn.addEventListener('click', cancelEdit);
-            deleteBtn.addEventListener('click', deleteFile);
-            fileNameInput.addEventListener('input', handleFileChange);
-            textEditor.addEventListener('input', handleFileChange);
+            // 如果数据库连接成功，加载文本列表
+            if (isDatabaseConnected) {
+                await loadTexts();
+            }
+            
+            // 设置事件监听器
+            setupEventListeners();
         });
         
-        // 从Supabase加载文件列表
-        async function loadFiles() {
-            showLoading(true);
-            clearStatusMessage();
+        // 测试数据库连接
+        async function testDatabaseConnection() {
+            try {
+                // 尝试从数据库中获取数据
+                const { data, error } = await supabase
+                    .from('text_files')
+                    .select('id')
+                    .limit(1);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // 连接成功
+                isDatabaseConnected = true;
+                dbStatus.classList.remove('offline');
+                dbStatusText.textContent = '已连接';
+                console.log('数据库连接成功');
+            } catch (error) {
+                // 连接失败
+                isDatabaseConnected = false;
+                dbStatus.classList.add('offline');
+                dbStatusText.textContent = '连接失败';
+                console.error('数据库连接失败:', error);
+                showAlert('无法连接到数据库。请检查网络连接或配置。', 'error');
+            }
+        }
+        
+        // 从数据库加载文本列表
+        async function loadTexts() {
+            // 显示加载状态
+            textList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> 加载中...</div>';
             
             try {
-                // 从Supabase的"text_files"表中获取所有文件
-                const { data, error } = await supabaseClient
+                // 从Supabase获取数据
+                const { data, error } = await supabase
                     .from('text_files')
                     .select('*')
                     .order('updated_at', { ascending: false });
@@ -476,367 +497,345 @@
                     throw error;
                 }
                 
-                // 存储文件列表
-                files = data || [];
+                // 更新应用状态
+                texts = data || [];
                 
-                // 渲染文件列表
-                renderFileList();
+                // 更新UI
+                renderTextList();
                 
-                // 如果没有错误，隐藏状态消息
-                hideStatusMessage();
+                // 如果有文本，选择第一个
+                if (texts.length > 0) {
+                    selectText(texts[0].id);
+                }
+                
             } catch (error) {
-                console.error('加载文件列表时出错:', error);
-                showErrorMessage('无法从数据库加载文件列表。请检查数据库连接。');
-            } finally {
-                showLoading(false);
+                console.error('加载文本失败:', error);
+                textList.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>加载失败</h3><p>无法从数据库加载文本</p></div>';
             }
         }
         
-        // 渲染文件列表
-        function renderFileList() {
-            fileListElement.innerHTML = '';
-            
-            if (files.length === 0) {
-                fileListElement.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-folder-open"></i>
-                        <h3>暂无文件</h3>
-                        <p>点击"新建文件"创建第一个文本文件</p>
-                    </div>
-                `;
+        // 渲染文本列表
+        function renderTextList() {
+            if (texts.length === 0) {
+                textList.innerHTML = '<div class="empty-state"><i class="fas fa-file-alt"></i><h3>没有文本文件</h3><p>点击"新建文本"开始创建</p></div>';
                 return;
             }
             
-            files.forEach(file => {
-                const fileItem = document.createElement('li');
-                fileItem.className = `file-item ${currentFileId === file.id ? 'active' : ''}`;
-                fileItem.innerHTML = `
+            textList.innerHTML = '';
+            
+            texts.forEach(text => {
+                const listItem = document.createElement('li');
+                listItem.className = 'text-item';
+                if (currentTextId === text.id) {
+                    listItem.classList.add('active');
+                }
+                
+                // 预览内容（截取前50个字符）
+                const preview = text.content.length > 50 ? text.content.substring(0, 50) + '...' : text.content;
+                
+                listItem.innerHTML = `
                     <div>
-                        <div class="file-item-title">${file.title || '未命名文件'}</div>
-                        <div class="file-item-date">${formatDate(file.updated_at)}</div>
+                        <div class="text-item-title">${text.file_name || '未命名文件'}</div>
+                        <div class="text-item-preview">${preview || '空文件'}</div>
                     </div>
-                    <button class="file-item-delete" data-id="${file.id}">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="text-item-actions">
+                        <button class="text-item-action-btn edit-btn" data-id="${text.id}" title="编辑">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="text-item-action-btn delete-btn" data-id="${text.id}" title="删除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 `;
                 
-                // 点击文件项
-                fileItem.addEventListener('click', (e) => {
-                    if (!e.target.classList.contains('file-item-delete') && 
-                        !e.target.closest('.file-item-delete')) {
-                        selectFile(file.id);
+                listItem.addEventListener('click', (e) => {
+                    // 如果点击的是按钮，不触发选择
+                    if (e.target.closest('.text-item-action-btn')) {
+                        return;
                     }
+                    selectText(text.id);
                 });
                 
-                // 删除按钮
-                const deleteBtn = fileItem.querySelector('.file-item-delete');
-                deleteBtn.addEventListener('click', (e) => {
+                textList.appendChild(listItem);
+            });
+            
+            // 为删除按钮添加事件监听器
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    deleteFileFromList(file.id);
+                    const id = btn.getAttribute('data-id');
+                    deleteText(id);
                 });
-                
-                fileListElement.appendChild(fileItem);
+            });
+            
+            // 为编辑按钮添加事件监听器
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.getAttribute('data-id');
+                    selectText(id);
+                    enableEditing();
+                });
             });
         }
         
-        // 选择文件
-        function selectFile(fileId) {
-            const file = files.find(f => f.id === fileId);
-            if (!file) return;
+        // 选择文本
+        function selectText(id) {
+            const text = texts.find(t => t.id === id);
+            if (!text) return;
             
-            currentFileId = fileId;
+            currentTextId = id;
+            
+            // 更新编辑器
+            fileNameInput.value = text.file_name || '';
+            fileContentTextarea.value = text.content || '';
+            updateCharCount();
+            
+            // 更新UI状态
+            editorTitle.textContent = text.file_name || '未命名文件';
+            editorEmptyState.style.display = 'none';
+            editorContent.style.display = 'flex';
+            editorActions.style.display = 'block';
+            
+            // 更新列表中的活动项
+            renderTextList();
+            
+            // 禁用编辑模式
+            disableEditing();
+        }
+        
+        // 创建新文本
+        function createNewText() {
+            // 重置编辑器
+            fileNameInput.value = '';
+            fileContentTextarea.value = '';
+            updateCharCount();
             
             // 更新UI
-            fileNameInput.value = file.title || '';
-            textEditor.value = file.content || '';
-            
-            // 显示编辑器，隐藏空状态
+            editorTitle.textContent = '新建文本';
             editorEmptyState.style.display = 'none';
             editorContent.style.display = 'flex';
+            editorActions.style.display = 'block';
             
-            // 重置修改状态
-            isModified = false;
-            updateSaveButton();
-            deleteBtn.disabled = false;
+            // 设置新文本状态
+            currentTextId = null;
             
-            // 更新文件列表选中状态
-            renderFileList();
-        }
-        
-        // 创建新文件
-        function createNewFile() {
-            currentFileId = null;
-            
-            // 清空编辑器
-            fileNameInput.value = '';
-            textEditor.value = '';
-            
-            // 显示编辑器，隐藏空状态
-            editorEmptyState.style.display = 'none';
-            editorContent.style.display = 'flex';
-            
-            // 重置修改状态
-            isModified = false;
-            updateSaveButton();
-            deleteBtn.disabled = true;
-            
-            // 更新文件列表选中状态
-            renderFileList();
+            // 启用编辑模式
+            enableEditing();
             
             // 聚焦到文件名输入框
-            fileNameInput.focus();
+            setTimeout(() => {
+                fileNameInput.focus();
+            }, 100);
         }
         
-        // 保存文件
-        async function saveFile() {
-            const title = fileNameInput.value.trim();
-            const content = textEditor.value;
+        // 保存文本到数据库
+        async function saveText() {
+            const fileName = fileNameInput.value.trim();
+            const fileContent = fileContentTextarea.value;
             
-            if (!title) {
-                showErrorMessage('请输入文件名');
+            if (!fileName) {
+                showAlert('请输入文件名称', 'error');
                 fileNameInput.focus();
                 return;
             }
             
-            saveBtn.disabled = true;
-            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+            // 检查数据库连接
+            if (!isDatabaseConnected) {
+                showAlert('无法保存：数据库连接失败', 'error');
+                return;
+            }
             
             try {
                 let result;
                 
-                if (currentFileId) {
-                    // 更新现有文件
-                    result = await supabaseClient
+                if (currentTextId) {
+                    // 更新现有文本
+                    result = await supabase
                         .from('text_files')
                         .update({
-                            title: title,
-                            content: content,
+                            file_name: fileName,
+                            content: fileContent,
                             updated_at: new Date().toISOString()
                         })
-                        .eq('id', currentFileId);
+                        .eq('id', currentTextId);
                 } else {
-                    // 创建新文件
-                    result = await supabaseClient
+                    // 创建新文本
+                    result = await supabase
                         .from('text_files')
-                        .insert({
-                            title: title,
-                            content: content,
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString()
-                        });
+                        .insert([
+                            {
+                                file_name: fileName,
+                                content: fileContent,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            }
+                        ]);
                 }
                 
-                if (result.error) {
-                    throw result.error;
-                }
-                
-                // 重新加载文件列表
-                await loadFiles();
-                
-                // 如果是新文件，选中它
-                if (!currentFileId && result.data && result.data.length > 0) {
-                    selectFile(result.data[0].id);
-                }
-                
-                // 显示成功消息
-                showSuccessMessage('文件保存成功！');
-                
-                // 重置修改状态
-                isModified = false;
-                updateSaveButton();
-                
-            } catch (error) {
-                console.error('保存文件时出错:', error);
-                showErrorMessage('保存文件失败。数据库连接可能有问题。');
-            } finally {
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = '<i class="fas fa-save"></i> 保存';
-            }
-        }
-        
-        // 取消编辑
-        function cancelEdit() {
-            if (currentFileId) {
-                // 重新加载当前选中的文件
-                const file = files.find(f => f.id === currentFileId);
-                if (file) {
-                    fileNameInput.value = file.title || '';
-                    textEditor.value = file.content || '';
-                }
-            } else {
-                // 如果是新文件，清空编辑器
-                fileNameInput.value = '';
-                textEditor.value = '';
-                editorEmptyState.style.display = 'flex';
-                editorContent.style.display = 'none';
-            }
-            
-            // 重置修改状态
-            isModified = false;
-            updateSaveButton();
-        }
-        
-        // 删除文件
-        async function deleteFile() {
-            if (!currentFileId) return;
-            
-            if (!confirm('确定要删除这个文件吗？此操作无法撤销。')) {
-                return;
-            }
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('text_files')
-                    .delete()
-                    .eq('id', currentFileId);
+                const { error } = result;
                 
                 if (error) {
                     throw error;
                 }
                 
-                // 重新加载文件列表
-                await loadFiles();
+                // 保存成功，重新加载列表
+                await loadTexts();
                 
-                // 清空编辑器
-                fileNameInput.value = '';
-                textEditor.value = '';
-                editorEmptyState.style.display = 'flex';
-                editorContent.style.display = 'none';
+                // 如果创建了新文本，选择它
+                if (!currentTextId && texts.length > 0) {
+                    // 找到最新创建的文本
+                    const newestText = texts[0];
+                    selectText(newestText.id);
+                }
                 
-                // 重置状态
-                currentFileId = null;
-                isModified = false;
-                
-                // 显示成功消息
-                showSuccessMessage('文件删除成功！');
+                showAlert('文本保存成功', 'success');
+                disableEditing();
                 
             } catch (error) {
-                console.error('删除文件时出错:', error);
-                showErrorMessage('删除文件失败。数据库连接可能有问题。');
+                console.error('保存文本失败:', error);
+                showAlert('保存失败：数据库连接错误', 'error');
             }
         }
         
-        // 从列表中删除文件
-        async function deleteFileFromList(fileId) {
-            if (!confirm('确定要删除这个文件吗？此操作无法撤销。')) {
+        // 删除文本
+        async function deleteText(id) {
+            if (!confirm('确定要删除这个文本吗？')) {
+                return;
+            }
+            
+            // 检查数据库连接
+            if (!isDatabaseConnected) {
+                showAlert('无法删除：数据库连接失败', 'error');
                 return;
             }
             
             try {
-                const { error } = await supabaseClient
+                const { error } = await supabase
                     .from('text_files')
                     .delete()
-                    .eq('id', fileId);
+                    .eq('id', id);
                 
                 if (error) {
                     throw error;
                 }
                 
-                // 重新加载文件列表
-                await loadFiles();
-                
-                // 如果删除的是当前选中的文件，清空编辑器
-                if (currentFileId === fileId) {
-                    fileNameInput.value = '';
-                    textEditor.value = '';
+                // 如果删除的是当前选中的文本，清空编辑器
+                if (currentTextId === id) {
                     editorEmptyState.style.display = 'flex';
                     editorContent.style.display = 'none';
-                    currentFileId = null;
-                    isModified = false;
+                    editorActions.style.display = 'none';
+                    currentTextId = null;
                 }
                 
-                // 显示成功消息
-                showSuccessMessage('文件删除成功！');
+                // 重新加载列表
+                await loadTexts();
+                
+                showAlert('文本删除成功', 'success');
                 
             } catch (error) {
-                console.error('删除文件时出错:', error);
-                showErrorMessage('删除文件失败。数据库连接可能有问题。');
+                console.error('删除文本失败:', error);
+                showAlert('删除失败：数据库连接错误', 'error');
             }
         }
         
-        // 处理文件内容变化
-        function handleFileChange() {
-            isModified = true;
-            updateSaveButton();
+        // 启用编辑模式
+        function enableEditing() {
+            isEditing = true;
+            fileNameInput.disabled = false;
+            fileContentTextarea.disabled = false;
+            fileNameInput.focus();
         }
         
-        // 更新保存按钮状态
-        function updateSaveButton() {
-            saveBtn.disabled = !isModified || !fileNameInput.value.trim();
+        // 禁用编辑模式
+        function disableEditing() {
+            isEditing = false;
+            fileNameInput.disabled = true;
+            fileContentTextarea.disabled = true;
         }
         
-        // 格式化日期
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+        // 更新字符计数
+        function updateCharCount() {
+            const content = fileContentTextarea.value;
+            charCount.textContent = content.length;
         }
         
-        // 显示加载状态
-        function showLoading(show) {
-            loadingIndicator.style.display = show ? 'flex' : 'none';
-        }
-        
-        // 显示成功消息
-        function showSuccessMessage(message) {
-            statusMessage.className = 'status-message success';
-            statusText.textContent = message;
+        // 显示提示信息
+        function showAlert(message, type = 'info') {
+            // 移除现有的提示
+            const existingAlert = alertContainer.querySelector('.alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
             
-            // 3秒后自动隐藏
+            // 创建新提示
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
+                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            alertContainer.appendChild(alert);
+            
+            // 3秒后自动移除提示
             setTimeout(() => {
-                hideStatusMessage();
+                if (alert.parentNode === alertContainer) {
+                    alert.remove();
+                }
             }, 3000);
         }
         
-        // 显示错误消息
-        function showErrorMessage(message) {
-            statusMessage.className = 'status-message error';
-            statusText.textContent = message;
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 新建文本按钮
+            document.getElementById('newTextBtn').addEventListener('click', createNewText);
+            
+            // 保存按钮（在编辑器标题栏）
+            document.getElementById('saveBtn').addEventListener('click', () => {
+                if (!isEditing) {
+                    enableEditing();
+                } else {
+                    saveText();
+                }
+            });
+            
+            // 保存更改按钮（在编辑器底部）
+            document.getElementById('saveChangesBtn').addEventListener('click', saveText);
+            
+            // 取消按钮
+            document.getElementById('cancelBtn').addEventListener('click', () => {
+                if (currentTextId) {
+                    // 重新加载当前文本以取消更改
+                    const currentText = texts.find(t => t.id === currentTextId);
+                    if (currentText) {
+                        fileNameInput.value = currentText.file_name || '';
+                        fileContentTextarea.value = currentText.content || '';
+                        updateCharCount();
+                    }
+                }
+                disableEditing();
+            });
+            
+            // 文件名输入框变化时更新标题
+            fileNameInput.addEventListener('input', () => {
+                if (fileNameInput.value.trim()) {
+                    editorTitle.textContent = fileNameInput.value.trim();
+                } else {
+                    editorTitle.textContent = currentTextId ? '未命名文件' : '新建文本';
+                }
+            });
+            
+            // 文本内容变化时更新字符计数
+            fileContentTextarea.addEventListener('input', updateCharCount);
+            
+            // 双击文本项启用编辑
+            textList.addEventListener('dblclick', (e) => {
+                if (e.target.closest('.text-item') && currentTextId) {
+                    enableEditing();
+                }
+            });
         }
-        
-        // 显示信息消息
-        function showInfoMessage(message) {
-            statusMessage.className = 'status-message info';
-            statusText.textContent = message;
-        }
-        
-        // 隐藏状态消息
-        function hideStatusMessage() {
-            statusMessage.style.display = 'none';
-        }
-        
-        // 清除状态消息
-        function clearStatusMessage() {
-            statusMessage.className = 'status-message';
-            statusMessage.style.display = 'none';
-        }
-        
-        // 数据库连接测试
-        async function testConnection() {
-            try {
-                const { error } = await supabaseClient
-                    .from('text_files')
-                    .select('count', { count: 'exact', head: true });
-                
-                return !error;
-            } catch (error) {
-                console.error('数据库连接测试失败:', error);
-                return false;
-            }
-        }
-        
-        // 初始化时测试数据库连接
-        window.addEventListener('load', async () => {
-            const isConnected = await testConnection();
-            if (!isConnected) {
-                showErrorMessage('无法连接到数据库。请检查连接配置。');
-            }
-        });
     </script>
 </body>
 </html>
