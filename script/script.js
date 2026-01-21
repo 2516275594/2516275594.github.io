@@ -5,14 +5,6 @@ const DELETE_PASSWORD = 'jOjsDp0BDAYlGW2r';
 
 
     
-// 显示警告信息
-document.addEventListener('DOMContentLoaded', function() {
-    const warning = document.getElementById('config-warning');
-    if (warning) {
-          warning.style.display = 'block';
-    }
-});
-
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
 let isEditMode = false;
