@@ -12,12 +12,13 @@
             --success: #10b981;
             --error: #ef4444;
             --warning: #f59e0b;
-            --background: #f5f7fa;
+            --background: #f8fafc;
             --card-bg: #ffffff;
-            --text: #333;
-            --text-light: #6b7280;
-            --border: #e5e7eb;
+            --text: #334155;
+            --text-light: #64748b;
+            --border: #e2e8f0;
             --shadow: rgba(0, 0, 0, 0.05);
+            --sidebar-width: 280px;
         }
 
         * {
@@ -33,17 +34,20 @@
             height: 100vh;
             background-color: var(--background);
             color: var(--text);
+            overflow: hidden;
         }
 
         header {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
-            padding: 1.5rem;
+            padding: 1rem 1.5rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 10;
         }
 
         .header-content {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
@@ -51,7 +55,7 @@
         }
 
         h1 {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 600;
         }
 
@@ -88,22 +92,22 @@
         .container {
             display: flex;
             flex: 1;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             width: 100%;
-            padding: 1.5rem;
-            gap: 1.5rem;
+            height: calc(100% - 70px);
             overflow: hidden;
         }
 
         .sidebar {
-            width: 300px;
+            width: var(--sidebar-width);
             background-color: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px var(--shadow);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
         }
 
         .sidebar-header {
@@ -115,19 +119,20 @@
         }
 
         .sidebar-header h2 {
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             color: var(--text-light);
+            font-weight: 500;
         }
 
         .add-btn {
             background-color: var(--primary);
             color: white;
             border: none;
-            width: 36px;
-            height: 36px;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -139,6 +144,38 @@
             transform: rotate(90deg);
         }
 
+        .search-container {
+            padding: 0.5rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.6rem 2rem 0.6rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+        }
+
         .file-list {
             flex: 1;
             overflow-y: auto;
@@ -146,19 +183,19 @@
         }
 
         .file-item {
-            padding: 0.9rem;
+            padding: 0.75rem;
             border-radius: 8px;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
             cursor: pointer;
             transition: all 0.2s ease;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-left: 4px solid transparent;
+            border-left: 3px solid transparent;
         }
 
         .file-item:hover {
-            background-color: #f3f4f6;
+            background-color: #f1f5f9;
         }
 
         .file-item.active {
@@ -171,29 +208,41 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            flex: 1;
+            padding-right: 10px;
         }
 
-        .file-date {
-            font-size: 0.8rem;
-            color: var(--text-light);
-        }
-
-        .delete-btn {
-            background: none;
-            border: none;
-            color: var(--error);
-            cursor: pointer;
+        .file-actions {
+            display: flex;
+            gap: 5px;
             opacity: 0;
             transition: opacity 0.2s ease;
-            padding: 4px;
-            border-radius: 4px;
         }
 
-        .file-item:hover .delete-btn {
+        .file-item:hover .file-actions {
             opacity: 1;
         }
 
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-light);
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background-color: #f1f5f9;
+            color: var(--primary);
+        }
+
         .delete-btn:hover {
+            color: var(--error);
             background-color: #fee2e2;
         }
 
@@ -201,30 +250,38 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px var(--shadow);
             overflow: hidden;
         }
 
         .content-header {
-            padding: 1.25rem;
+            padding: 1rem 1.5rem;
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background-color: var(--card-bg);
         }
 
         .content-header h2 {
             font-size: 1.3rem;
-            color: var(--text-light);
+            color: var(--text);
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 70%;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
         }
 
         .save-btn {
-            background-color: var(--success);
+            background-color: var(--primary);
             color: white;
             border: none;
-            padding: 0.6rem 1.2rem;
+            padding: 0.5rem 1.2rem;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 500;
@@ -232,15 +289,16 @@
             align-items: center;
             gap: 8px;
             transition: all 0.3s ease;
+            font-size: 0.9rem;
         }
 
         .save-btn:hover {
-            background-color: #059669;
+            background-color: var(--primary-dark);
             transform: translateY(-2px);
         }
 
         .save-btn:disabled {
-            background-color: #9ca3af;
+            background-color: #cbd5e1;
             cursor: not-allowed;
             transform: none;
         }
@@ -248,35 +306,8 @@
         .editor-container {
             flex: 1;
             display: flex;
-            flex-direction: column;
-            padding: 1.5rem;
-            gap: 1.5rem;
+            padding: 0;
             overflow: hidden;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .input-group label {
-            font-weight: 500;
-            color: var(--text-light);
-        }
-
-        .filename-input {
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-
-        .filename-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
         .text-editor {
@@ -284,31 +315,52 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            background-color: var(--card-bg);
+            border-radius: 0 0 8px 0;
         }
 
         .text-editor textarea {
             flex: 1;
-            padding: 1rem;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
+            padding: 1.5rem;
+            border: none;
             font-size: 1rem;
-            line-height: 1.5;
+            line-height: 1.6;
             resize: none;
-            transition: border-color 0.3s ease;
-            font-family: 'Courier New', monospace;
+            background: transparent;
+            color: var(--text);
         }
 
         .text-editor textarea:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .editor-footer {
+            padding: 0.8rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card-bg);
         }
 
         .char-count {
-            text-align: right;
             color: var(--text-light);
             font-size: 0.9rem;
-            margin-top: 0.5rem;
+        }
+
+        .toggle-sidebar {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.3rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-sidebar:hover {
+            background-color: #eef2ff;
         }
 
         .notification {
@@ -379,39 +431,59 @@
             padding: 3rem;
             color: var(--text-light);
             text-align: center;
+            height: 100%;
         }
 
         .empty-state i {
             font-size: 3rem;
             margin-bottom: 1rem;
-            color: #d1d5db;
+            color: #cbd5e1;
         }
 
-        footer {
-            text-align: center;
-            padding: 1rem;
-            color: var(--text-light);
-            font-size: 0.9rem;
-            border-top: 1px solid var(--border);
-            background-color: var(--card-bg);
+        .empty-state h3 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .empty-state p {
+            max-width: 350px;
+            line-height: 1.5;
+        }
+
+        .sidebar-collapsed {
+            transform: translateX(calc(var(--sidebar-width) * -1));
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-right: 1rem;
         }
 
         @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-                padding: 1rem;
-            }
-            
             .sidebar {
-                width: 100%;
-                height: 300px;
+                position: absolute;
+                height: calc(100% - 70px);
+                z-index: 5;
+                box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
             }
             
-            .notification {
-                left: 1rem;
-                right: 1rem;
-                bottom: 1rem;
-                max-width: none;
+            .sidebar-collapsed {
+                transform: translateX(-100%);
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .toggle-sidebar {
+                display: none;
             }
         }
     </style>
@@ -419,6 +491,9 @@
 <body>
     <header>
         <div class="header-content">
+            <div class="mobile-menu-btn" id="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </div>
             <div class="logo">
                 <i class="fas fa-file-alt"></i>
                 <h1>Supabase文本管理器</h1>
@@ -431,12 +506,20 @@
     </header>
 
     <div class="container">
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2>文本列表</h2>
+                <h2>我的文本</h2>
                 <button class="add-btn" id="add-file-btn" title="新建文本">
                     <i class="fas fa-plus"></i>
                 </button>
+            </div>
+            <div class="search-container">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="搜索文件...">
+                    <div class="search-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
             </div>
             <div class="file-list" id="file-list">
                 <div class="loading">
@@ -449,16 +532,24 @@
         <div class="content-area">
             <div class="content-header">
                 <h2 id="current-filename">选择或创建新文本</h2>
-                <button class="save-btn" id="save-btn" disabled>
-                    <i class="fas fa-save"></i>
-                    <span>保存更改</span>
-                </button>
+                <div class="header-actions">
+                    <button class="toggle-sidebar" id="toggle-sidebar" title="隐藏侧边栏">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="save-btn" id="save-btn" disabled>
+                        <i class="fas fa-save"></i>
+                        <span>保存</span>
+                    </button>
+                </div>
             </div>
-            <div class="editor-container" id="editor-container">
-                <div class="empty-state">
-                    <i class="fas fa-file-alt"></i>
-                    <h3>无选中文件</h3>
-                    <p>从左侧选择文件或创建新文件以开始编辑</p>
+            <div class="editor-container">
+                <div class="text-editor">
+                    <textarea id="content" placeholder="从左侧选择文件或创建新文件以开始编辑..."></textarea>
+                    <div class="editor-footer">
+                        <div class="char-count">
+                            字符数: <span id="char-count">0</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -466,20 +557,8 @@
 
     <div class="notification" id="notification"></div>
 
-    <footer>
-        <p>© 2023 文本管理器 | 数据存储在Supabase云数据库</p>
-    </footer>
-
     <!-- Supabase客户端库 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- 配置和主应用脚本 -->
-    <script>
-        // 配置Supabase连接信息
-        // 请替换为你的Supabase项目URL和匿名密钥
-        const supabaseUrl = 'https://ubsdjmcnonsormczvtuq.supabase.co';
-        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NDA0ODQsImV4cCI6MjA3ODQxNjQ4NH0.ZGD7FkjFdKitHThi22ieZcRipPVgysdTkvowP-UNjAI';
-    </script>
     
     <script>
         // 使用IIFE封装应用逻辑，避免全局变量冲突
@@ -494,15 +573,24 @@
             const statusDotEl = document.querySelector('.status-dot');
             const fileListEl = document.getElementById('file-list');
             const currentFilenameEl = document.getElementById('current-filename');
-            const editorContainerEl = document.getElementById('editor-container');
+            const contentEl = document.getElementById('content');
+            const charCountEl = document.getElementById('char-count');
             const saveBtnEl = document.getElementById('save-btn');
             const addFileBtnEl = document.getElementById('add-file-btn');
             const notificationEl = document.getElementById('notification');
+            const searchInputEl = document.getElementById('search-input');
+            const sidebarEl = document.getElementById('sidebar');
+            const toggleSidebarEl = document.getElementById('toggle-sidebar');
+            const mobileMenuBtnEl = document.getElementById('mobile-menu-btn');
             
             // 初始化应用
             document.addEventListener('DOMContentLoaded', initApp);
             
             async function initApp() {
+                // 配置Supabase连接信息
+                const supabaseUrl = 'https://your-project.supabase.co';
+                const supabaseAnonKey = 'your-anon-key';
+                
                 // 检查配置
                 if (!supabaseUrl || !supabaseAnonKey || 
                     supabaseUrl === 'https://your-project.supabase.co' || 
@@ -533,12 +621,20 @@
                     
                     // 设置事件监听器
                     setupEventListeners();
+                    
+                    // 设置文本区域事件
+                    contentEl.addEventListener('input', updateCharCount);
                 } catch (error) {
                     console.error('数据库连接失败:', error);
                     connectionStatusEl.textContent = '数据库连接失败';
                     statusDotEl.style.backgroundColor = 'var(--error)';
                     showNotification('数据库连接失败: ' + error.message, 'error');
                 }
+            }
+            
+            // 更新字符计数
+            function updateCharCount() {
+                charCountEl.textContent = contentEl.value.length;
             }
             
             // 加载文件列表
@@ -589,28 +685,45 @@
                     return;
                 }
                 
-                files.forEach(file => {
+                // 根据搜索词过滤文件
+                const searchTerm = searchInputEl.value.toLowerCase();
+                const filteredFiles = files.filter(file => 
+                    file.filename.toLowerCase().includes(searchTerm)
+                );
+                
+                if (filteredFiles.length === 0) {
+                    fileListEl.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-search"></i>
+                            <h3>未找到匹配文件</h3>
+                            <p>请尝试其他搜索词</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                filteredFiles.forEach(file => {
                     const fileItem = document.createElement('div');
                     fileItem.className = `file-item ${currentFileId === file.id ? 'active' : ''}`;
                     fileItem.dataset.id = file.id;
                     
-                    const date = new Date(file.updated_at);
-                    const formattedDate = `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-                    
                     fileItem.innerHTML = `
-                        <div>
-                            <div class="file-name">${file.filename}</div>
-                            <div class="file-date">更新: ${formattedDate}</div>
+                        <div class="file-name">${file.filename}</div>
+                        <div class="file-actions">
+                            <button class="action-btn delete-btn" title="删除文件">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
-                        <button class="delete-btn" title="删除文件">
-                            <i class="fas fa-trash"></i>
-                        </button>
                     `;
                     
                     // 点击文件项选择文件
                     fileItem.addEventListener('click', (e) => {
                         if (!e.target.closest('.delete-btn')) {
                             selectFile(file.id);
+                            // 在移动端选择文件后自动隐藏侧边栏
+                            if (window.innerWidth <= 768) {
+                                sidebarEl.classList.add('sidebar-collapsed');
+                            }
                         }
                     });
                     
@@ -637,128 +750,80 @@
                 
                 // 更新编辑器
                 currentFilenameEl.textContent = file.filename;
-                
-                // 渲染编辑器界面
-                editorContainerEl.innerHTML = `
-                    <div class="input-group">
-                        <label for="filename">文件名</label>
-                        <input type="text" id="filename" class="filename-input" value="${file.filename}">
-                    </div>
-                    <div class="text-editor">
-                        <label for="content">内容</label>
-                        <textarea id="content" placeholder="输入文本内容...">${file.content || ''}</textarea>
-                        <div class="char-count">
-                            字符数: <span id="char-count">${file.content ? file.content.length : 0}</span>
-                        </div>
-                    </div>
-                `;
+                contentEl.value = file.content || '';
+                updateCharCount();
                 
                 // 启用保存按钮
                 saveBtnEl.disabled = false;
-                
-                // 添加输入事件监听
-                document.getElementById('content').addEventListener('input', function() {
-                    document.getElementById('char-count').textContent = this.value.length;
-                });
-                
-                // 文件名输入框事件
-                document.getElementById('filename').addEventListener('input', function() {
-                    currentFilenameEl.textContent = this.value || '未命名文件';
-                });
             }
             
             // 显示空编辑器
             function showEmptyEditor() {
                 currentFilenameEl.textContent = '选择或创建新文本';
-                editorContainerEl.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-file-alt"></i>
-                        <h3>无选中文件</h3>
-                        <p>从左侧选择文件或创建新文件以开始编辑</p>
-                    </div>
-                `;
+                contentEl.value = '';
+                updateCharCount();
                 saveBtnEl.disabled = true;
             }
             
             // 创建新文件
             function createNewFile() {
-                currentFileId = null;
+                const newFile = {
+                    id: 'new-' + Date.now(),
+                    filename: '新文件_' + new Date().toLocaleDateString(),
+                    content: ''
+                };
+                
+                // 添加到文件列表
+                files.unshift(newFile);
+                currentFileId = newFile.id;
+                
+                // 渲染文件列表并选中新文件
+                renderFileList();
                 
                 // 更新编辑器
-                currentFilenameEl.textContent = '新文件';
-                
-                editorContainerEl.innerHTML = `
-                    <div class="input-group">
-                        <label for="filename">文件名</label>
-                        <input type="text" id="filename" class="filename-input" placeholder="输入文件名...">
-                    </div>
-                    <div class="text-editor">
-                        <label for="content">内容</label>
-                        <textarea id="content" placeholder="输入文本内容..."></textarea>
-                        <div class="char-count">
-                            字符数: <span id="char-count">0</span>
-                        </div>
-                    </div>
-                `;
+                currentFilenameEl.textContent = newFile.filename;
+                contentEl.value = '';
+                updateCharCount();
                 
                 // 启用保存按钮
                 saveBtnEl.disabled = false;
                 
-                // 添加输入事件监听
-                document.getElementById('content').addEventListener('input', function() {
-                    document.getElementById('char-count').textContent = this.value.length;
-                });
+                // 滚动到顶部
+                fileListEl.scrollTop = 0;
                 
-                // 文件名输入框事件
-                document.getElementById('filename').addEventListener('input', function() {
-                    currentFilenameEl.textContent = this.value || '新文件';
-                });
-                
-                // 聚焦文件名输入框
-                document.getElementById('filename').focus();
+                // 聚焦编辑器
+                contentEl.focus();
             }
             
             // 保存文件
             async function saveFile() {
-                const filenameInput = document.getElementById('filename');
-                const contentInput = document.getElementById('content');
+                const file = files.find(f => f.id === currentFileId);
                 
-                if (!filenameInput || !contentInput) {
-                    showNotification('无法保存：编辑器未正确加载', 'error');
-                    return;
-                }
+                if (!file) return;
                 
-                const filename = filenameInput.value.trim();
-                const content = contentInput.value;
-                
-                if (!filename) {
-                    showNotification('请输入文件名', 'warning');
-                    filenameInput.focus();
-                    return;
-                }
+                const filename = file.filename;
+                const content = contentEl.value;
                 
                 try {
                     let result;
                     
-                    if (currentFileId) {
-                        // 更新现有文件
-                        result = await supabase
-                            .from('text_files')
-                            .update({
-                                filename: filename,
-                                content: content,
-                                updated_at: new Date().toISOString()
-                            })
-                            .eq('id', currentFileId);
-                    } else {
+                    if (file.id.startsWith('new-')) {
                         // 创建新文件
                         result = await supabase
                             .from('text_files')
                             .insert([{
                                 filename: filename,
+                                content: content
+                            }]);
+                    } else {
+                        // 更新现有文件
+                        result = await supabase
+                            .from('text_files')
+                            .update({
                                 content: content,
                                 updated_at: new Date().toISOString()
-                            }]);
+                            })
+                            .eq('id', currentFileId);
                     }
                     
                     const { data, error } = result;
@@ -771,7 +836,7 @@
                     await loadFiles();
                     
                     // 如果创建了新文件，选中它
-                    if (!currentFileId && data && data.length > 0) {
+                    if (file.id.startsWith('new-') && data && data.length > 0) {
                         currentFileId = data[0].id;
                         selectFile(currentFileId);
                     }
@@ -779,7 +844,7 @@
                     showNotification('文件保存成功', 'success');
                 } catch (error) {
                     console.error('保存文件失败:', error);
-                    showNotification('数据库连接失败，文件未保存', 'error');
+                    showNotification('保存失败: ' + error.message, 'error');
                 }
             }
             
@@ -790,6 +855,24 @@
                 }
                 
                 try {
+                    // 如果是新文件（未保存的），直接从内存中删除
+                    if (fileId.startsWith('new-')) {
+                        files = files.filter(f => f.id !== fileId);
+                        
+                        // 重新渲染文件列表
+                        renderFileList();
+                        
+                        // 如果删除的是当前选中的文件，清空编辑器
+                        if (currentFileId === fileId) {
+                            currentFileId = null;
+                            showEmptyEditor();
+                        }
+                        
+                        showNotification('未保存的文件已删除', 'success');
+                        return;
+                    }
+                    
+                    // 从数据库中删除
                     const { error } = await supabase
                         .from('text_files')
                         .delete()
@@ -843,6 +926,28 @@
                 
                 // 保存按钮
                 saveBtnEl.addEventListener('click', saveFile);
+                
+                // 搜索功能
+                searchInputEl.addEventListener('input', renderFileList);
+                
+                // 切换侧边栏
+                toggleSidebarEl.addEventListener('click', () => {
+                    sidebarEl.classList.toggle('sidebar-collapsed');
+                    toggleSidebarEl.innerHTML = sidebarEl.classList.contains('sidebar-collapsed') ? 
+                        '<i class="fas fa-chevron-right"></i>' : '<i class="fas fa-chevron-left"></i>';
+                });
+                
+                // 移动端菜单按钮
+                mobileMenuBtnEl.addEventListener('click', () => {
+                    sidebarEl.classList.toggle('sidebar-collapsed');
+                });
+                
+                // 在移动端点击内容区域隐藏侧边栏
+                document.querySelector('.content-area').addEventListener('click', () => {
+                    if (window.innerWidth <= 768 && !sidebarEl.classList.contains('sidebar-collapsed')) {
+                        sidebarEl.classList.add('sidebar-collapsed');
+                    }
+                });
             }
         })();
     </script>
