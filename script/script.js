@@ -3,6 +3,16 @@ const supabaseUrl = 'https://ubsdjmcnonsormczvtuq.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NDA0ODQsImV4cCI6MjA3ODQxNjQ4NH0.ZGD7FkjFdKitHThi22ieZcRipPVgysdTkvowP-UNjAI';
 const DELETE_PASSWORD = 'jOjsDp0BDAYlGW2r';
 
+
+    
+// 显示警告信息
+document.addEventListener('DOMContentLoaded', function() {
+    const warning = document.getElementById('config-warning');
+    if (warning) {
+          warning.style.display = 'block';
+    }
+});
+
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
 let isEditMode = false;
