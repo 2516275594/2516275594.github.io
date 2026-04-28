@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本对比工具</title>
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --danger-color: #ea4335;
+            --light-gray: #f8f9fa;
+            --dark-gray: #6c757d;
+            --border-color: #dee2e6;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #212529;
+            background-color: #f5f7fa;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: 500;
+        }
+        
+        .tool-description {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 8px;
+        }
+        
+        .main-content {
+            padding: 20px;
+        }
+        
+        .text-inputs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .text-inputs {
+                flex-direction: column;
+            }
+        }
+        
+        .text-column {
+            flex: 1;
+        }
+        
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .column-title {
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+        
+        .char-count {
+            font-size: 12px;
+            color: var(--dark-gray);
+        }
+        
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            resize: vertical;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .compare-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .compare-btn:hover {
+            background-color: #3367d6;
+        }
+        
+        .clear-btn {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .clear-btn:hover {
+            background-color: #d33426;
+        }
+        
+        .result-container {
+            margin-top: 20px;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .result-title {
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+        
+        .diff-stats {
+            font-size: 14px;
+            color: var(--dark-gray);
+        }
+        
+        .diff-result {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            background-color: var(--light-gray);
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        
+        .added {
+            background-color: rgba(52, 168, 83, 0.2);
+            border-bottom: 1px solid var(--secondary-color);
+        }
+        
+        .removed {
+            background-color: rgba(234, 67, 53, 0.2);
+            text-decoration: line-through;
+        }
+        
+        .unchanged {
+            color: var(--dark-gray);
+        }
+        
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+        }
+        
+        .legend-added {
+            background-color: rgba(52, 168, 83, 0.2);
+            border: 1px solid var(--secondary-color);
+        }
+        
+        .legend-removed {
+            background-color: rgba(234, 67, 53, 0.2);
+            border: 1px solid var(--danger-color);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 13px;
+            color: var(--dark-gray);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>文本对比工具</h1>
+            <p class="tool-description">快速比较两段文本的差异，高亮显示新增和删除的内容</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="text-inputs">
+                <div class="text-column">
+                    <div class="column-header">
+                        <span class="column-title">原文</span>
+                        <span class="char-count" id="left-count">0 字符</span>
+                    </div>
+                    <textarea id="left-text" placeholder="在此输入或粘贴原始文本..."></textarea>
+                </div>
+                
+                <div class="text-column">
+                    <div class="column-header">
+                        <span class="column-title">修改后</span>
+                        <span class="char-count" id="right-count">0 字符</span>
+                    </div>
+                    <textarea id="right-text" placeholder="在此输入或粘贴修改后的文本..."></textarea>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="compare-btn" id="compare-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z"/>
+                        <path d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+                    </svg>
+                    对比文本
+                </button>
+                <button class="clear-btn" id="clear-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                    </svg>
+                    清空文本
+                </button>
+            </div>
+            
+            <div class="result-container">
+                <div class="result-header">
+                    <span class="result-title">对比结果</span>
+                    <span class="diff-stats" id="diff-stats">未对比</span>
+                </div>
+                <div class="diff-result" id="diff-result">
+                    对比结果将显示在这里...
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color legend-added"></div>
+                        <span>新增内容</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-removed"></div>
+                        <span>删除内容</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>文本对比工具 &copy; 2023 | 使用差异算法比较文本</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const leftText = document.getElementById('left-text');
+            const rightText = document.getElementById('right-text');
+            const compareBtn = document.getElementById('compare-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const diffResult = document.getElementById('diff-result');
+            const leftCount = document.getElementById('left-count');
+            const rightCount = document.getElementById('right-count');
+            const diffStats = document.getElementById('diff-stats');
+            
+            // 更新字符计数
+            function updateCharCount() {
+                leftCount.textContent = `${leftText.value.length} 字符`;
+                rightCount.textContent = `${rightText.value.length} 字符`;
+            }
+            
+            leftText.addEventListener('input', updateCharCount);
+            rightText.addEventListener('input', updateCharCount);
+            
+            // 清空文本
+            clearBtn.addEventListener('click', function() {
+                leftText.value = '';
+                rightText.value = '';
+                diffResult.innerHTML = '对比结果将显示在这里...';
+                diffStats.textContent = '未对比';
+                updateCharCount();
+            });
+            
+            // 对比文本
+            compareBtn.addEventListener('click', function() {
+                const text1 = leftText.value;
+                const text2 = rightText.value;
+                
+                if (!text1 && !text2) {
+                    diffResult.innerHTML = '请输入要对比的文本';
+                    diffStats.textContent = '未对比';
+                    return;
+                }
+                
+                if (!text1) {
+                    diffResult.innerHTML = '<span class="added">' + escapeHtml(text2) + '</span>';
+                    diffStats.textContent = '全部为新增内容';
+                    return;
+                }
+                
+                if (!text2) {
+                    diffResult.innerHTML = '<span class="removed">' + escapeHtml(text1) + '</span>';
+                    diffStats.textContent = '全部为删除内容';
+                    return;
+                }
+                
+                const diff = diffText(text1, text2);
+                displayDiff(diff);
+            });
+            
+            // 简单的差异算法
+            function diffText(text1, text2) {
+                const lines1 = text1.split('\n');
+                const lines2 = text2.split('\n');
+                const diff = [];
+                
+                let i = 0, j = 0;
+                while (i < lines1.length || j < lines2.length) {
+                    if (i < lines1.length && j < lines2.length && lines1[i] === lines2[j]) {
+                        diff.push({ type: 'unchanged', value: lines1[i] });
+                        i++;
+                        j++;
+                    } else {
+                        if (j < lines2.length && (i >= lines1.length || lines1[i] !== lines2[j])) {
+                            diff.push({ type: 'added', value: lines2[j] });
+                            j++;
+                        }
+                        if (i < lines1.length && (j >= lines2.length || lines1[i] !== lines2[j])) {
+                            diff.push({ type: 'removed', value: lines1[i] });
+                            i++;
+                        }
+                    }
+                }
+                
+                return diff;
+            }
+            
+            // 显示差异结果
+            function displayDiff(diff) {
+                let addedCount = 0;
+                let removedCount = 0;
+                let unchangedCount = 0;
+                
+                let html = '';
+                
+                diff.forEach(part => {
+                    if (part.type === 'added') {
+                        html += '<span class="added">' + escapeHtml(part.value) + '</span>\n';
+                        addedCount++;
+                    } else if (part.type === 'removed') {
+                        html += '<span class="removed">' + escapeHtml(part.value) + '</span>\n';
+                        removedCount++;
+                    } else {
+                        html += '<span class="unchanged">' + escapeHtml(part.value) + '</span>\n';
+                        unchangedCount++;
+                    }
+                });
+                
+                diffResult.innerHTML = html;
+                diffStats.textContent = `新增: ${addedCount} 处 | 删除: ${removedCount} 处 | 未变: ${unchangedCount} 处`;
+            }
+            
+            // 转义HTML特殊字符
+            function escapeHtml(unsafe) {
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+            
+            // 初始化字符计数
+            updateCharCount();
+        });
+    </script>
+</body>
+</html>
