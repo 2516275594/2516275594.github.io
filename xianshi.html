@@ -1,86 +1,400 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>免费代理订阅链接</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
-        #proxies {
-            margin-top: 2rem;
-        }
-        .proxy-item {
-            border: 1px solid #ddd;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border-radius: 8px;
-        }
-        strong {
-            font-weight: bold;
-        }
-        a {
-            color: #007bff;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>M3U 网页播放器</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --border: #2a2f3a;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --accent: #4ea1ff;
+      --accent-hover: #6bb3ff;
+      --danger: #ff6b6b;
+      --ok: #3ddc97;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      gap: 16px;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .status {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .status.ok { color: var(--ok); }
+    .status.err { color: var(--danger); }
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+    .player-panel, .side-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .video-box {
+      position: relative;
+      background: #000;
+      aspect-ratio: 16 / 9;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #000;
+    }
+    .now-playing {
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+    .now-playing .label {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+    }
+    button, .file-btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: #222733;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    button:hover, .file-btn:hover {
+      border-color: var(--accent);
+      color: #fff;
+    }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #061018;
+      font-weight: 600;
+    }
+    button.primary:hover {
+      background: var(--accent-hover);
+    }
+    .file-btn { display: inline-flex; align-items: center; }
+    .file-btn input { display: none; }
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      max-height: 70vh;
+    }
+    .side-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .list {
+      overflow: auto;
+      flex: 1;
+    }
+    .item {
+      width: 100%;
+      text-align: left;
+      border: 0;
+      border-bottom: 1px solid var(--border);
+      border-radius: 0;
+      background: transparent;
+      padding: 12px 14px;
+      display: block;
+    }
+    .item:hover { background: #1e2430; }
+    .item.active {
+      background: rgba(78, 161, 255, 0.12);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+    .item .name {
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+    .item .url {
+      font-size: 0.75rem;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    .help {
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+    code {
+      background: #222733;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+  </style>
 </head>
 <body>
-    <h1>免费代理订阅链接</h1>
-    <div id="proxies">
-        <p>正在加载代理数据...</p>
+  <div class="wrap">
+    <header>
+      <h1>M3U 网页播放器</h1>
+      <div id="status" class="status">正在加载 1.txt …</div>
+    </header>
+
+    <div class="layout">
+      <section class="player-panel">
+        <div class="video-box">
+          <video id="video" controls playsinline></video>
+        </div>
+        <div class="now-playing">
+          <div class="label">当前播放</div>
+          <div id="currentName">—</div>
+        </div>
+        <div class="toolbar">
+          <button class="primary" id="btnReload" type="button">重新加载 1.txt</button>
+          <label class="file-btn">
+            选择本地文件
+            <input id="fileInput" type="file" accept=".m3u,.m3u8,.txt,text/plain" />
+          </label>
+          <button id="btnPrev" type="button">上一个</button>
+          <button id="btnNext" type="button">下一个</button>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <div class="side-header">播放列表 (<span id="count">0</span>)</div>
+        <div id="list" class="list"></div>
+        <div class="help">
+          将播放地址写入同目录下的 <code>1.txt</code>：
+          <br />• 可写单个 URL
+          <br />• 可写标准 m3u / m3u8 内容
+          <br />• 支持 HLS（.m3u8）与常见直链
+          <br />请用本地 HTTP 服务打开本页（不要用 file://），以便读取 1.txt。
+        </div>
+      </aside>
     </div>
+  </div>
 
-    <script>
-        async function loadProxies() {
-            try {
-                // 根据你的 GitHub Pages 结构选择路径：
-                // 选项1：相对路径（适用于用户主页仓库）
-                const response = await fetch('./data/proxies.json');
-                // 选项2：绝对路径（适用于项目仓库）
-                // const response = await fetch('/2516275594.github.io/data/proxies.json');
+  <script>
+    const video = document.getElementById('video');
+    const listEl = document.getElementById('list');
+    const statusEl = document.getElementById('status');
+    const countEl = document.getElementById('count');
+    const currentNameEl = document.getElementById('currentName');
+    const fileInput = document.getElementById('fileInput');
 
-                const data = await response.json();
-                if (!data.length) {
-                    throw new Error('代理数据为空');
-                }
+    let items = [];
+    let currentIndex = -1;
+    let hls = null;
 
-                const container = document.getElementById('proxies');
-                container.innerHTML = ''; // 清空“正在加载”
+    function setStatus(text, type) {
+      statusEl.textContent = text;
+      statusEl.className = 'status' + (type ? ' ' + type : '');
+    }
 
-                data.forEach(proxy => {
-                    const item = document.createElement('div');
-                    item.className = 'proxy-item';
-                    item.innerHTML = `
-                        <strong>类型：</strong> ${proxy.type}<br>
-                        <strong>链接：</strong> 
-                        <a href="${proxy.link}" target="_blank">${proxy.link}</a><br>
-                        <strong>更新时间：</strong> ${proxy.date}
-                    `;
-                    container.appendChild(item);
-                });
-            } catch (error) {
-                console.error("加载代理数据失败:", error);
-                const container = document.getElementById('proxies');
-                container.innerHTML = `
-                    <p style="color: red;">
-                        ❌ 加载失败，请检查：<br>
-                        1. 确保 <code>data/proxies.json</code> 存在<br>
-                        2. 路径是否正确（查看控制台错误）<br>
-                        3. 强制刷新页面（Ctrl + F5）
-                    </p>
-                `;
+    function destroyHls() {
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+    }
+
+    function isHlsUrl(url) {
+      return /\.m3u8(\?|#|$)/i.test(url) || /application\/vnd\.apple\.mpegurl/i.test(url);
+    }
+
+    function playUrl(url) {
+      destroyHls();
+      video.removeAttribute('src');
+      video.load();
+
+      if (isHlsUrl(url)) {
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = url;
+          video.play().catch(() => {});
+          return;
+        }
+        if (window.Hls && Hls.isSupported()) {
+          hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+          });
+          hls.loadSource(url);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.play().catch(() => {});
+          });
+          hls.on(Hls.Events.ERROR, (_, data) => {
+            if (data.fatal) {
+              setStatus('HLS 播放失败：' + (data.type || 'unknown'), 'err');
             }
+          });
+          return;
+        }
+        setStatus('当前浏览器不支持 HLS 播放', 'err');
+        return;
+      }
+
+      video.src = url;
+      video.play().catch(() => {});
+    }
+
+    function selectItem(index) {
+      if (index < 0 || index >= items.length) return;
+      currentIndex = index;
+      const item = items[index];
+      currentNameEl.textContent = item.name;
+      setStatus('正在播放：' + item.name, 'ok');
+      renderList();
+      playUrl(item.url);
+    }
+
+    function renderList() {
+      countEl.textContent = String(items.length);
+      listEl.innerHTML = '';
+      items.forEach((item, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'item' + (i === currentIndex ? ' active' : '');
+        btn.innerHTML =
+          '<div class="name"></div><div class="url"></div>';
+        btn.querySelector('.name').textContent = item.name;
+        btn.querySelector('.url').textContent = item.url;
+        btn.addEventListener('click', () => selectItem(i));
+        listEl.appendChild(btn);
+      });
+    }
+
+    function parseM3u(text) {
+      const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/);
+      const result = [];
+      let pendingName = null;
+
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (!line) continue;
+
+        if (line.startsWith('#EXTINF:')) {
+          // #EXTINF:duration,title
+          const comma = line.indexOf(',');
+          pendingName = comma >= 0 ? line.slice(comma + 1).trim() : null;
+          continue;
         }
 
-        // 页面加载完成后执行
-        window.onload = loadProxies;
-    </script>
+        if (line.startsWith('#')) continue;
+
+        // 纯 URL 或 m3u 条目
+        if (/^https?:\/\//i.test(line) || /^rtmp:\/\//i.test(line) || line.startsWith('/')) {
+          result.push({
+            name: pendingName || line,
+            url: line,
+          });
+          pendingName = null;
+        }
+      }
+
+      // 若整份文件只有一行 URL（无 m3u 结构）
+      if (result.length === 0) {
+        const only = text.trim();
+        if (/^https?:\/\//i.test(only)) {
+          result.push({ name: only, url: only });
+        }
+      }
+
+      return result;
+    }
+
+    function loadText(text, sourceLabel) {
+      items = parseM3u(text);
+      currentIndex = -1;
+      destroyHls();
+      video.removeAttribute('src');
+      video.load();
+      currentNameEl.textContent = '—';
+      renderList();
+
+      if (items.length === 0) {
+        setStatus(sourceLabel + ' 中未解析到有效播放地址', 'err');
+        return;
+      }
+
+      setStatus('已从 ' + sourceLabel + ' 加载 ' + items.length + ' 个条目', 'ok');
+      selectItem(0);
+    }
+
+    async function loadFromTxt() {
+      setStatus('正在加载 1.txt …');
+      try {
+        const res = await fetch('1.txt', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const text = await res.text();
+        loadText(text, '1.txt');
+      } catch (e) {
+        setStatus('无法读取 1.txt：' + e.message + '（可用「选择本地文件」或检查 HTTP 服务）', 'err');
+      }
+    }
+
+    document.getElementById('btnReload').addEventListener('click', loadFromTxt);
+    document.getElementById('btnPrev').addEventListener('click', () => {
+      if (items.length) selectItem((currentIndex - 1 + items.length) % items.length);
+    });
+    document.getElementById('btnNext').addEventListener('click', () => {
+      if (items.length) selectItem((currentIndex + 1) % items.length);
+    });
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => loadText(String(reader.result || ''), file.name);
+      reader.onerror = () => setStatus('读取本地文件失败', 'err');
+      reader.readAsText(file);
+      fileInput.value = '';
+    });
+
+    video.addEventListener('error', () => {
+      if (currentIndex >= 0) {
+        setStatus('媒体加载失败，请检查地址或跨域限制', 'err');
+      }
+    });
+
+    loadFromTxt();
+  </script>
 </body>
 </html>
