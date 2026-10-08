@@ -22,6 +22,7 @@
             --bookmark-width: 260px;
             --read-bg: #f1f5f9;
             --edit-bg: #ffffff;
+            --editor-scrollbar-width: 0px; /* JS运行时会自动测量并写入 */
         }
 
         * {
@@ -100,6 +101,7 @@
             width: 100%;
             height: calc(100% - 70px);
             overflow: hidden;
+            position: relative;
         }
 
         .sidebar {
@@ -109,8 +111,23 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: all 0.3s ease;
+            transition: width 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+            position: relative;
+            z-index: 20;
+        }
+
+        /* 侧边栏收起状态：宽度归 0，内容隐藏 */
+        .sidebar.collapsed {
+            width: 0;
+            border-right-color: transparent;
+            overflow: hidden;
+        }
+        .sidebar.collapsed > * {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
         }
 
         .sidebar-header {
@@ -282,15 +299,21 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            position: relative;
+            min-width: 0;
         }
 
         .content-header {
             padding: 1rem 1.5rem;
+            padding-left: 52px; /* 为左侧的折叠按钮让出位置 */
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
             background-color: var(--card-bg);
+            position: relative;
+            z-index: 10;
+            flex-shrink: 0;
         }
 
         .content-header h2 {
@@ -440,6 +463,32 @@
             padding: 0;
             overflow: hidden;
             position: relative;
+            background-color: var(--read-bg);
+        }
+
+        /* 编辑器视口：侧边栏收起/展开时，保持 textarea 的逻辑排版宽度不变，
+           只通过 transform: scale() 等比放大/缩小，从而保证"每行显示哪些文字"完全不变——
+           不会因宽度变化重新折行，书签定位也不会因侧栏开关而错乱 */
+        .editor-viewport {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: stretch;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .editor-scaler {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            transition: transform 0.3s ease;
+            will-change: transform;
+            display: flex;
+            flex-direction: column;
+            /* width/height 由 JS 动态设置，默认先铺满（侧边栏展开状态 scale=1） */
         }
 
         .text-editor {
@@ -448,8 +497,8 @@
             flex-direction: column;
             overflow: hidden;
             background-color: var(--card-bg);
-            border-radius: 0 0 8px 0;
             min-width: 0;
+            min-height: 0;
             transition: background-color 0.3s ease;
         }
 
@@ -475,6 +524,7 @@
             font-family: 'Consolas', 'Monaco', 'Courier New', 'Microsoft YaHei', monospace;
             tab-size: 4;
             transition: background-color 0.3s ease;
+            /* 禁止 transform 下文本模糊的提示（浏览器原生已处理） */
         }
 
         .text-editor.read-mode textarea {
@@ -490,6 +540,16 @@
 
         .text-editor textarea:focus {
             outline: none;
+        }
+
+        .editor-footer {
+            padding: 0.8rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card-bg);
+            flex-shrink: 0;
         }
 
         /* 阅读模式遮罩提示 */
@@ -520,15 +580,6 @@
             font-size: 0.95rem;
         }
 
-        .editor-footer {
-            padding: 0.8rem 1.5rem;
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--card-bg);
-        }
-
         .char-count {
             color: var(--text-light);
             font-size: 0.9rem;
@@ -554,7 +605,7 @@
             overflow: hidden;
             transform: translateX(101%);
             transition: transform 0.28s ease, box-shadow 0.28s ease;
-            z-index: 30;
+            z-index: 50; /* 高于 editor-scaler，避免被缩放层遮挡 */
             box-shadow: none;
             will-change: transform;
         }
@@ -878,19 +929,40 @@
             background: var(--primary-dark);
         }
 
+        /* 左侧边缘的侧边栏折叠按钮 */
         .toggle-sidebar {
-            background: none;
-            border: none;
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
             color: var(--primary);
             cursor: pointer;
-            font-size: 1.2rem;
-            padding: 0.3rem;
-            border-radius: 4px;
-            transition: all 0.2s ease;
+            font-size: 0.95rem;
+            width: 32px;
+            height: 40px;
+            border-radius: 0 8px 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 15;
+            box-shadow: 2px 0 6px rgba(0, 0, 0, 0.06);
         }
 
         .toggle-sidebar:hover {
             background-color: #eef2ff;
+            color: var(--primary-dark);
+            width: 36px;
+        }
+
+        /* 侧边栏收起时，按钮贴在最左并显示"展开"图标 */
+        .sidebar.collapsed ~ .content-area .toggle-sidebar i {
+            transform: rotate(180deg);
+        }
+        .toggle-sidebar i {
+            transition: transform 0.3s ease;
         }
 
         .notification {
@@ -981,10 +1053,6 @@
             line-height: 1.5;
         }
 
-        .sidebar-collapsed {
-            transform: translateX(calc(var(--sidebar-width) * -1));
-        }
-
         .mobile-menu-btn {
             display: none;
             background: none;
@@ -999,21 +1067,25 @@
         @media (max-width: 768px) {
             .sidebar {
                 position: absolute;
-                height: calc(100% - 70px);
-                z-index: 5;
+                height: 100%;
+                z-index: 25;
                 box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
             }
-            
-            .sidebar-collapsed {
-                transform: translateX(-100%);
+
+            .sidebar.collapsed {
+                width: 0;
             }
-            
+
             .mobile-menu-btn {
                 display: block;
             }
-            
+
             .toggle-sidebar {
-                display: none;
+                display: none; /* 移动端使用顶栏汉堡菜单 */
+            }
+
+            .content-header {
+                padding-left: 1.5rem;
             }
 
             .bookmark-panel {
@@ -1074,11 +1146,11 @@
 
         <div class="content-area">
             <div class="content-header">
+                <button class="toggle-sidebar" id="toggle-sidebar" title="收起/展开文件列表">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
                 <h2 id="current-filename">选择或创建新文本</h2>
                 <div class="header-actions">
-                    <button class="toggle-sidebar" id="toggle-sidebar" title="隐藏侧边栏">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
                     <div class="icon-btn-wrapper">
                         <button class="icon-btn" id="bookmark-toggle" title="书签面板 (Ctrl+B)">
                             <i class="fas fa-bookmark"></i>
@@ -1096,18 +1168,22 @@
                 </div>
             </div>
             <div class="editor-container">
-                <div class="text-editor" id="text-editor">
-                    <div class="read-mode-tip" id="read-mode-tip">
-                        <i class="fas fa-eye"></i>
-                        <p>阅读模式 — 点击「编辑」按钮开始修改</p>
-                    </div>
-                    <textarea id="content" placeholder="从左侧选择文件或创建新文件以开始...&#10;&#10;提示：&#10;• 默认进入阅读模式，防止误修改&#10;• 点击右上角「编辑」按钮后才能修改内容&#10;• 关闭再打开会自动回到上次阅读位置&#10;• 点击书签图标或按 Ctrl+B 添加/管理书签" readonly></textarea>
-                    <div class="editor-footer">
-                        <div class="char-count">
-                            字符数: <span id="char-count">0</span>
-                        </div>
-                        <div class="cursor-info" id="cursor-info">
-                            行 1, 列 1
+                <div class="editor-viewport" id="editor-viewport">
+                    <div class="editor-scaler" id="editor-scaler">
+                        <div class="text-editor" id="text-editor">
+                            <div class="read-mode-tip" id="read-mode-tip">
+                                <i class="fas fa-eye"></i>
+                                <p>阅读模式 — 点击「编辑」按钮开始修改</p>
+                            </div>
+                            <textarea id="content" placeholder="从左侧选择文件或创建新文件以开始...&#10;&#10;提示：&#10;• 默认进入阅读模式，防止误修改&#10;• 点击右上角「编辑」按钮后才能修改内容&#10;• 关闭再打开会自动回到上次阅读位置&#10;• 点击书签图标或按 Ctrl+B 添加/管理书签&#10;• 点击左侧边缘的箭头按钮收起/展开文件列表，文字会自动放大/缩小且不会重排" readonly></textarea>
+                            <div class="editor-footer">
+                                <div class="char-count">
+                                    字符数: <span id="char-count">0</span>
+                                </div>
+                                <div class="cursor-info" id="cursor-info">
+                                    行 1, 列 1
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1192,6 +1268,15 @@
             const sidebarEl = document.getElementById('sidebar');
             const toggleSidebarEl = document.getElementById('toggle-sidebar');
             const mobileMenuBtnEl = document.getElementById('mobile-menu-btn');
+            const editorViewportEl = document.getElementById('editor-viewport');
+            const editorScalerEl = document.getElementById('editor-scaler');
+            
+            // 默认展开侧边栏
+            let sidebarCollapsed = false;
+            // 基准排版宽度（侧边栏展开时 textarea 的内容宽度，用于计算缩放比）
+            const BASE_EDITOR_WIDTH = 800;
+            // 侧边栏展开时的基准字号
+            const BASE_FONT_SIZE = 16;
             
             // 书签相关元素
             const bookmarkPanelEl = document.getElementById('bookmark-panel');
@@ -1910,7 +1995,7 @@
                         }
                         selectFile(file.id);
                         if (window.innerWidth <= 768) {
-                            sidebarEl.classList.add('sidebar-collapsed');
+                            setSidebarCollapsed(true);
                         }
                     });
                     
@@ -2237,7 +2322,45 @@
                     notificationEl.classList.remove('show');
                 }, 3000);
             }
-            
+
+            // ========== 侧边栏折叠 + 等比缩放文字（不改变折行） ==========
+            // 核心思路：
+            //   - editor-scaler 始终以"基准宽度 BASE_EDITOR_WIDTH"进行排版（textarea 宽度固定为此值）；
+            //   - 侧边栏展开时视口较窄，缩放比 scale 较小 → 文字较小；
+            //   - 侧边栏收起时视口变宽，缩放比 scale 变大 → 文字视觉上变大；
+            //   - textarea 的 DOM 宽度始终不变，所以"一行显示哪些字符/折行点"完全不变，
+            //     书签定位、阅读位置记忆都不会因为切换而错位。
+            function setSidebarCollapsed(collapsed) {
+                sidebarCollapsed = !!collapsed;
+                if (sidebarCollapsed) {
+                    sidebarEl.classList.add('collapsed');
+                } else {
+                    sidebarEl.classList.remove('collapsed');
+                }
+                requestAnimationFrame(() => {
+                    updateEditorScale();
+                });
+                try {
+                    localStorage.setItem('sidebarCollapsed', sidebarCollapsed ? '1' : '0');
+                } catch(e) {}
+            }
+
+            function updateEditorScale() {
+                if (!editorViewportEl || !editorScalerEl) return;
+                const vpRect = editorViewportEl.getBoundingClientRect();
+                const vpW = Math.max(320, vpRect.width);
+                const vpH = Math.max(200, vpRect.height);
+                const scale = vpW / BASE_EDITOR_WIDTH;
+                const baseW = BASE_EDITOR_WIDTH;
+                const baseH = vpH / scale;
+                editorScalerEl.style.width = baseW + 'px';
+                editorScalerEl.style.height = baseH + 'px';
+                editorScalerEl.style.transform = 'scale(' + scale + ')';
+                editorScalerEl._scale = scale;
+                // 因为 textarea 的 clientWidth 始终等于基准排版宽度（不随缩放变化），
+                // 测量镜像 syncMeasureMirrorStyle 读 clientWidth 时拿到的就是基准宽度，定位永远精确。
+            }
+
             function setupEventListeners() {
                 addFileBtnEl.addEventListener('click', createNewFile);
                 saveBtnEl.addEventListener('click', saveFile);
@@ -2245,19 +2368,34 @@
                 searchInputEl.addEventListener('input', renderFileList);
                 
                 toggleSidebarEl.addEventListener('click', () => {
-                    sidebarEl.classList.toggle('sidebar-collapsed');
-                    toggleSidebarEl.innerHTML = sidebarEl.classList.contains('sidebar-collapsed') ? 
-                        '<i class="fas fa-chevron-right"></i>' : '<i class="fas fa-chevron-left"></i>';
+                    setSidebarCollapsed(!sidebarCollapsed);
                 });
                 
                 mobileMenuBtnEl.addEventListener('click', () => {
-                    sidebarEl.classList.toggle('sidebar-collapsed');
+                    setSidebarCollapsed(!sidebarCollapsed);
                 });
                 
-                document.querySelector('.content-area').addEventListener('click', () => {
-                    if (window.innerWidth <= 768 && !sidebarEl.classList.contains('sidebar-collapsed')) {
-                        sidebarEl.classList.add('sidebar-collapsed');
+                document.querySelector('.content-area').addEventListener('click', (e) => {
+                    // 点击内容区时，若在移动端且侧边栏展开，自动收起
+                    if (window.innerWidth <= 768 && !sidebarCollapsed && !e.target.closest('.sidebar')) {
+                        setSidebarCollapsed(true);
                     }
+                });
+
+                // 窗口尺寸变化时重算缩放
+                window.addEventListener('resize', () => {
+                    updateEditorScale();
+                });
+
+                // 初次渲染：读取用户上次的侧边栏状态
+                let initialCollapsed = false;
+                try {
+                    initialCollapsed = localStorage.getItem('sidebarCollapsed') === '1';
+                } catch(e) {}
+                setSidebarCollapsed(initialCollapsed);
+                // 首次延迟一个事件循环，等布局稳定后再算缩放
+                requestAnimationFrame(() => {
+                    updateEditorScale();
                 });
                 
                 document.addEventListener('keydown', (e) => {
