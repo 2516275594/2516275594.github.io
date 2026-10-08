@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文本管理器</title>
+    <title>文本管理器（阅读+编辑模式）</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -484,11 +484,15 @@
             top: 0;
             left: 0;
             transform-origin: top left;
-            transition: transform 0.3s ease;
             will-change: transform;
             display: flex;
             flex-direction: column;
-            /* width/height 由 JS 动态设置，默认先铺满（侧边栏展开状态 scale=1） */
+            /* width/height 由 JS 动态设置。
+               注意：这里【不能】给 transform 加 transition。
+               侧边栏收起/展开本身是 0.3s 的宽度过渡动画，视口宽度在这 0.3s 内逐帧变化；
+               若 transform 再叠加一个 0.3s 过渡，缩放比就会"追不上"视口宽度，
+               动画结束时仍停留在中途的值 → 文字右侧露出一片空白（或反向溢出）。
+               因此缩放必须逐帧跟随视口宽度（由 ResizeObserver 驱动），保持无过渡。 */
         }
 
         .text-editor {
@@ -1273,10 +1277,20 @@
             
             // 默认展开侧边栏
             let sidebarCollapsed = false;
-            // 基准排版宽度（侧边栏展开时 textarea 的内容宽度，用于计算缩放比）
-            const BASE_EDITOR_WIDTH = 800;
+            // 基准排版宽度：textarea 永远按这个宽度排版，它决定"一行显示几个字"。
+            // 缩放比 = 视口宽度 / 基准排版宽度，而 scaler 的布局宽度恰好等于基准排版宽度，
+            // 于是缩放后的视觉宽度 = 视口宽度 → 文字正好铺满编辑器框，右侧不留空白。
+            // 桌面端固定 800px（切换侧边栏时基准不变，所以折行点永不改变）；
+            // 窄屏（手机/平板竖屏）基准取屏幕宽度，否则 800px 基准会把字号压得看不清。
+            const DESKTOP_BASE_WIDTH = 800;
+            function getBaseEditorWidth() {
+                if (window.innerWidth > 768) return DESKTOP_BASE_WIDTH;
+                return Math.max(360, Math.min(720, window.innerWidth));
+            }
             // 侧边栏展开时的基准字号
             const BASE_FONT_SIZE = 16;
+            // 侧边栏宽度过渡动画结束后校正缩放的定时器
+            let sidebarScaleTimer = null;
             
             // 书签相关元素
             const bookmarkPanelEl = document.getElementById('bookmark-panel');
@@ -2325,11 +2339,14 @@
 
             // ========== 侧边栏折叠 + 等比缩放文字（不改变折行） ==========
             // 核心思路：
-            //   - editor-scaler 始终以"基准宽度 BASE_EDITOR_WIDTH"进行排版（textarea 宽度固定为此值）；
-            //   - 侧边栏展开时视口较窄，缩放比 scale 较小 → 文字较小；
-            //   - 侧边栏收起时视口变宽，缩放比 scale 变大 → 文字视觉上变大；
-            //   - textarea 的 DOM 宽度始终不变，所以"一行显示哪些字符/折行点"完全不变，
-            //     书签定位、阅读位置记忆都不会因为切换而错位。
+            //   - textarea 始终按"基准排版宽度"排版（桌面端固定 800px），所以"一行显示哪些字符、
+            //     折行点"完全不随侧边栏开关变化，书签定位、阅读位置记忆都不会错位；
+            //   - 缩放比 = 视口宽度 / 基准排版宽度，scaler 的布局宽度就是基准排版宽度，
+            //     因此缩放后的视觉宽度必然正好等于视口宽度 → 文字铺满编辑器框，右侧无空白；
+            //   - 侧边栏收起 → 视口变宽 → 缩放比变大 → 字号变大；
+            //     侧边栏展开 → 视口变窄 → 缩放比变小 → 字号变小。
+            //   - 关键点：侧边栏宽度是 0.3s 过渡动画，视口宽度逐帧变化，
+            //     所以缩放比必须逐帧重算（ResizeObserver），否则动画结束后会残留错误的缩放比。
             function setSidebarCollapsed(collapsed) {
                 sidebarCollapsed = !!collapsed;
                 if (sidebarCollapsed) {
@@ -2340,6 +2357,12 @@
                 requestAnimationFrame(() => {
                     updateEditorScale();
                 });
+                // 兜底校正：侧边栏宽度过渡为 0.3s，等动画彻底结束后再算一次，
+                // 确保缩放比与最终视口宽度严格一致，不会残留空白或溢出。
+                clearTimeout(sidebarScaleTimer);
+                sidebarScaleTimer = setTimeout(() => {
+                    updateEditorScale();
+                }, 360);
                 try {
                     localStorage.setItem('sidebarCollapsed', sidebarCollapsed ? '1' : '0');
                 } catch(e) {}
@@ -2348,17 +2371,35 @@
             function updateEditorScale() {
                 if (!editorViewportEl || !editorScalerEl) return;
                 const vpRect = editorViewportEl.getBoundingClientRect();
-                const vpW = Math.max(320, vpRect.width);
-                const vpH = Math.max(200, vpRect.height);
-                const scale = vpW / BASE_EDITOR_WIDTH;
-                const baseW = BASE_EDITOR_WIDTH;
+                // 取视口的真实尺寸（不再做 320/200 的最小值兜底，
+                // 否则窄视口下缩放比会大于实际需要，文字会溢出）
+                const vpW = Math.max(1, vpRect.width);
+                const vpH = Math.max(1, vpRect.height);
+                const baseW = getBaseEditorWidth();
+                const scale = vpW / baseW;
                 const baseH = vpH / scale;
                 editorScalerEl.style.width = baseW + 'px';
                 editorScalerEl.style.height = baseH + 'px';
                 editorScalerEl.style.transform = 'scale(' + scale + ')';
                 editorScalerEl._scale = scale;
+                editorScalerEl._baseWidth = baseW;
                 // 因为 textarea 的 clientWidth 始终等于基准排版宽度（不随缩放变化），
                 // 测量镜像 syncMeasureMirrorStyle 读 clientWidth 时拿到的就是基准宽度，定位永远精确。
+            }
+
+            // 逐帧监听编辑视口尺寸：侧边栏过渡动画期间视口每一帧都在变宽/变窄，
+            // 这里每次变化都重算缩放比，保证文字始终严丝合缝地铺满编辑框。
+            function observeEditorViewportSize() {
+                if (!editorViewportEl) return;
+                if (typeof ResizeObserver !== 'undefined') {
+                    const ro = new ResizeObserver(() => {
+                        updateEditorScale();
+                    });
+                    ro.observe(editorViewportEl);
+                } else {
+                    // 老浏览器兜底：窗口尺寸变化时重算（侧边栏动画结束由 setTimeout 兜底校正）
+                    window.addEventListener('resize', updateEditorScale);
+                }
             }
 
             function setupEventListeners() {
@@ -2387,6 +2428,14 @@
                     updateEditorScale();
                 });
 
+                // 侧边栏宽度过渡动画结束后再校正一次缩放
+                sidebarEl.addEventListener('transitionend', (e) => {
+                    if (e.propertyName === 'width') updateEditorScale();
+                });
+
+                // 逐帧监听编辑视口尺寸变化（侧边栏动画期间同步跟随，避免残留空白）
+                observeEditorViewportSize();
+
                 // 初次渲染：读取用户上次的侧边栏状态
                 let initialCollapsed = false;
                 try {
@@ -2395,6 +2444,10 @@
                 setSidebarCollapsed(initialCollapsed);
                 // 首次延迟一个事件循环，等布局稳定后再算缩放
                 requestAnimationFrame(() => {
+                    updateEditorScale();
+                });
+                // 页面完全加载后再校正一次（字体/滚动条就绪后尺寸才最终确定）
+                window.addEventListener('load', () => {
                     updateEditorScale();
                 });
                 
