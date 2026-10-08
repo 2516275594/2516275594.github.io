@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文本管理器</title>
+    <title>文本管理器（阅读+编辑模式）</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -20,6 +20,8 @@
             --shadow: rgba(0, 0, 0, 0.05);
             --sidebar-width: 280px;
             --bookmark-width: 260px;
+            --read-bg: #f1f5f9;
+            --edit-bg: #ffffff;
         }
 
         * {
@@ -301,6 +303,25 @@
             max-width: 70%;
         }
 
+        .mode-indicator {
+            font-size: 0.8rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            margin-left: 10px;
+            font-weight: 500;
+            vertical-align: middle;
+        }
+
+        .mode-indicator.read-mode {
+            background-color: #e2e8f0;
+            color: #64748b;
+        }
+
+        .mode-indicator.edit-mode {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
         .header-actions {
             display: flex;
             gap: 10px;
@@ -352,6 +373,41 @@
             display: inline-block;
         }
 
+        /* 编辑按钮 */
+        .edit-mode-btn {
+            background-color: var(--success);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .edit-mode-btn:hover {
+            background-color: #059669;
+            transform: translateY(-2px);
+        }
+
+        .edit-mode-btn.editing {
+            background-color: var(--warning);
+        }
+
+        .edit-mode-btn.editing:hover {
+            background-color: #d97706;
+        }
+
+        .edit-mode-btn:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .save-btn {
             background-color: var(--primary);
             color: white;
@@ -394,6 +450,17 @@
             background-color: var(--card-bg);
             border-radius: 0 0 8px 0;
             min-width: 0;
+            transition: background-color 0.3s ease;
+        }
+
+        /* 阅读模式样式 */
+        .text-editor.read-mode {
+            background-color: var(--read-bg);
+        }
+
+        .text-editor.edit-mode {
+            background-color: var(--edit-bg);
+            box-shadow: inset 0 0 0 2px var(--warning);
         }
 
         .text-editor textarea {
@@ -401,16 +468,56 @@
             padding: 1.5rem;
             border: none;
             font-size: 1rem;
-            line-height: 1.6;
+            line-height: 1.7;
             resize: none;
             background: transparent;
             color: var(--text);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-family: 'Consolas', 'Monaco', 'Courier New', 'Microsoft YaHei', monospace;
             tab-size: 4;
+            transition: background-color 0.3s ease;
+        }
+
+        .text-editor.read-mode textarea {
+            cursor: default;
+            background-color: var(--read-bg);
+            opacity: 0.85;
+        }
+
+        .text-editor.edit-mode textarea {
+            cursor: text;
+            background-color: white;
         }
 
         .text-editor textarea:focus {
             outline: none;
+        }
+
+        /* 阅读模式遮罩提示 */
+        .read-mode-tip {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--text-light);
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 5;
+        }
+
+        .text-editor.read-mode .read-mode-tip.show {
+            opacity: 0.6;
+        }
+
+        .read-mode-tip i {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            color: #94a3b8;
+        }
+
+        .read-mode-tip p {
+            font-size: 0.95rem;
         }
 
         .editor-footer {
@@ -878,6 +985,15 @@
                 z-index: 5;
                 box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
             }
+
+            .header-actions {
+                gap: 6px;
+            }
+
+            .edit-mode-btn, .save-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
@@ -888,7 +1004,7 @@
                 <i class="fas fa-bars"></i>
             </div>
             <div class="logo">
-                <i class="fas fa-bookmark"></i>
+                <i class="fas fa-book-open"></i>
                 <h1>文本管理器</h1>
             </div>
             <div class="status-indicator">
@@ -935,6 +1051,10 @@
                             <span class="badge" id="bookmark-count" style="display:none">0</span>
                         </button>
                     </div>
+                    <button class="edit-mode-btn" id="edit-mode-btn" disabled title="点击进入编辑模式">
+                        <i class="fas fa-pen"></i>
+                        <span>编辑</span>
+                    </button>
                     <button class="save-btn" id="save-btn" disabled>
                         <i class="fas fa-save"></i>
                         <span>保存</span>
@@ -942,8 +1062,12 @@
                 </div>
             </div>
             <div class="editor-container">
-                <div class="text-editor">
-                    <textarea id="content" placeholder="从左侧选择文件或创建新文件以开始编辑...&#10;&#10;提示：&#10;• 关闭再打开会自动回到上次阅读位置&#10;• 点击右上角书签图标或按 Ctrl+B 添加/管理书签&#10;• Ctrl+B 添加当前位置为书签"></textarea>
+                <div class="text-editor" id="text-editor">
+                    <div class="read-mode-tip" id="read-mode-tip">
+                        <i class="fas fa-eye"></i>
+                        <p>阅读模式 — 点击「编辑」按钮开始修改</p>
+                    </div>
+                    <textarea id="content" placeholder="从左侧选择文件或创建新文件以开始...&#10;&#10;提示：&#10;• 默认进入阅读模式，防止误修改&#10;• 点击右上角「编辑」按钮后才能修改内容&#10;• 关闭再打开会自动回到上次阅读位置&#10;• 点击书签图标或按 Ctrl+B 添加/管理书签" readonly></textarea>
                     <div class="editor-footer">
                         <div class="char-count">
                             字符数: <span id="char-count">0</span>
@@ -969,7 +1093,7 @@
                     <div class="bookmark-list" id="bookmark-list">
                         <div class="bookmark-empty">
                             <i class="fas fa-bookmark"></i>
-                            <p>暂无书签<br>点击上方按钮或按 Ctrl+B<br>在光标位置添加书签</p>
+                            <p>请先选择一个文件<br>再使用书签功能</p>
                         </div>
                     </div>
                 </div>
@@ -1010,6 +1134,7 @@
             let bookmarks = {}; // { fileId: [{ id, name, position, scrollTop, preview, createdAt }] }
             let pendingBookmarkPosition = null;
             let isRestoringPosition = false;
+            let isEditMode = false; // 当前是否为编辑模式
             
             // DOM元素
             const connectionStatusEl = document.getElementById('connection-status');
@@ -1020,6 +1145,9 @@
             const charCountEl = document.getElementById('char-count');
             const cursorInfoEl = document.getElementById('cursor-info');
             const saveBtnEl = document.getElementById('save-btn');
+            const editModeBtnEl = document.getElementById('edit-mode-btn');
+            const textEditorEl = document.getElementById('text-editor');
+            const readModeTipEl = document.getElementById('read-mode-tip');
             const addFileBtnEl = document.getElementById('add-file-btn');
             const notificationEl = document.getElementById('notification');
             const searchInputEl = document.getElementById('search-input');
@@ -1066,6 +1194,7 @@
                     setupBookmarkEventListeners();
                     
                     contentEl.addEventListener('input', () => {
+                        if (!isEditMode) return;
                         updateCharCount();
                         updateCursorInfo();
                         saveCurrentPosition();
@@ -1083,11 +1212,94 @@
                             saveCurrentPosition();
                         }
                     });
+
+                    // 阅读模式下尝试点击编辑按钮的提示
+                    contentEl.addEventListener('click', (e) => {
+                        if (!isEditMode && currentFileId) {
+                            // 点击区域闪烁提示
+                            showNotification('当前为阅读模式，请点击右上角「编辑」按钮修改', 'warning');
+                        }
+                    });
+
+                    // 初始化为阅读模式
+                    setReadMode();
                 } catch (error) {
                     console.error('数据库连接失败:', error);
                     connectionStatusEl.textContent = '数据库连接失败';
                     statusDotEl.style.backgroundColor = 'var(--error)';
                     showNotification('数据库连接失败: ' + error.message, 'error');
+                }
+            }
+
+            // ========== 阅读/编辑模式切换 ==========
+            
+            function setReadMode() {
+                isEditMode = false;
+                contentEl.readOnly = true;
+                textEditorEl.classList.remove('edit-mode');
+                textEditorEl.classList.add('read-mode');
+                editModeBtnEl.classList.remove('editing');
+                editModeBtnEl.innerHTML = '<i class="fas fa-pen"></i> <span>编辑</span>';
+                editModeBtnEl.title = '点击进入编辑模式';
+                saveBtnEl.disabled = true;
+                
+                // 更新文件名旁的模式标记
+                updateModeIndicator('read');
+                
+                // 空内容时显示提示
+                if (currentFileId && (!contentEl.value || contentEl.value.trim() === '')) {
+                    readModeTipEl.classList.add('show');
+                } else {
+                    readModeTipEl.classList.remove('show');
+                }
+            }
+            
+            function setEditMode() {
+                if (!currentFileId) {
+                    showNotification('请先选择或创建一个文件', 'warning');
+                    return;
+                }
+                isEditMode = true;
+                contentEl.readOnly = false;
+                textEditorEl.classList.remove('read-mode');
+                textEditorEl.classList.add('edit-mode');
+                editModeBtnEl.classList.add('editing');
+                editModeBtnEl.innerHTML = '<i class="fas fa-check"></i> <span>完成</span>';
+                editModeBtnEl.title = '点击退出编辑模式';
+                saveBtnEl.disabled = false;
+                readModeTipEl.classList.remove('show');
+                
+                // 更新文件名旁的模式标记
+                updateModeIndicator('edit');
+                
+                // 聚焦到编辑器末尾
+                contentEl.focus();
+                const end = contentEl.value.length;
+                contentEl.setSelectionRange(end, end);
+                updateCursorInfo();
+            }
+
+            function updateModeIndicator(mode) {
+                // 移除旧的标记
+                const oldIndicator = currentFilenameEl.querySelector('.mode-indicator');
+                if (oldIndicator) oldIndicator.remove();
+                
+                // 添加新标记
+                const indicator = document.createElement('span');
+                indicator.className = `mode-indicator ${mode}-mode`;
+                indicator.textContent = mode === 'read' ? '阅读模式' : '编辑模式';
+                currentFilenameEl.appendChild(indicator);
+            }
+            
+            function toggleEditMode() {
+                if (isEditMode) {
+                    // 如果有未保存的修改，提示用户
+                    // 这里简单处理：直接切换，用户可以选择保存
+                    setReadMode();
+                    showNotification('已退出编辑模式，未保存的修改不会丢失，请点击保存', 'info');
+                } else {
+                    setEditMode();
+                    showNotification('已进入编辑模式，可以开始修改', 'success');
                 }
             }
             
@@ -1121,7 +1333,8 @@
                     requestAnimationFrame(() => {
                         isRestoringPosition = true;
                         contentEl.scrollTop = data.scrollTop || 0;
-                        if (typeof data.selectionStart === 'number') {
+                        // 阅读模式下不设置光标，避免默认选中
+                        if (isEditMode && typeof data.selectionStart === 'number') {
                             try {
                                 contentEl.setSelectionRange(
                                     Math.min(data.selectionStart, contentEl.value.length),
@@ -1183,7 +1396,7 @@
                 const list = getCurrentFileBookmarks();
                 updateBookmarkBadge();
                 
-                if (!currentFileId || saveBtnEl.disabled) {
+                if (!currentFileId || !currentFileId) {
                     bookmarkListEl.innerHTML = `
                         <div class="bookmark-empty">
                             <i class="fas fa-bookmark"></i>
@@ -1199,7 +1412,7 @@
                     bookmarkListEl.innerHTML = `
                         <div class="bookmark-empty">
                             <i class="fas fa-bookmark"></i>
-                            <p>暂无书签<br>点击上方按钮或按 Ctrl+B<br>在光标位置添加书签</p>
+                            <p>暂无书签<br>点击上方按钮或按 Ctrl+B<br>添加书签</p>
                         </div>`;
                     return;
                 }
@@ -1276,13 +1489,32 @@
             }
             
             function openAddBookmarkModal() {
-                if (!currentFileId || saveBtnEl.disabled) {
+                if (!currentFileId) {
                     showNotification('请先选择或创建一个文件', 'warning');
                     return;
                 }
+
+                // 如果是阅读模式，先临时允许选择（虽然只读，但可以点击定位光标）
+                // 阅读模式下也可以添加书签：基于当前滚动位置？或者进入编辑模式？
+                // 更好的方式：阅读模式下添加书签，默认添加到当前屏幕顶部位置
+                let position, scrollTop;
+                if (isEditMode) {
+                    position = contentEl.selectionStart;
+                    scrollTop = contentEl.scrollTop;
+                } else {
+                    // 阅读模式下，根据滚动位置计算大致字符位置
+                    const computedStyle = window.getComputedStyle(contentEl);
+                    const lineHeight = parseFloat(computedStyle.lineHeight) || 25.6;
+                    const paddingTop = parseFloat(computedStyle.paddingTop) || 24;
+                    const linesScrolled = Math.floor((contentEl.scrollTop - paddingTop) / lineHeight);
+                    const textBefore = contentEl.value.split('\n').slice(0, Math.max(0, linesScrolled)).join('\n');
+                    position = textBefore.length;
+                    scrollTop = contentEl.scrollTop;
+                }
+
                 pendingBookmarkPosition = {
-                    position: contentEl.selectionStart,
-                    scrollTop: contentEl.scrollTop
+                    position: position,
+                    scrollTop: scrollTop
                 };
                 bookmarkNameInputEl.value = getDefaultBookmarkName();
                 bookmarkModalEl.classList.add('show');
@@ -1366,14 +1598,15 @@
             function jumpToBookmark(bm) {
                 if (!contentEl.value) return;
                 
-                // 由于文本可能被修改，使用position重新计算scrollTop
-                // 先设置光标位置，然后通过创建mirror元素计算精确滚动位置
+                // 计算该字符位置对应的像素高度
                 const pos = Math.min(bm.position, contentEl.value.length);
                 
-                contentEl.focus();
-                contentEl.setSelectionRange(pos, pos);
+                // 阅读模式下不需要focus（会唤起键盘），但设置滚动
+                if (isEditMode) {
+                    contentEl.focus();
+                    contentEl.setSelectionRange(pos, pos);
+                }
                 
-                // 计算该字符位置对应的像素高度
                 const computedStyle = window.getComputedStyle(contentEl);
                 const lineHeight = parseFloat(computedStyle.lineHeight) || 25.6;
                 const paddingTop = parseFloat(computedStyle.paddingTop) || 24;
@@ -1585,6 +1818,7 @@
                         cancelEditing(fileId);
                         if (currentFileId === fileId) {
                             currentFilenameEl.textContent = newName;
+                            updateModeIndicator(isEditMode ? 'edit' : 'read');
                         }
                         showNotification('文件名已更新', 'success');
                         return;
@@ -1602,6 +1836,7 @@
                     
                     if (currentFileId === fileId) {
                         currentFilenameEl.textContent = newName;
+                        updateModeIndicator(isEditMode ? 'edit' : 'read');
                     }
                     
                     showNotification('文件名更新成功', 'success');
@@ -1631,8 +1866,12 @@
                 currentFilenameEl.textContent = file.filename;
                 contentEl.value = file.content || '';
                 updateCharCount();
+                updateCursorInfo();
                 
-                saveBtnEl.disabled = false;
+                editModeBtnEl.disabled = false;
+                
+                // 默认进入阅读模式
+                setReadMode();
                 
                 // 渲染书签并恢复位置
                 renderBookmarkList();
@@ -1640,11 +1879,19 @@
             }
             
             function showEmptyEditor() {
+                currentFileId = null;
                 currentFilenameEl.textContent = '选择或创建新文本';
                 contentEl.value = '';
                 updateCharCount();
                 updateCursorInfo();
+                editModeBtnEl.disabled = true;
                 saveBtnEl.disabled = true;
+                isEditMode = false;
+                contentEl.readOnly = true;
+                textEditorEl.classList.remove('edit-mode', 'read-mode');
+                const oldIndicator = currentFilenameEl.querySelector('.mode-indicator');
+                if (oldIndicator) oldIndicator.remove();
+                readModeTipEl.classList.remove('show');
                 renderBookmarkList();
             }
             
@@ -1667,15 +1914,19 @@
                 updateCharCount();
                 updateCursorInfo();
                 
-                saveBtnEl.disabled = false;
+                editModeBtnEl.disabled = false;
                 
                 fileListEl.scrollTop = 0;
-                contentEl.focus();
+                
+                // 新建文件自动进入编辑模式
+                setEditMode();
                 contentEl.scrollTop = 0;
                 renderBookmarkList();
             }
             
             async function saveFile() {
+                if (!isEditMode) return;
+
                 const file = files.find(f => f.id === currentFileId);
                 
                 if (!file) return;
@@ -1742,25 +1993,27 @@
                     
                     if (newId) {
                         currentFileId = newId;
-                        // selectFile会调用restorePosition，但我们要保持当前编辑位置不变
+                        // selectFile会调用setReadMode，但我们保存后保持在阅读模式
                         renderFileList();
                         currentFilenameEl.textContent = filename;
                         contentEl.value = content;
                         updateCharCount();
+                        // 保存完成后切换回阅读模式
+                        setReadMode();
                         renderBookmarkList();
-                        // 保持当前位置
+                        // 保持当前阅读位置
                         requestAnimationFrame(() => {
                             isRestoringPosition = true;
                             contentEl.scrollTop = savedScrollTop;
-                            try {
-                                contentEl.setSelectionRange(savedSelStart, savedSelEnd);
-                            } catch(e){}
                             updateCursorInfo();
                             setTimeout(() => { isRestoringPosition = false; }, 100);
                         });
+                    } else {
+                        // 已有文件保存后也回到阅读模式
+                        setReadMode();
                     }
                     
-                    showNotification('文件保存成功', 'success');
+                    showNotification('文件保存成功，已返回阅读模式', 'success');
                 } catch (error) {
                     console.error('保存文件失败:', error);
                     showNotification('保存失败: ' + error.message, 'error');
@@ -1833,6 +2086,7 @@
             function setupEventListeners() {
                 addFileBtnEl.addEventListener('click', createNewFile);
                 saveBtnEl.addEventListener('click', saveFile);
+                editModeBtnEl.addEventListener('click', toggleEditMode);
                 searchInputEl.addEventListener('input', renderFileList);
                 
                 toggleSidebarEl.addEventListener('click', () => {
@@ -1854,8 +2108,10 @@
                 document.addEventListener('keydown', (e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                         e.preventDefault();
-                        if (!saveBtnEl.disabled) {
+                        if (isEditMode && !saveBtnEl.disabled) {
                             saveFile();
+                        } else if (!isEditMode && currentFileId) {
+                            showNotification('当前为阅读模式，请先点击「编辑」按钮', 'warning');
                         }
                     }
                     // Ctrl+B 添加书签
@@ -1869,10 +2125,14 @@
                         }
                         openAddBookmarkModal();
                     }
+                    // Escape 键退出编辑模式
+                    if (e.key === 'Escape' && isEditMode) {
+                        setReadMode();
+                    }
                 });
             }
         })();
     </script>
 </body>
 </html>
-<!--08307884782573747210093016-->
+<!--34205746272395614730100808-->
