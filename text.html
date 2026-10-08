@@ -539,21 +539,59 @@
             font-size: 0.9rem;
         }
 
-        /* 书签面板样式 */
+        /* 书签面板样式：悬浮层，打开/关闭时不改变正文宽度，避免文本重新换行导致书签错位 */
         .bookmark-panel {
-            width: 0;
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: var(--bookmark-width);
+            max-width: 85%;
             background-color: var(--card-bg);
-            border-left: 0 solid var(--border);
+            border-left: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: all 0.3s ease;
-            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.05);
+            transform: translateX(101%);
+            transition: transform 0.28s ease, box-shadow 0.28s ease;
+            z-index: 30;
+            box-shadow: none;
+            will-change: transform;
         }
 
         .bookmark-panel.open {
-            width: var(--bookmark-width);
-            border-left: 1px solid var(--border);
+            transform: translateX(0);
+            box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+        }
+
+        /* 书签跳转后的定位提示条 */
+        .bookmark-flash {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-6px);
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 6px 18px rgba(217, 119, 6, 0.35);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            z-index: 40;
+            max-width: 70%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bookmark-flash.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
 
         .bookmark-header {
@@ -978,12 +1016,8 @@
                 display: none;
             }
 
-            .bookmark-panel.open {
-                position: absolute;
-                right: 0;
-                height: 100%;
-                z-index: 5;
-                box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+            .bookmark-panel {
+                width: min(var(--bookmark-width), 82vw);
             }
 
             .header-actions {
@@ -1135,6 +1169,10 @@
             let pendingBookmarkPosition = null;
             let isRestoringPosition = false;
             let isEditMode = false; // 当前是否为编辑模式
+            let measureMirrorEl = null;   // 用于测量文本真实排版（含自动换行）的隐藏镜像元素
+            let measureTextEl = null;
+            let measureMarkerEl = null;
+            let bookmarkFlashEl = null;   // 书签跳转提示条
             
             // DOM元素
             const connectionStatusEl = document.getElementById('connection-status');
@@ -1303,14 +1341,135 @@
                 }
             }
             
+            // ========== 文本排版测量（书签 / 位置精确定位的基础） ==========
+            // textarea 中过长的行会自动换行，若只按换行符数量估算行号，跳转就会错位；
+            // 尤其在书签面板开合、窗口尺寸变化时更明显。
+            // 这里用一个与 textarea 字体、字号、行高、内边距、宽度完全一致的隐藏镜像元素，
+            // 测量任意字符位置的真实像素纵向偏移，保证"跳到第几行"永远精确。
+
+            function ensureMeasureMirror() {
+                if (!measureMirrorEl || !document.body.contains(measureMirrorEl)) {
+                    measureMirrorEl = document.createElement('div');
+                    measureMirrorEl.setAttribute('aria-hidden', 'true');
+                    measureTextEl = document.createElement('span');
+                    measureMarkerEl = document.createElement('span');
+                    measureMarkerEl.textContent = '\u200b';
+                    measureMirrorEl.appendChild(measureTextEl);
+                    measureMirrorEl.appendChild(measureMarkerEl);
+                    const s = measureMirrorEl.style;
+                    s.position = 'absolute';
+                    s.top = '0';
+                    s.left = '-99999px';
+                    s.visibility = 'hidden';
+                    s.pointerEvents = 'none';
+                    s.zIndex = '-1';
+                    s.margin = '0';
+                    s.border = '0';
+                    s.boxSizing = 'border-box';
+                    s.height = 'auto';
+                    s.overflow = 'hidden';
+                    document.body.appendChild(measureMirrorEl);
+                }
+                syncMeasureMirrorStyle();
+                return measureMirrorEl;
+            }
+
+            function syncMeasureMirrorStyle() {
+                const cs = window.getComputedStyle(contentEl);
+                const s = measureMirrorEl.style;
+                // 镜像为 border-box 且无边框，宽度取 textarea 的 clientWidth，
+                // 使其内容宽度 = clientWidth - 左右内边距，与 textarea 的换行宽度一致
+                s.width = contentEl.clientWidth + 'px';
+                s.paddingTop = cs.paddingTop;
+                s.paddingRight = cs.paddingRight;
+                s.paddingBottom = cs.paddingBottom;
+                s.paddingLeft = cs.paddingLeft;
+                s.fontFamily = cs.fontFamily;
+                s.fontSize = cs.fontSize;
+                s.fontWeight = cs.fontWeight;
+                s.fontStyle = cs.fontStyle;
+                s.lineHeight = cs.lineHeight;
+                s.letterSpacing = cs.letterSpacing;
+                s.wordSpacing = cs.wordSpacing;
+                s.textIndent = cs.textIndent;
+                s.textTransform = cs.textTransform;
+                s.textAlign = cs.textAlign;
+                s.direction = cs.direction;
+                s.tabSize = cs.tabSize;
+                s.whiteSpace = 'pre-wrap';
+                s.overflowWrap = 'break-word';
+                s.wordBreak = 'break-word';
+            }
+
+            // 返回字符位置 pos 距 textarea 内容区顶部的像素距离（已包含自动换行的影响）
+            function measureCharTop(pos) {
+                const value = contentEl.value;
+                const p = Math.max(0, Math.min(pos, value.length));
+                ensureMeasureMirror();
+                measureTextEl.textContent = value.substring(0, p);
+                const mirrorRect = measureMirrorEl.getBoundingClientRect();
+                const markerRect = measureMarkerEl.getBoundingClientRect();
+                return markerRect.top - mirrorRect.top;
+            }
+
+            // 反查：纵向像素位置 pixelY 对应的字符位置（阅读模式在屏幕顶部加书签时用）
+            function findCharAtPixel(pixelY) {
+                const value = contentEl.value;
+                if (!value) return 0;
+                let lo = 0, hi = value.length, best = 0;
+                while (lo <= hi) {
+                    const mid = (lo + hi) >> 1;
+                    if (measureCharTop(mid) <= pixelY) {
+                        best = mid;
+                        lo = mid + 1;
+                    } else {
+                        hi = mid - 1;
+                    }
+                }
+                return best;
+            }
+
+            function getMaxScroll() {
+                return Math.max(0, contentEl.scrollHeight - contentEl.clientHeight);
+            }
+
+            // 把某个字符位置滚动到视口靠上位置（gap 为距顶部的留白）
+            function scrollToCharPos(pos, gap) {
+                if (typeof gap !== 'number') gap = 24;
+                const charTop = measureCharTop(pos);
+                const target = Math.max(0, Math.min(charTop - gap, getMaxScroll()));
+                isRestoringPosition = true;
+                contentEl.scrollTo({ top: target, behavior: 'smooth' });
+                setTimeout(() => { isRestoringPosition = false; }, 400);
+                return target;
+            }
+
+            function showBookmarkFlash(name) {
+                if (!bookmarkFlashEl) {
+                    bookmarkFlashEl = document.createElement('div');
+                    bookmarkFlashEl.className = 'bookmark-flash';
+                    const host = document.getElementById('text-editor');
+                    if (host) host.appendChild(bookmarkFlashEl);
+                }
+                bookmarkFlashEl.innerHTML = '<i class="fas fa-bookmark"></i> 已定位：' + escapeHtml(name || '书签');
+                bookmarkFlashEl.classList.add('show');
+                clearTimeout(bookmarkFlashEl._timer);
+                bookmarkFlashEl._timer = setTimeout(() => {
+                    bookmarkFlashEl.classList.remove('show');
+                }, 1800);
+            }
+
             // ========== 位置记忆功能 ==========
             
             function saveCurrentPosition() {
                 if (!currentFileId) return;
                 try {
                     const key = `textPosition_${currentFileId}`;
+                    const maxScroll = getMaxScroll();
                     const data = {
                         scrollTop: contentEl.scrollTop,
+                        maxScroll: maxScroll,
+                        ratio: maxScroll > 0 ? contentEl.scrollTop / maxScroll : 0,
                         selectionStart: contentEl.selectionStart,
                         selectionEnd: contentEl.selectionEnd,
                         timestamp: Date.now()
@@ -1332,7 +1491,13 @@
                     // 延迟设置，等textarea内容渲染完成
                     requestAnimationFrame(() => {
                         isRestoringPosition = true;
-                        contentEl.scrollTop = data.scrollTop || 0;
+                        const maxScrollNow = getMaxScroll();
+                        let target = data.scrollTop || 0;
+                        // 若可滚动高度与上次不同（换行方式或窗口尺寸变化），按比例还原，避免完全跑偏
+                        if (typeof data.maxScroll === 'number' && Math.abs(maxScrollNow - data.maxScroll) > 2) {
+                            target = (data.ratio || 0) * maxScrollNow;
+                        }
+                        contentEl.scrollTop = Math.max(0, Math.min(target, maxScrollNow));
                         // 阅读模式下不设置光标，避免默认选中
                         if (isEditMode && typeof data.selectionStart === 'number') {
                             try {
@@ -1480,8 +1645,8 @@
                 return preview || '(空行)';
             }
             
-            function getDefaultBookmarkName() {
-                const pos = contentEl.selectionStart;
+            function getDefaultBookmarkName(pos) {
+                if (typeof pos !== 'number') pos = contentEl.selectionStart;
                 const text = contentEl.value.substring(0, pos);
                 const line = (text.match(/\n/g) || []).length + 1;
                 const preview = getPreviewText(pos);
@@ -1494,21 +1659,14 @@
                     return;
                 }
 
-                // 如果是阅读模式，先临时允许选择（虽然只读，但可以点击定位光标）
-                // 阅读模式下也可以添加书签：基于当前滚动位置？或者进入编辑模式？
-                // 更好的方式：阅读模式下添加书签，默认添加到当前屏幕顶部位置
+                // 编辑模式：以光标位置为准
+                // 阅读模式：只读无法放置光标，则以"当前屏幕顶部"对应的字符位置为准（精确测量，非估算）
                 let position, scrollTop;
                 if (isEditMode) {
                     position = contentEl.selectionStart;
                     scrollTop = contentEl.scrollTop;
                 } else {
-                    // 阅读模式下，根据滚动位置计算大致字符位置
-                    const computedStyle = window.getComputedStyle(contentEl);
-                    const lineHeight = parseFloat(computedStyle.lineHeight) || 25.6;
-                    const paddingTop = parseFloat(computedStyle.paddingTop) || 24;
-                    const linesScrolled = Math.floor((contentEl.scrollTop - paddingTop) / lineHeight);
-                    const textBefore = contentEl.value.split('\n').slice(0, Math.max(0, linesScrolled)).join('\n');
-                    position = textBefore.length;
+                    position = findCharAtPixel(contentEl.scrollTop + 4);
                     scrollTop = contentEl.scrollTop;
                 }
 
@@ -1516,7 +1674,7 @@
                     position: position,
                     scrollTop: scrollTop
                 };
-                bookmarkNameInputEl.value = getDefaultBookmarkName();
+                bookmarkNameInputEl.value = getDefaultBookmarkName(position);
                 bookmarkModalEl.classList.add('show');
                 setTimeout(() => {
                     bookmarkNameInputEl.focus();
@@ -1534,7 +1692,7 @@
                 
                 const bm = {
                     id: 'bm_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-                    name: name.trim() || getDefaultBookmarkName(),
+                    name: name.trim() || getDefaultBookmarkName(pendingBookmarkPosition.position),
                     position: pendingBookmarkPosition.position,
                     scrollTop: pendingBookmarkPosition.scrollTop,
                     preview: getPreviewText(pendingBookmarkPosition.position),
@@ -1598,27 +1756,24 @@
             function jumpToBookmark(bm) {
                 if (!contentEl.value) return;
                 
-                // 计算该字符位置对应的像素高度
-                const pos = Math.min(bm.position, contentEl.value.length);
+                const pos = Math.max(0, Math.min(bm.position, contentEl.value.length));
                 
-                // 阅读模式下不需要focus（会唤起键盘），但设置滚动
+                // 编辑模式下同时把光标放到该位置（并聚焦）
                 if (isEditMode) {
                     contentEl.focus();
-                    contentEl.setSelectionRange(pos, pos);
+                    try { contentEl.setSelectionRange(pos, pos); } catch(e) {}
+                    requestAnimationFrame(() => {
+                        scrollToCharPos(pos, 24);
+                        saveCurrentPosition();
+                    });
+                } else {
+                    // 阅读模式下只滚动，不 focus（避免移动端唤起键盘）
+                    scrollToCharPos(pos, 24);
+                    setTimeout(saveCurrentPosition, 450);
                 }
                 
-                const computedStyle = window.getComputedStyle(contentEl);
-                const lineHeight = parseFloat(computedStyle.lineHeight) || 25.6;
-                const paddingTop = parseFloat(computedStyle.paddingTop) || 24;
-                const textBefore = contentEl.value.substring(0, pos);
-                const linesBefore = (textBefore.match(/\n/g) || []).length;
-                const targetScroll = Math.max(0, linesBefore * lineHeight + paddingTop - 80);
-                
-                isRestoringPosition = true;
-                contentEl.scrollTo({ top: targetScroll, behavior: 'smooth' });
                 updateCursorInfo();
-                setTimeout(() => { isRestoringPosition = false; }, 300);
-                saveCurrentPosition();
+                showBookmarkFlash(bm.name);
             }
             
             function setupBookmarkEventListeners() {
@@ -2135,4 +2290,3 @@
     </script>
 </body>
 </html>
-<!--34205746272395614730100808-->
