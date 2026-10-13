@@ -4,2597 +4,866 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文本管理器</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-          crossorigin="anonymous" referrerpolicy="no-referrer">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    <!-- Supabase JS SDK - 双CDN回退，去掉易出错的SRI校验 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js'"></script>
     <style>
-        :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --success: #10b981;
-            --error: #ef4444;
-            --warning: #f59e0b;
-            --background: #f8fafc;
-            --card-bg: #ffffff;
-            --text: #334155;
-            --text-light: #64748b;
-            --border: #e2e8f0;
-            --shadow: rgba(0, 0, 0, 0.05);
-            --sidebar-width: 280px;
-            --bookmark-width: 260px;
-            --read-bg: #f1f5f9;
-            --edit-bg: #ffffff;
-            --editor-scrollbar-width: 0px; /* JS运行时会自动测量并写入 */
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            background-color: var(--background);
-            color: var(--text);
-            overflow: hidden;
-        }
-
-        header {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            padding: 1rem 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            position: relative;
-            z-index: 10;
-        }
-
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        h1 {
-            font-size: 1.6rem;
-            font-weight: 600;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-            padding: 6px 12px;
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background-color: var(--success);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        .container {
-            display: flex;
-            flex: 1;
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
-            height: calc(100% - 70px);
-            overflow: hidden;
-            position: relative;
-        }
-
-        .sidebar {
-            width: var(--sidebar-width);
-            background-color: var(--card-bg);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: width 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
-            flex-shrink: 0;
-            position: relative;
-            z-index: 20;
-        }
-
-        /* 侧边栏收起状态：宽度归 0，内容隐藏 */
-        .sidebar.collapsed {
-            width: 0;
-            border-right-color: transparent;
-            overflow: hidden;
-        }
-        .sidebar.collapsed > * {
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.15s ease;
-        }
-
-        .sidebar-header {
-            padding: 1.25rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .sidebar-header h2 {
-            font-size: 1.25rem;
-            color: var(--text-light);
-            font-weight: 500;
-        }
-
-        .add-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .add-btn:hover {
-            background-color: var(--primary-dark);
-            transform: rotate(90deg);
-        }
-
-        .search-container {
-            padding: 0.5rem 1.25rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .search-box {
-            position: relative;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 0.6rem 2rem 0.6rem 0.8rem;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-
-        .search-icon {
-            position: absolute;
-            right: 0.8rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-light);
-        }
-
-        .file-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0.75rem;
-        }
-
-        .file-item {
-            padding: 0.75rem;
-            border-radius: 8px;
-            margin-bottom: 0.4rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-left: 3px solid transparent;
-        }
-
-        .file-item:hover {
-            background-color: #f1f5f9;
-        }
-
-        .file-item.active {
-            background-color: #eef2ff;
-            border-left-color: var(--primary);
-        }
-
-        .file-name-container {
-            display: flex;
-            align-items: center;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .file-name {
-            font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            flex: 1;
-            padding-right: 10px;
-        }
-
-        .file-name-input {
-            flex: 1;
-            padding: 0.3rem 0.5rem;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            font-size: 0.95rem;
-            background: white;
-            color: var(--text);
-            outline: none;
-        }
-
-        .file-name-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-        }
-
-        .file-actions {
-            display: flex;
-            gap: 5px;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-
-        .file-item:hover .file-actions {
-            opacity: 1;
-        }
-
-        .action-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-light);
-            transition: all 0.2s ease;
-        }
-
-        .action-btn:hover {
-            background-color: #f1f5f9;
-            color: var(--primary);
-        }
-
-        .delete-btn:hover {
-            color: var(--error);
-            background-color: #fee2e2;
-        }
-
-        .edit-btn:hover {
-            color: var(--primary-dark);
-            background-color: #e0e7ff;
-        }
-
-        .content-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            position: relative;
-            min-width: 0;
-        }
-
-        .content-header {
-            padding: 1rem 1.5rem;
-            padding-left: 52px; /* 为左侧的折叠按钮让出位置 */
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--card-bg);
-            position: relative;
-            z-index: 10;
-            flex-shrink: 0;
-        }
-
-        .content-header h2 {
-            font-size: 1.3rem;
-            color: var(--text);
-            font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 70%;
-        }
-
-        .mode-indicator {
-            font-size: 0.8rem;
-            padding: 0.2rem 0.6rem;
-            border-radius: 12px;
-            margin-left: 10px;
-            font-weight: 500;
-            vertical-align: middle;
-        }
-
-        .mode-indicator.read-mode {
-            background-color: #e2e8f0;
-            color: #64748b;
-        }
-
-        .mode-indicator.edit-mode {
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .icon-btn {
-            background: none;
-            border: none;
-            color: var(--text-light);
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 0.5rem 0.7rem;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .icon-btn:hover {
-            background-color: #f1f5f9;
-            color: var(--primary);
-        }
-
-        .icon-btn.active {
-            background-color: #eef2ff;
-            color: var(--primary);
-        }
-
-        .icon-btn .badge {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: var(--error);
-            color: white;
-            font-size: 0.65rem;
-            min-width: 16px;
-            height: 16px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 3px;
-        }
-
-        .icon-btn-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-
-        /* 编辑按钮 */
-        .edit-mode-btn {
-            background-color: var(--success);
-            color: white;
-            border: none;
-            padding: 0.5rem 1.1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-        }
-
-        .edit-mode-btn:hover {
-            background-color: #059669;
-            transform: translateY(-2px);
-        }
-
-        .edit-mode-btn.editing {
-            background-color: var(--warning);
-        }
-
-        .edit-mode-btn.editing:hover {
-            background-color: #d97706;
-        }
-
-        .edit-mode-btn:disabled {
-            background-color: #cbd5e1;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .save-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 0.5rem 1.2rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-        }
-
-        .save-btn:hover {
-            background-color: var(--primary-dark);
-            transform: translateY(-2px);
-        }
-
-        .save-btn:disabled {
-            background-color: #cbd5e1;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .editor-container {
-            flex: 1;
-            display: flex;
-            padding: 0;
-            overflow: hidden;
-            position: relative;
-            background-color: var(--read-bg);
-        }
-
-        /* 编辑器视口：侧边栏收起/展开时，保持 textarea 的逻辑排版宽度不变，
-           只通过 transform: scale() 等比放大/缩小，从而保证"每行显示哪些文字"完全不变——
-           不会因宽度变化重新折行，书签定位也不会因侧栏开关而错乱 */
-        .editor-viewport {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: stretch;
-            min-width: 0;
-            min-height: 0;
-        }
-
-        .editor-scaler {
-            position: absolute;
-            top: 0;
-            left: 0;
-            transform-origin: top left;
-            will-change: transform;
-            display: flex;
-            flex-direction: column;
-            /* width/height 由 JS 动态设置。
-               注意：这里【不能】给 transform 加 transition。
-               侧边栏收起/展开本身是 0.3s 的宽度过渡动画，视口宽度在这 0.3s 内逐帧变化；
-               若 transform 再叠加一个 0.3s 过渡，缩放比就会"追不上"视口宽度，
-               动画结束时仍停留在中途的值 → 文字右侧露出一片空白（或反向溢出）。
-               因此缩放必须逐帧跟随视口宽度（由 ResizeObserver 驱动），保持无过渡。 */
-        }
-
-        .text-editor {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            background-color: var(--card-bg);
-            min-width: 0;
-            min-height: 0;
-            transition: background-color 0.3s ease;
-        }
-
-        /* 阅读模式样式 */
-        .text-editor.read-mode {
-            background-color: var(--read-bg);
-        }
-
-        .text-editor.edit-mode {
-            background-color: var(--edit-bg);
-            box-shadow: inset 0 0 0 2px var(--warning);
-        }
-
-        .text-editor textarea {
-            flex: 1;
-            padding: 1.5rem;
-            border: none;
-            font-size: 1rem;
-            line-height: 1.7;
-            resize: none;
-            background: transparent;
-            color: var(--text);
-            font-family: 'Consolas', 'Monaco', 'Courier New', 'Microsoft YaHei', monospace;
-            tab-size: 4;
-            transition: background-color 0.3s ease;
-            /* 禁止 transform 下文本模糊的提示（浏览器原生已处理） */
-        }
-
-        .text-editor.read-mode textarea {
-            cursor: default;
-            background-color: var(--read-bg);
-            opacity: 0.85;
-        }
-
-        .text-editor.edit-mode textarea {
-            cursor: text;
-            background-color: white;
-        }
-
-        .text-editor textarea:focus {
-            outline: none;
-        }
-
-        .editor-footer {
-            padding: 0.8rem 1.5rem;
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--card-bg);
-            flex-shrink: 0;
-        }
-
-        /* 阅读模式遮罩提示 */
-        .read-mode-tip {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: var(--text-light);
-            text-align: center;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 5;
-        }
-
-        .text-editor.read-mode .read-mode-tip.show {
-            opacity: 0.6;
-        }
-
-        .read-mode-tip i {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-            color: #94a3b8;
-        }
-
-        .read-mode-tip p {
-            font-size: 0.95rem;
-        }
-
-        .char-count {
-            color: var(--text-light);
-            font-size: 0.9rem;
-        }
-
-        .cursor-info {
-            color: var(--text-light);
-            font-size: 0.9rem;
-        }
-
-        /* 书签面板样式：悬浮层，打开/关闭时不改变正文宽度，避免文本重新换行导致书签错位 */
-        .bookmark-panel {
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: var(--bookmark-width);
-            max-width: 85%;
-            background-color: var(--card-bg);
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transform: translateX(101%);
-            transition: transform 0.28s ease, box-shadow 0.28s ease;
-            z-index: 50; /* 高于 editor-scaler，避免被缩放层遮挡 */
-            box-shadow: none;
-            will-change: transform;
-        }
-
-        .bookmark-panel.open {
-            transform: translateX(0);
-            box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
-        }
-
-        /* 书签跳转后的定位提示条 */
-        .bookmark-flash {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-6px);
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #fff;
-            padding: 0.35rem 0.85rem;
-            border-radius: 999px;
-            font-size: 0.82rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            box-shadow: 0 6px 18px rgba(217, 119, 6, 0.35);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s ease, transform 0.25s ease;
-            z-index: 40;
-            max-width: 70%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .bookmark-flash.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .bookmark-header {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
-        }
-
-        .bookmark-header h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #92400e;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .bookmark-header-actions {
-            display: flex;
-            gap: 5px;
-        }
-
-        .bookmark-header button {
-            background: rgba(255,255,255,0.6);
-            border: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            cursor: pointer;
-            color: #92400e;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .bookmark-header button:hover {
-            background: white;
-        }
-
-        .add-bookmark-btn {
-            padding: 0.75rem 1rem;
-            margin: 0.75rem;
-            background: linear-gradient(135deg, var(--warning), #d97706);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
-        }
-
-        .add-bookmark-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-        }
-
-        .add-bookmark-btn:disabled {
-            background: #cbd5e1;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .bookmark-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0.5rem 0.75rem;
-        }
-
-        .bookmark-item {
-            padding: 0.75rem;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background-color: #fffbeb;
-            border-left: 3px solid var(--warning);
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .bookmark-item:hover {
-            background-color: #fef3c7;
-            transform: translateX(-2px);
-        }
-
-        .bookmark-item-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .bookmark-name {
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: #78350f;
-            flex: 1;
-            word-break: break-word;
-            padding-right: 8px;
-            cursor: pointer;
-        }
-
-        .bookmark-name-input {
-            flex: 1;
-            padding: 0.2rem 0.4rem;
-            border: 1px solid var(--warning);
-            border-radius: 4px;
-            font-size: 0.9rem;
-            background: white;
-            color: var(--text);
-            outline: none;
-            margin-right: 8px;
-        }
-
-        .bookmark-actions {
-            display: flex;
-            gap: 2px;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .bookmark-item:hover .bookmark-actions {
-            opacity: 1;
-        }
-
-        .bookmark-action-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 3px 5px;
-            border-radius: 4px;
-            color: #92400e;
-            font-size: 0.8rem;
-            transition: all 0.2s;
-        }
-
-        .bookmark-action-btn:hover {
-            background: white;
-        }
-
-        .bookmark-action-btn.delete:hover {
-            color: var(--error);
-        }
-
-        .bookmark-preview {
-            font-size: 0.78rem;
-            color: var(--text-light);
-            font-style: italic;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-        }
-
-        .bookmark-meta {
-            font-size: 0.72rem;
-            color: #b45309;
-        }
-
-        .bookmark-empty {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem 1rem;
-            color: var(--text-light);
-            text-align: center;
-            gap: 8px;
-        }
-
-        .bookmark-empty i {
-            font-size: 2rem;
-            color: #fcd34d;
-        }
-
-        .bookmark-empty p {
-            font-size: 0.85rem;
-            line-height: 1.4;
-        }
-
-        /* 书签命名弹窗 */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s;
-        }
-
-        .modal-overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-            transform: translateY(20px);
-            transition: transform 0.2s;
-        }
-
-        .modal-overlay.show .modal {
-            transform: translateY(0);
-        }
-
-        .modal h3 {
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .modal input {
-            width: 100%;
-            padding: 0.7rem 0.9rem;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.95rem;
-            margin-bottom: 1rem;
-            transition: all 0.2s;
-        }
-
-        .modal input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        .modal-btn {
-            padding: 0.5rem 1.2rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 0.9rem;
-            border: none;
-            transition: all 0.2s;
-        }
-
-        .modal-btn.cancel {
-            background: #f1f5f9;
-            color: var(--text);
-        }
-
-        .modal-btn.cancel:hover {
-            background: #e2e8f0;
-        }
-
-        .modal-btn.confirm {
-            background: var(--primary);
-            color: white;
-        }
-
-        .modal-btn.confirm:hover {
-            background: var(--primary-dark);
-        }
-
-        /* 左侧边缘的侧边栏折叠按钮 */
-        .toggle-sidebar {
-            position: absolute;
-            left: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: var(--card-bg);
-            border: 1px solid var(--border);
-            color: var(--primary);
-            cursor: pointer;
-            font-size: 0.95rem;
-            width: 32px;
-            height: 40px;
-            border-radius: 0 8px 8px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            z-index: 15;
-            box-shadow: 2px 0 6px rgba(0, 0, 0, 0.06);
-        }
-
-        .toggle-sidebar:hover {
-            background-color: #eef2ff;
-            color: var(--primary-dark);
-            width: 36px;
-        }
-
-        /* 侧边栏收起时，按钮贴在最左并显示"展开"图标 */
-        .sidebar.collapsed ~ .content-area .toggle-sidebar i {
-            transform: rotate(180deg);
-        }
-        .toggle-sidebar i {
-            transition: transform 0.3s ease;
-        }
-
-        .notification {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            color: white;
-            font-weight: 500;
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.5s ease;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            max-width: 400px;
-        }
-
-        .notification.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        .notification.success {
-            background-color: var(--success);
-        }
-
-        .notification.error {
-            background-color: var(--error);
-        }
-
-        .notification.warning {
-            background-color: var(--warning);
-        }
-
-        .loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 3rem;
-            color: var(--text-light);
-        }
-
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-radius: 50%;
-            border-top: 4px solid var(--primary);
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 3rem;
-            color: var(--text-light);
-            text-align: center;
-            height: 100%;
-        }
-
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            color: #cbd5e1;
-        }
-
-        .empty-state h3 {
-            font-size: 1.4rem;
-            margin-bottom: 0.5rem;
-            color: var(--text);
-        }
-
-        .empty-state p {
-            max-width: 350px;
-            line-height: 1.5;
-        }
-
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.4rem;
-            cursor: pointer;
-            padding: 0.5rem;
-            margin-right: 1rem;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { height: 100vh; display: flex; background: #f0f2f5; overflow: hidden; }
+        /* 侧边栏 */
+        .sidebar { width: 280px; background: #fff; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; transition: width 0.3s ease; position: relative; z-index: 10; }
+        .sidebar.collapsed { width: 0; overflow: hidden; border-right: none; }
+        .sidebar-header { padding: 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-header h2 { font-size: 18px; color: #1f2937; }
+        .new-file-btn { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+        .new-file-btn:hover { background: #2563eb; }
+        .file-list { flex: 1; overflow-y: auto; padding: 8px; }
+        .file-item { padding: 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; transition: background 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .file-item:hover { background: #f3f4f6; }
+        .file-item.active { background: #eff6ff; border-left: 3px solid #3b82f6; }
+        .file-item-name { font-size: 14px; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-item-actions { display: none; gap: 8px; }
+        .file-item:hover .file-item-actions { display: flex; }
+        .file-item-actions button { background: none; border: none; cursor: pointer; color: #6b7280; padding: 2px 4px; border-radius: 4px; }
+        .file-item-actions button:hover { color: #ef4444; background: #fee2e2; }
+        /* 折叠按钮 - 移到左侧 */
+        .toggle-sidebar { position: absolute; left: 280px; top: 50%; transform: translateY(-50%); width: 24px; height: 60px; background: #fff; border: 1px solid #e5e7eb; border-left: none; border-radius: 0 8px 8px 0; cursor: pointer; z-index: 100; display: flex; align-items: center; justify-content: center; color: #6b7280; transition: left 0.3s ease; box-shadow: 2px 0 4px rgba(0,0,0,0.05); }
+        .toggle-sidebar:hover { background: #f9fafb; color: #3b82f6; }
+        .sidebar.collapsed + .toggle-sidebar { left: 0; }
+        .toggle-sidebar i { transition: transform 0.3s ease; }
+        .sidebar.collapsed + .toggle-sidebar i { transform: rotate(180deg); }
+        /* 主编辑区 */
+        .main { flex: 1; display: flex; flex-direction: column; position: relative; }
+        .toolbar { padding: 12px 20px; background: #fff; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; position: relative; }
+        .toolbar-left { display: flex; align-items: center; gap: 12px; margin-left: 30px; transition: margin-left 0.3s ease; }
+        .sidebar.collapsed ~ .main .toolbar-left { margin-left: 0; }
+        .filename { font-size: 16px; font-weight: 500; color: #1f2937; border: none; outline: none; background: transparent; padding: 4px 8px; border-radius: 4px; width: 200px; }
+        .filename:focus { background: #f3f4f6; }
+        .mode-badge { padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .mode-badge.read { background: #e5e7eb; color: #4b5563; }
+        .mode-badge.edit { background: #fef3c7; color: #d97706; }
+        .toolbar-right { display: flex; gap: 8px; align-items: center; }
+        .toolbar-btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .save-btn { background: #10b981; color: white; }
+        .save-btn:hover:not(:disabled) { background: #059669; }
+        .save-btn:disabled { background: #9ca3af; cursor: not-allowed; opacity: 0.6; }
+        .edit-btn { background: #3b82f6; color: white; }
+        .edit-btn.editing { background: #f59e0b; }
+        .edit-btn:hover { opacity: 0.9; }
+        .bookmark-toggle { background: #8b5cf6; color: white; position: relative; }
+        .bookmark-toggle:hover { background: #7c3aed; }
+        .bookmark-badge { position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        /* 编辑器容器 */
+        .editor-container { flex: 1; padding: 20px 30px; position: relative; overflow: hidden; transition: padding 0.3s ease; margin-left: 30px; }
+        .sidebar.collapsed ~ .main .editor-container { margin-left: 0; padding: 20px 40px; }
+        .editor-wrapper { width: 800px; height: 100%; margin: 0 auto; position: relative; transform-origin: top left; transition: transform 0s linear; }
+        #editor { width: 100%; height: 100%; border: none; outline: none; resize: none; padding: 24px; background: #fff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); font-size: 16px; line-height: 1.8; font-family: "SF Mono", Consolas, Monaco, monospace; transition: all 0.2s; }
+        #editor.readonly { background: #f9fafb; cursor: default; }
+        #editor.editing { background: #fff; border: 2px solid #fbbf24; box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.1); }
+        .readonly-hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 14px; pointer-events: none; display: none; }
+        #editor.readonly + .readonly-hint { display: block; }
+        /* 书签面板 - 悬浮模式，不挤压正文 */
+        .bookmark-panel { position: absolute; right: -320px; top: 0; width: 300px; height: calc(100% - 57px); background: #fff; box-shadow: -4px 0 16px rgba(0,0,0,0.1); z-index: 50; transition: right 0.3s ease; display: flex; flex-direction: column; }
+        .bookmark-panel.open { right: 0; }
+        .bookmark-header { padding: 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+        .bookmark-header h3 { font-size: 16px; color: #1f2937; }
+        .add-bookmark-btn { background: #8b5cf6; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+        .add-bookmark-btn:hover { background: #7c3aed; }
+        .bookmark-list { flex: 1; overflow-y: auto; padding: 8px; }
+        .bookmark-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 6px; background: #f9fafb; transition: all 0.2s; position: relative; }
+        .bookmark-item:hover { background: #f3e8ff; }
+        .bookmark-item-name { font-size: 13px; color: #374151; font-weight: 500; margin-bottom: 2px; }
+        .bookmark-item-preview { font-size: 11px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .bookmark-item-actions { position: absolute; top: 8px; right: 8px; display: none; gap: 4px; }
+        .bookmark-item:hover .bookmark-item-actions { display: flex; }
+        .bookmark-item-actions button { background: none; border: none; cursor: pointer; color: #9ca3af; padding: 2px; border-radius: 4px; }
+        .bookmark-item-actions button:hover { color: #ef4444; }
+        .empty-bookmarks { text-align: center; padding: 40px 20px; color: #9ca3af; font-size: 13px; }
+        /* 状态栏 */
+        .statusbar { padding: 8px 20px; background: #fff; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; display: flex; justify-content: space-between; align-items: center; margin-left: 30px; transition: margin-left 0.3s ease; }
+        .sidebar.collapsed ~ .main .statusbar { margin-left: 0; }
+        .sync-status { display: flex; align-items: center; gap: 6px; }
+        .sync-status.online { color: #10b981; }
+        .sync-status.offline { color: #f59e0b; }
+        /* 跳转提示 */
+        .jump-toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .jump-toast.show { opacity: 1; }
+        /* 通知 */
+        .notification { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; font-size: 14px; z-index: 1000; transform: translateY(100px); opacity: 0; transition: all 0.3s; display: flex; align-items: center; gap: 8px; }
+        .notification.show { transform: translateY(0); opacity: 1; }
+        .notification.success { background: #10b981; }
+        .notification.error { background: #ef4444; }
+        .notification.info { background: #3b82f6; }
+        /* 移动端 */
+        .mobile-menu-btn { display: none; background: none; border: none; font-size: 20px; color: #374151; cursor: pointer; }
         @media (max-width: 768px) {
-            .sidebar {
-                position: absolute;
-                height: 100%;
-                z-index: 25;
-                box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
-            }
-
-            .sidebar.collapsed {
-                width: 0;
-            }
-
-            .mobile-menu-btn {
-                display: block;
-            }
-
-            .toggle-sidebar {
-                display: none; /* 移动端使用顶栏汉堡菜单 */
-            }
-
-            .content-header {
-                padding-left: 1.5rem;
-            }
-
-            .bookmark-panel {
-                width: min(var(--bookmark-width), 82vw);
-            }
-
-            .header-actions {
-                gap: 6px;
-            }
-
-            .edit-mode-btn, .save-btn {
-                padding: 0.4rem 0.8rem;
-                font-size: 0.85rem;
-            }
+            .sidebar { position: absolute; left: 0; top: 0; height: 100vh; z-index: 200; transform: translateX(-100%); transition: transform 0.3s ease; }
+            .sidebar.open { transform: translateX(0); }
+            .toggle-sidebar { display: none; }
+            .mobile-menu-btn { display: block; }
+            .editor-wrapper { width: calc(100vw - 40px); }
+            .bookmark-panel { width: 80vw; right: -80vw; }
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-content">
-            <div class="mobile-menu-btn" id="mobile-menu-btn">
-                <i class="fas fa-bars"></i>
-            </div>
-            <div class="logo">
-                <i class="fas fa-book-open"></i>
-                <h1>文本管理器</h1>
-            </div>
-            <div class="status-indicator">
-                <div class="status-dot"></div>
-                <span id="connection-status">正在连接数据库...</span>
-            </div>
+    <!-- 侧边栏 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>我的笔记</h2>
+            <button class="new-file-btn" onclick="createNewFile()">
+                <i class="fas fa-plus"></i> 新建
+            </button>
         </div>
-    </header>
+        <div class="file-list" id="fileList"></div>
+    </div>
 
-    <div class="container">
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h2>我的文本</h2>
-                <button class="add-btn" id="add-file-btn" title="新建文本">
-                    <i class="fas fa-plus"></i>
+    <!-- 折叠按钮 -->
+    <button class="toggle-sidebar" onclick="toggleSidebar()">
+        <i class="fas fa-chevron-left"></i>
+    </button>
+
+    <!-- 主区域 -->
+    <div class="main">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <input type="text" class="filename" id="filename" value="未命名笔记" readonly>
+                <span class="mode-badge read" id="modeBadge">阅读模式</span>
+            </div>
+            <div class="toolbar-right">
+                <button class="toolbar-btn bookmark-toggle" onclick="toggleBookmarkPanel()">
+                    <i class="fas fa-bookmark"></i>
+                    <span class="bookmark-badge" id="bookmarkBadge">0</span>
+                </button>
+                <button class="toolbar-btn edit-btn" id="editBtn" onclick="toggleEditMode()">
+                    <i class="fas fa-pen"></i> 编辑
+                </button>
+                <button class="toolbar-btn save-btn" id="saveBtn" onclick="saveFile()" disabled>
+                    <i class="fas fa-save"></i> 保存
                 </button>
             </div>
-            <div class="search-container">
-                <div class="search-box">
-                    <input type="text" id="search-input" placeholder="搜索文件...">
-                    <div class="search-icon">
-                        <i class="fas fa-search"></i>
-                    </div>
-                </div>
+        </div>
+
+        <div class="editor-container" id="editorContainer">
+            <div class="editor-wrapper" id="editorWrapper">
+                <textarea id="editor" class="readonly" placeholder="在这里开始写作..." readonly></textarea>
+                <div class="readonly-hint">阅读模式 — 点击「编辑」按钮开始修改</div>
             </div>
-            <div class="file-list" id="file-list">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>正在加载文件列表...</p>
+            <div class="jump-toast" id="jumpToast"></div>
+            
+            <!-- 书签面板 -->
+            <div class="bookmark-panel" id="bookmarkPanel">
+                <div class="bookmark-header">
+                    <h3><i class="fas fa-bookmark"></i> 书签</h3>
+                    <button class="add-bookmark-btn" onclick="addBookmarkAtCursor()">
+                        <i class="fas fa-plus"></i> 当前位置
+                    </button>
+                </div>
+                <div class="bookmark-list" id="bookmarkList">
+                    <div class="empty-bookmarks">暂无书签<br>按 Ctrl+B 快速添加</div>
                 </div>
             </div>
         </div>
 
-        <div class="content-area">
-            <div class="content-header">
-                <button class="toggle-sidebar" id="toggle-sidebar" title="收起/展开文件列表">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <h2 id="current-filename">选择或创建新文本</h2>
-                <div class="header-actions">
-                    <div class="icon-btn-wrapper">
-                        <button class="icon-btn" id="bookmark-toggle" title="书签面板 (Ctrl+B)">
-                            <i class="fas fa-bookmark"></i>
-                            <span class="badge" id="bookmark-count" style="display:none">0</span>
-                        </button>
-                    </div>
-                    <button class="edit-mode-btn" id="edit-mode-btn" disabled title="点击进入编辑模式">
-                        <i class="fas fa-pen"></i>
-                        <span>编辑</span>
-                    </button>
-                    <button class="save-btn" id="save-btn" disabled>
-                        <i class="fas fa-save"></i>
-                        <span>保存</span>
-                    </button>
-                </div>
-            </div>
-            <div class="editor-container">
-                <div class="editor-viewport" id="editor-viewport">
-                    <div class="editor-scaler" id="editor-scaler">
-                        <div class="text-editor" id="text-editor">
-                            <div class="read-mode-tip" id="read-mode-tip">
-                                <i class="fas fa-eye"></i>
-                                <p>阅读模式 — 点击「编辑」按钮开始修改</p>
-                            </div>
-                            <textarea id="content" placeholder="从左侧选择文件或创建新文件以开始...&#10;&#10;提示：&#10;• 默认进入阅读模式，防止误修改&#10;• 点击右上角「编辑」按钮后才能修改内容&#10;• 关闭再打开会自动回到上次阅读位置&#10;• 点击书签图标或按 Ctrl+B 添加/管理书签&#10;• 点击左侧边缘的箭头按钮收起/展开文件列表，文字会自动放大/缩小且不会重排" readonly></textarea>
-                            <div class="editor-footer">
-                                <div class="char-count">
-                                    字符数: <span id="char-count">0</span>
-                                </div>
-                                <div class="cursor-info" id="cursor-info">
-                                    行 1, 列 1
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- 书签面板 -->
-                <div class="bookmark-panel" id="bookmark-panel">
-                    <div class="bookmark-header">
-                        <h3><i class="fas fa-bookmark"></i> 书签</h3>
-                        <div class="bookmark-header-actions">
-                            <button id="close-bookmark" title="关闭">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <button class="add-bookmark-btn" id="add-bookmark-btn" disabled>
-                        <i class="fas fa-plus"></i> 在当前位置添加书签
-                    </button>
-                    <div class="bookmark-list" id="bookmark-list">
-                        <div class="bookmark-empty">
-                            <i class="fas fa-bookmark"></i>
-                            <p>请先选择一个文件<br>再使用书签功能</p>
-                        </div>
-                    </div>
-                </div>
+        <div class="statusbar">
+            <div id="positionInfo">行 1, 列 1</div>
+            <div class="sync-status offline" id="syncStatus">
+                <i class="fas fa-database"></i> <span id="syncText">本地模式</span>
             </div>
         </div>
     </div>
 
     <div class="notification" id="notification"></div>
 
-    <!-- 书签命名弹窗 -->
-    <div class="modal-overlay" id="bookmark-modal">
-        <div class="modal">
-            <h3><i class="fas fa-bookmark" style="color:var(--warning)"></i> 添加书签</h3>
-            <input type="text" id="bookmark-name-input" placeholder="输入书签名称（可选）" maxlength="50">
-            <div class="modal-buttons">
-                <button class="modal-btn cancel" id="bookmark-cancel">取消</button>
-                <button class="modal-btn confirm" id="bookmark-confirm">添加</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Supabase客户端库 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"
-            integrity="sha384-YieCqqg9gQufX7+5HcFvCEg/n3KUEdl8/Jb+A6J0npf1mB740VayvwKjTrtCeUoy"
-            crossorigin="anonymous"></script>
-    
-    <!-- 数据库配置信息 -->
     <script>
-        // 数据库配置信息
+        // ==================== 全局状态 ====================
         const SUPABASE_URL = 'https://ubsdjmcnonsormczvtuq.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NDA0ODQsImV4cCI6MjA3ODQxNjQ4NH0.ZGD7FkjFdKitHThi22ieZcRipPVgysdTkvowP-UNjAI';
-    </script>
-        <!-- 主应用逻辑 -->
-    <script>
-        (function() {
-            let supabase;
-            let currentFileId = null;
-            let files = [];
-            let editingFileId = null;
-            let bookmarks = {}; // { fileId: [{ id, name, position, scrollTop, preview, createdAt }] }
-            let bookmarksLoaded = false;  // 是否已从云端拉取完书签
-            let bookmarkSyncTimer = null; // 防抖同步定时器
-            let pendingBookmarkPosition = null;
-            let isRestoringPosition = false;
-            let isEditMode = false; // 当前是否为编辑模式
-            let measureMirrorEl = null;   // 用于测量文本真实排版（含自动换行）的隐藏镜像元素
-            let measureTextEl = null;
-            let measureMarkerEl = null;
-            let bookmarkFlashEl = null;   // 书签跳转提示条
-            
-            // DOM元素
-            const connectionStatusEl = document.getElementById('connection-status');
-            const statusDotEl = document.querySelector('.status-dot');
-            const fileListEl = document.getElementById('file-list');
-            const currentFilenameEl = document.getElementById('current-filename');
-            const contentEl = document.getElementById('content');
-            const charCountEl = document.getElementById('char-count');
-            const cursorInfoEl = document.getElementById('cursor-info');
-            const saveBtnEl = document.getElementById('save-btn');
-            const editModeBtnEl = document.getElementById('edit-mode-btn');
-            const textEditorEl = document.getElementById('text-editor');
-            const readModeTipEl = document.getElementById('read-mode-tip');
-            const addFileBtnEl = document.getElementById('add-file-btn');
-            const notificationEl = document.getElementById('notification');
-            const searchInputEl = document.getElementById('search-input');
-            const sidebarEl = document.getElementById('sidebar');
-            const toggleSidebarEl = document.getElementById('toggle-sidebar');
-            const mobileMenuBtnEl = document.getElementById('mobile-menu-btn');
-            const editorViewportEl = document.getElementById('editor-viewport');
-            const editorScalerEl = document.getElementById('editor-scaler');
-            
-            // 默认展开侧边栏
-            let sidebarCollapsed = false;
-            // 基准排版宽度：textarea 永远按这个宽度排版，它决定"一行显示几个字"。
-            // 缩放比 = 视口宽度 / 基准排版宽度，而 scaler 的布局宽度恰好等于基准排版宽度，
-            // 于是缩放后的视觉宽度 = 视口宽度 → 文字正好铺满编辑器框，右侧不留空白。
-            // 桌面端固定 800px（切换侧边栏时基准不变，所以折行点永不改变）；
-            // 窄屏（手机/平板竖屏）基准取屏幕宽度，否则 800px 基准会把字号压得看不清。
-            const DESKTOP_BASE_WIDTH = 800;
-            function getBaseEditorWidth() {
-                if (window.innerWidth > 768) return DESKTOP_BASE_WIDTH;
-                return Math.max(360, Math.min(720, window.innerWidth));
-            }
-            // 侧边栏展开时的基准字号
-            const BASE_FONT_SIZE = 16;
-            // 侧边栏宽度过渡动画结束后校正缩放的定时器
-            let sidebarScaleTimer = null;
-            
-            // 书签相关元素
-            const bookmarkPanelEl = document.getElementById('bookmark-panel');
-            const bookmarkToggleEl = document.getElementById('bookmark-toggle');
-            const bookmarkCountEl = document.getElementById('bookmark-count');
-            const addBookmarkBtnEl = document.getElementById('add-bookmark-btn');
-            const bookmarkListEl = document.getElementById('bookmark-list');
-            const closeBookmarkEl = document.getElementById('close-bookmark');
-            const bookmarkModalEl = document.getElementById('bookmark-modal');
-            const bookmarkNameInputEl = document.getElementById('bookmark-name-input');
-            const bookmarkConfirmEl = document.getElementById('bookmark-confirm');
-            const bookmarkCancelEl = document.getElementById('bookmark-cancel');
-            
-            document.addEventListener('DOMContentLoaded', initApp);
-            
-            async function initApp() {
-                loadBookmarksFromStorage();
-                
-                if (!SUPABASE_URL || !SUPABASE_ANON_KEY || 
-                    SUPABASE_URL === 'https://your-project.supabase.co' || 
-                    SUPABASE_ANON_KEY === 'your-anon-key') {
-                    showNotification('请先配置Supabase连接信息', 'error');
-                    connectionStatusEl.textContent = '配置错误';
-                    statusDotEl.style.backgroundColor = 'var(--error)';
-                    return;
-                }
-                
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NjgwMDAsImV4cCI6MjA3ODQ0NDAwMH0.Cp03e89qS9k2X7z5R8t4Y6u3I1o0P7a2S9d4F6g8H0j2K5l8M3n7B1v9C4x6Z2a3s5D7f9G';
+        
+        let supabase = null;
+        let isCloudAvailable = false;
+        let currentFileId = null;
+        let isEditMode = false;
+        let files = [];
+        let currentBookmarks = [];
+        let sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        
+        // ==================== 初始化 ====================
+        async function init() {
+            // 1. 先检查Supabase是否加载成功
+            if (window.supabase && window.supabase.createClient) {
                 try {
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                    const { data, error } = await supabase.from('text_files').select('id').limit(1);
-                    if (error) throw error;
-                    
-                    connectionStatusEl.textContent = '已连接到数据库';
-                    statusDotEl.style.backgroundColor = 'var(--success)';
-                    
-                    await loadFiles();
-                    // 从云端拉取书签（会把本地旧缓存覆盖成最新云端数据，之后触发本地→云端的首次迁移）
-                    await loadBookmarksFromCloud();
-                    await migrateLocalBookmarksToCloud();
-                    setupEventListeners();
-                    setupBookmarkEventListeners();
-                    
-                    contentEl.addEventListener('input', () => {
-                        if (!isEditMode) return;
-                        updateCharCount();
-                        updateCursorInfo();
-                        saveCurrentPosition();
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                        auth: { persistSession: false }
                     });
-                    contentEl.addEventListener('keyup', () => {
-                        updateCursorInfo();
-                        saveCurrentPosition();
-                    });
-                    contentEl.addEventListener('click', () => {
-                        updateCursorInfo();
-                        saveCurrentPosition();
-                    });
-                    contentEl.addEventListener('scroll', () => {
-                        if (!isRestoringPosition) {
-                            saveCurrentPosition();
-                        }
-                    });
-
-                    // 阅读模式下尝试点击编辑按钮的提示
-                    contentEl.addEventListener('click', (e) => {
-                        if (!isEditMode && currentFileId) {
-                            // 点击区域闪烁提示
-                            showNotification('当前为阅读模式，请点击右上角「编辑」按钮修改', 'warning');
-                        }
-                    });
-
-                    // 初始化为阅读模式
-                    setReadMode();
-                } catch (error) {
-                    console.error('数据库连接失败:', error);
-                    connectionStatusEl.textContent = '数据库连接失败';
-                    statusDotEl.style.backgroundColor = 'var(--error)';
-                    showNotification('数据库连接失败: ' + error.message, 'error');
-                }
-            }
-
-            // ========== 阅读/编辑模式切换 ==========
-            
-            function setReadMode() {
-                isEditMode = false;
-                contentEl.readOnly = true;
-                textEditorEl.classList.remove('edit-mode');
-                textEditorEl.classList.add('read-mode');
-                editModeBtnEl.classList.remove('editing');
-                editModeBtnEl.innerHTML = '<i class="fas fa-pen"></i> <span>编辑</span>';
-                editModeBtnEl.title = '点击进入编辑模式';
-                saveBtnEl.disabled = true;
-                
-                // 更新文件名旁的模式标记
-                updateModeIndicator('read');
-                
-                // 空内容时显示提示
-                if (currentFileId && (!contentEl.value || contentEl.value.trim() === '')) {
-                    readModeTipEl.classList.add('show');
-                } else {
-                    readModeTipEl.classList.remove('show');
-                }
-            }
-            
-            function setEditMode() {
-                if (!currentFileId) {
-                    showNotification('请先选择或创建一个文件', 'warning');
-                    return;
-                }
-                isEditMode = true;
-                contentEl.readOnly = false;
-                textEditorEl.classList.remove('read-mode');
-                textEditorEl.classList.add('edit-mode');
-                editModeBtnEl.classList.add('editing');
-                editModeBtnEl.innerHTML = '<i class="fas fa-check"></i> <span>完成</span>';
-                editModeBtnEl.title = '点击退出编辑模式';
-                saveBtnEl.disabled = false;
-                readModeTipEl.classList.remove('show');
-                
-                // 更新文件名旁的模式标记
-                updateModeIndicator('edit');
-                
-                // 聚焦到编辑器末尾
-                contentEl.focus();
-                const end = contentEl.value.length;
-                contentEl.setSelectionRange(end, end);
-                updateCursorInfo();
-            }
-
-            function updateModeIndicator(mode) {
-                // 移除旧的标记
-                const oldIndicator = currentFilenameEl.querySelector('.mode-indicator');
-                if (oldIndicator) oldIndicator.remove();
-                
-                // 添加新标记
-                const indicator = document.createElement('span');
-                indicator.className = `mode-indicator ${mode}-mode`;
-                indicator.textContent = mode === 'read' ? '阅读模式' : '编辑模式';
-                currentFilenameEl.appendChild(indicator);
-            }
-            
-            function toggleEditMode() {
-                if (isEditMode) {
-                    // 如果有未保存的修改，提示用户
-                    // 这里简单处理：直接切换，用户可以选择保存
-                    setReadMode();
-                    showNotification('已退出编辑模式，未保存的修改不会丢失，请点击保存', 'info');
-                } else {
-                    setEditMode();
-                    showNotification('已进入编辑模式，可以开始修改', 'success');
-                }
-            }
-            
-            // ========== 文本排版测量（书签 / 位置精确定位的基础） ==========
-            // textarea 中过长的行会自动换行，若只按换行符数量估算行号，跳转就会错位；
-            // 尤其在书签面板开合、窗口尺寸变化时更明显。
-            // 这里用一个与 textarea 字体、字号、行高、内边距、宽度完全一致的隐藏镜像元素，
-            // 测量任意字符位置的真实像素纵向偏移，保证"跳到第几行"永远精确。
-
-            function ensureMeasureMirror() {
-                if (!measureMirrorEl || !document.body.contains(measureMirrorEl)) {
-                    measureMirrorEl = document.createElement('div');
-                    measureMirrorEl.setAttribute('aria-hidden', 'true');
-                    measureTextEl = document.createElement('span');
-                    measureMarkerEl = document.createElement('span');
-                    measureMarkerEl.textContent = '\u200b';
-                    measureMirrorEl.appendChild(measureTextEl);
-                    measureMirrorEl.appendChild(measureMarkerEl);
-                    const s = measureMirrorEl.style;
-                    s.position = 'absolute';
-                    s.top = '0';
-                    s.left = '-99999px';
-                    s.visibility = 'hidden';
-                    s.pointerEvents = 'none';
-                    s.zIndex = '-1';
-                    s.margin = '0';
-                    s.border = '0';
-                    s.boxSizing = 'border-box';
-                    s.height = 'auto';
-                    s.overflow = 'hidden';
-                    document.body.appendChild(measureMirrorEl);
-                }
-                syncMeasureMirrorStyle();
-                return measureMirrorEl;
-            }
-
-            function syncMeasureMirrorStyle() {
-                const cs = window.getComputedStyle(contentEl);
-                const s = measureMirrorEl.style;
-                // 镜像为 border-box 且无边框，宽度取 textarea 的 clientWidth，
-                // 使其内容宽度 = clientWidth - 左右内边距，与 textarea 的换行宽度一致
-                s.width = contentEl.clientWidth + 'px';
-                s.paddingTop = cs.paddingTop;
-                s.paddingRight = cs.paddingRight;
-                s.paddingBottom = cs.paddingBottom;
-                s.paddingLeft = cs.paddingLeft;
-                s.fontFamily = cs.fontFamily;
-                s.fontSize = cs.fontSize;
-                s.fontWeight = cs.fontWeight;
-                s.fontStyle = cs.fontStyle;
-                s.lineHeight = cs.lineHeight;
-                s.letterSpacing = cs.letterSpacing;
-                s.wordSpacing = cs.wordSpacing;
-                s.textIndent = cs.textIndent;
-                s.textTransform = cs.textTransform;
-                s.textAlign = cs.textAlign;
-                s.direction = cs.direction;
-                s.tabSize = cs.tabSize;
-                s.whiteSpace = 'pre-wrap';
-                s.overflowWrap = 'break-word';
-                s.wordBreak = 'break-word';
-            }
-
-            // 返回字符位置 pos 距 textarea 内容区顶部的像素距离（已包含自动换行的影响）
-            function measureCharTop(pos) {
-                const value = contentEl.value;
-                const p = Math.max(0, Math.min(pos, value.length));
-                ensureMeasureMirror();
-                measureTextEl.textContent = value.substring(0, p);
-                const mirrorRect = measureMirrorEl.getBoundingClientRect();
-                const markerRect = measureMarkerEl.getBoundingClientRect();
-                return markerRect.top - mirrorRect.top;
-            }
-
-            // 反查：纵向像素位置 pixelY 对应的字符位置（阅读模式在屏幕顶部加书签时用）
-            function findCharAtPixel(pixelY) {
-                const value = contentEl.value;
-                if (!value) return 0;
-                let lo = 0, hi = value.length, best = 0;
-                while (lo <= hi) {
-                    const mid = (lo + hi) >> 1;
-                    if (measureCharTop(mid) <= pixelY) {
-                        best = mid;
-                        lo = mid + 1;
+                    // 测试连接
+                    const { error } = await supabase.from('text_files').select('id', { count: 'exact', head: true });
+                    if (!error) {
+                        isCloudAvailable = true;
+                        updateSyncStatus(true, '云端同步已连接');
                     } else {
-                        hi = mid - 1;
+                        console.warn('云数据库连接失败，自动降级为本地模式:', error.message);
                     }
+                } catch (e) {
+                    console.warn('Supabase初始化失败，自动降级为本地模式:', e);
                 }
-                return best;
+            } else {
+                console.warn('Supabase SDK加载失败，自动降级为本地模式');
+            }
+            
+            if (!isCloudAvailable) {
+                updateSyncStatus(false, '本地模式（云端不可用）');
+                showNotification('云端连接失败，已自动切换为纯本地模式，书签保存在浏览器中', 'info');
             }
 
-            function getMaxScroll() {
-                return Math.max(0, contentEl.scrollHeight - contentEl.clientHeight);
+            // 2. 加载文件列表
+            await loadFiles();
+            
+            // 3. 初始化UI
+            initSidebar();
+            initEditor();
+            initShortcuts();
+            initScaleOnResize();
+            
+            // 4. 恢复上次打开的文件
+            const lastFileId = localStorage.getItem('lastFileId');
+            if (lastFileId) {
+                openFile(lastFileId);
+            } else if (files.length > 0) {
+                openFile(files[0].id);
             }
+        }
 
-            // 把某个字符位置滚动到视口靠上位置（gap 为距顶部的留白）
-            function scrollToCharPos(pos, gap) {
-                if (typeof gap !== 'number') gap = 24;
-                const charTop = measureCharTop(pos);
-                const target = Math.max(0, Math.min(charTop - gap, getMaxScroll()));
-                isRestoringPosition = true;
-                contentEl.scrollTo({ top: target, behavior: 'smooth' });
-                setTimeout(() => { isRestoringPosition = false; }, 400);
-                return target;
+        function updateSyncStatus(online, text) {
+            const el = document.getElementById('syncStatus');
+            const textEl = document.getElementById('syncText');
+            if (online) {
+                el.className = 'sync-status online';
+                el.innerHTML = `<i class="fas fa-cloud"></i> <span>${text}</span>`;
+            } else {
+                el.className = 'sync-status offline';
+                el.innerHTML = `<i class="fas fa-hdd"></i> <span>${text}</span>`;
             }
+        }
 
-            function showBookmarkFlash(name) {
-                if (!bookmarkFlashEl) {
-                    bookmarkFlashEl = document.createElement('div');
-                    bookmarkFlashEl.className = 'bookmark-flash';
-                    const host = document.getElementById('text-editor');
-                    if (host) host.appendChild(bookmarkFlashEl);
-                }
-                bookmarkFlashEl.innerHTML = '<i class="fas fa-bookmark"></i> 已定位：' + escapeHtml(name || '书签');
-                bookmarkFlashEl.classList.add('show');
-                clearTimeout(bookmarkFlashEl._timer);
-                bookmarkFlashEl._timer = setTimeout(() => {
-                    bookmarkFlashEl.classList.remove('show');
-                }, 1800);
-            }
-
-            // ========== 位置记忆功能 ==========
-            
-            function saveCurrentPosition() {
-                if (!currentFileId) return;
-                try {
-                    const key = `textPosition_${currentFileId}`;
-                    const maxScroll = getMaxScroll();
-                    const data = {
-                        scrollTop: contentEl.scrollTop,
-                        maxScroll: maxScroll,
-                        ratio: maxScroll > 0 ? contentEl.scrollTop / maxScroll : 0,
-                        selectionStart: contentEl.selectionStart,
-                        selectionEnd: contentEl.selectionEnd,
-                        timestamp: Date.now()
-                    };
-                    localStorage.setItem(key, JSON.stringify(data));
-                } catch(e) { /* ignore */ }
-            }
-            
-            function restorePosition(fileId) {
-                try {
-                    const key = `textPosition_${fileId}`;
-                    const saved = localStorage.getItem(key);
-                    if (!saved) {
-                        contentEl.scrollTop = 0;
-                        return;
-                    }
-                    const data = JSON.parse(saved);
-                    
-                    // 延迟设置，等textarea内容渲染完成
-                    requestAnimationFrame(() => {
-                        isRestoringPosition = true;
-                        const maxScrollNow = getMaxScroll();
-                        let target = data.scrollTop || 0;
-                        // 若可滚动高度与上次不同（换行方式或窗口尺寸变化），按比例还原，避免完全跑偏
-                        if (typeof data.maxScroll === 'number' && Math.abs(maxScrollNow - data.maxScroll) > 2) {
-                            target = (data.ratio || 0) * maxScrollNow;
-                        }
-                        contentEl.scrollTop = Math.max(0, Math.min(target, maxScrollNow));
-                        // 阅读模式下不设置光标，避免默认选中
-                        if (isEditMode && typeof data.selectionStart === 'number') {
-                            try {
-                                contentEl.setSelectionRange(
-                                    Math.min(data.selectionStart, contentEl.value.length),
-                                    Math.min(data.selectionEnd || data.selectionStart, contentEl.value.length)
-                                );
-                            } catch(e) {}
-                        }
-                        updateCursorInfo();
-                        setTimeout(() => { isRestoringPosition = false; }, 100);
-                    });
-                } catch(e) {
-                    isRestoringPosition = false;
-                }
-            }
-            
-            function updateCursorInfo() {
-                if (!contentEl) return;
-                const pos = contentEl.selectionStart;
-                const text = contentEl.value.substring(0, pos);
-                const line = (text.match(/\n/g) || []).length + 1;
-                const lastNewline = text.lastIndexOf('\n');
-                const col = pos - lastNewline;
-                cursorInfoEl.textContent = `行 ${line}, 列 ${col}`;
-            }
-            
-            // ========== 书签功能 ==========
-            
-            // 从 localStorage 读离线缓存（首次进页面时兜底显示）
-            function loadBookmarksFromStorage() {
-                try {
-                    const saved = localStorage.getItem('textBookmarks');
-                    if (saved) {
-                        bookmarks = JSON.parse(saved);
-                    }
-                } catch(e) { bookmarks = {}; }
-            }
-            
-            // 写入本地离线缓存（localStorage），只作本地兜底，不代表已经同步到云
-            function saveBookmarksToCache() {
-                try {
-                    localStorage.setItem('textBookmarks', JSON.stringify(bookmarks));
-                } catch(e) {}
-            }
-            
-            // 防抖：在 300ms 内多次改动只同步一次，减少数据库写入次数
-            function scheduleBookmarksSync(fileId) {
-                saveBookmarksToCache(); // 本地立刻保存（防断电/断网丢数据）
-                if (!supabase || !fileId || fileId.startsWith('new-')) return; // 新文件未入库时不同步
-                clearTimeout(bookmarkSyncTimer);
-                bookmarkSyncTimer = setTimeout(() => {
-                    syncBookmarksToCloud(fileId);
-                }, 300);
-            }
-            
-            // 把某个文件的书签整包同步到云端：upsert（存在则更新，不存在则插入）
-            // 用 bookmarks_json 字段整包存取，避免逐条操作时的竞态
-            async function syncBookmarksToCloud(fileId) {
-                if (!supabase || !fileId || fileId.startsWith('new-')) return;
-                try {
-                    const list = bookmarks[fileId] || [];
-                    const { error } = await supabase
-                        .from('text_bookmarks')
-                        .upsert({
-                            file_id: fileId,
-                            bookmarks_json: list,
-                            updated_at: new Date().toISOString()
-                        }, { onConflict: 'file_id' });
-                    if (error) {
-                        console.warn('书签字段同步失败（已本地保存）:', error.message);
-                    }
-                } catch(e) {
-                    console.warn('书签同步异常:', e);
-                }
-            }
-            
-            // 首次进入时，从云端一次性拉取所有文件的书签，并合并到本地缓存
-            async function loadBookmarksFromCloud() {
-                if (!supabase) return;
-                try {
-                    const { data, error } = await supabase
-                        .from('text_bookmarks')
-                        .select('file_id, bookmarks_json, updated_at');
-                    if (error) {
-                        // 最常见原因：表还没建；给出一次明确提示，不打断主功能
-                        if (error.code === '42P01') {
-                            console.warn('text_bookmarks 表不存在，书签将暂存本地。请在 Supabase SQL 编辑器中执行建表语句启用云同步。');
-                        } else {
-                            console.warn('从云端加载书签失败:', error.message);
-                        }
-                        bookmarksLoaded = true;
-                        return;
-                    }
-                    // 云端数据优先覆盖本地（以 updated_at 为准）
-                    const cloudMap = {};
-                    (data || []).forEach(row => {
-                        cloudMap[row.file_id] = {
-                            list: Array.isArray(row.bookmarks_json) ? row.bookmarks_json : [],
-                            updated_at: row.updated_at || 0
-                        };
-                    });
-                    // 合并：本地有而云端没有的（比如某文件还没建过书签）暂保留，等用户下次改动时再上云
-                    Object.keys(bookmarks).forEach(fid => {
-                        if (!cloudMap[fid]) cloudMap[fid] = { list: bookmarks[fid], updated_at: 0 };
-                    });
-                    bookmarks = {};
-                    Object.keys(cloudMap).forEach(fid => {
-                        bookmarks[fid] = cloudMap[fid].list || [];
-                    });
-                    saveBookmarksToCache();
-                    bookmarksLoaded = true;
-                    // 如果当前已有打开的文件，刷新书签面板（可能刚从云端拉到新数据）
-                    if (currentFileId) renderBookmarkList();
-                } catch(e) {
-                    console.warn('加载云端书签异常:', e);
-                    bookmarksLoaded = true;
-                }
-            }
-            
-            // 迁移：第一次上云同步时，把本地旧书签一次性写上去
-            async function migrateLocalBookmarksToCloud() {
-                if (!supabase) return;
-                const existingIds = Object.keys(bookmarks).filter(fid =>
-                    !fid.startsWith('new-') && Array.isArray(bookmarks[fid]) && bookmarks[fid].length > 0
-                );
-                for (const fid of existingIds) {
-                    await syncBookmarksToCloud(fid);
-                }
-            }
-            
-            function getCurrentFileBookmarks() {
-                if (!currentFileId) return [];
-                return bookmarks[currentFileId] || [];
-            }
-            
-            function updateBookmarkBadge() {
-                const list = getCurrentFileBookmarks();
-                if (list.length > 0) {
-                    bookmarkCountEl.textContent = list.length;
-                    bookmarkCountEl.style.display = 'flex';
+        // ==================== 文件操作 ====================
+        async function loadFiles() {
+            try {
+                let result;
+                if (isCloudAvailable) {
+                    result = await supabase.from('text_files').select('*').order('updated_at', { ascending: false });
+                    if (result.error) throw result.error;
+                    files = result.data || [];
                 } else {
-                    bookmarkCountEl.style.display = 'none';
+                    files = JSON.parse(localStorage.getItem('local_files') || '[]');
                 }
+                renderFileList();
+            } catch (e) {
+                console.error('加载文件列表失败:', e);
+                files = JSON.parse(localStorage.getItem('local_files') || '[]');
+                renderFileList();
+            }
+        }
+
+        async function createNewFile() {
+            const newFile = {
+                id: crypto.randomUUID(),
+                filename: '新建笔记',
+                content: '',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+            
+            try {
+                if (isCloudAvailable) {
+                    const { error } = await supabase.from('text_files').insert(newFile);
+                    if (error) throw error;
+                } else {
+                    files.unshift(newFile);
+                    localStorage.setItem('local_files', JSON.stringify(files));
+                }
+            } catch (e) {
+                console.warn('云端创建失败，保存到本地:', e);
+                files.unshift(newFile);
+                localStorage.setItem('local_files', JSON.stringify(files));
             }
             
-            function renderBookmarkList() {
-                const list = getCurrentFileBookmarks();
-                updateBookmarkBadge();
-                
-                if (!currentFileId || !currentFileId) {
-                    bookmarkListEl.innerHTML = `
-                        <div class="bookmark-empty">
-                            <i class="fas fa-bookmark"></i>
-                            <p>请先选择一个文件<br>再使用书签功能</p>
-                        </div>`;
-                    addBookmarkBtnEl.disabled = true;
-                    return;
-                }
-                
-                addBookmarkBtnEl.disabled = false;
-                
-                if (list.length === 0) {
-                    bookmarkListEl.innerHTML = `
-                        <div class="bookmark-empty">
-                            <i class="fas fa-bookmark"></i>
-                            <p>暂无书签<br>点击上方按钮或按 Ctrl+B<br>添加书签</p>
-                        </div>`;
-                    return;
-                }
-                
-                bookmarkListEl.innerHTML = '';
-                // 按位置排序（从上到下）
-                const sorted = [...list].sort((a, b) => a.position - b.position);
-                
-                sorted.forEach(bm => {
-                    const item = document.createElement('div');
-                    item.className = 'bookmark-item';
-                    item.dataset.id = bm.id;
-                    
-                    const pos = bm.position;
-                    const text = contentEl.value ? contentEl.value.substring(0, pos) : '';
-                    const line = (text.match(/\n/g) || []).length + 1;
-                    
-                    const previewText = bm.preview || '';
-                    
-                    item.innerHTML = `
-                        <div class="bookmark-item-top">
-                            <div class="bookmark-name" title="点击跳转到此处">${escapeHtml(bm.name)}</div>
-                            <div class="bookmark-actions">
-                                <button class="bookmark-action-btn rename" title="重命名"><i class="fas fa-pen"></i></button>
-                                <button class="bookmark-action-btn delete" title="删除"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                        <div class="bookmark-preview">${escapeHtml(previewText)}</div>
-                        <div class="bookmark-meta"><i class="fas fa-map-pin"></i> 第 ${line} 行</div>
-                    `;
-                    
-                    // 点击书签名称跳转
-                    item.querySelector('.bookmark-name').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        jumpToBookmark(bm);
-                    });
-                    
-                    // 重命名
-                    item.querySelector('.rename').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        startRenameBookmark(bm.id, item);
-                    });
-                    
-                    // 删除
-                    item.querySelector('.delete').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        deleteBookmark(bm.id);
-                    });
-                    
-                    bookmarkListEl.appendChild(item);
-                });
+            await loadFiles();
+            openFile(newFile.id);
+            toggleEditMode(true);
+            showNotification('新笔记已创建', 'success');
+        }
+
+        async function openFile(fileId) {
+            // 先保存当前文件的位置和书签
+            if (currentFileId) {
+                saveCurrentPosition();
+                await saveCurrentBookmarks();
             }
             
-            function escapeHtml(str) {
+            let file;
+            try {
+                if (isCloudAvailable) {
+                    const { data, error } = await supabase.from('text_files').select('*').eq('id', fileId).single();
+                    if (error) throw error;
+                    file = data;
+                } else {
+                    file = files.find(f => f.id === fileId);
+                }
+            } catch (e) {
+                file = files.find(f => f.id === fileId);
+            }
+            
+            if (!file) return;
+            
+            currentFileId = fileId;
+            document.getElementById('filename').value = file.filename;
+            document.getElementById('editor').value = file.content;
+            
+            // 加载书签
+            await loadBookmarks(fileId);
+            
+            // 恢复阅读位置
+            restorePosition();
+            
+            // 更新文件列表激活状态
+            renderFileList();
+            updateBookmarkBadge();
+            exitEditMode();
+            
+            localStorage.setItem('lastFileId', fileId);
+        }
+
+        async function saveFile() {
+            if (!currentFileId || !isEditMode) return;
+            
+            const content = document.getElementById('editor').value;
+            const filename = document.getElementById('filename').value;
+            
+            try {
+                if (isCloudAvailable) {
+                    const { error } = await supabase.from('text_files')
+                        .update({ content, filename, updated_at: new Date().toISOString() })
+                        .eq('id', currentFileId);
+                    if (error) throw error;
+                } else {
+                    const idx = files.findIndex(f => f.id === currentFileId);
+                    if (idx >= 0) {
+                        files[idx].content = content;
+                        files[idx].filename = filename;
+                        files[idx].updated_at = new Date().toISOString();
+                        localStorage.setItem('local_files', JSON.stringify(files));
+                    }
+                }
+                
+                exitEditMode();
+                showNotification('保存成功', 'success');
+                await loadFiles();
+            } catch (e) {
+                console.error('保存失败:', e);
+                // 本地兜底保存
+                const idx = files.findIndex(f => f.id === currentFileId);
+                if (idx >= 0) {
+                    files[idx].content = content;
+                    files[idx].filename = filename;
+                    localStorage.setItem('local_files', JSON.stringify(files));
+                    showNotification('云端保存失败，已保存到本地', 'info');
+                    exitEditMode();
+                } else {
+                    showNotification('保存失败: ' + e.message, 'error');
+                }
+            }
+        }
+
+        async function deleteFile(fileId, event) {
+            event.stopPropagation();
+            if (!confirm('确定要删除这个笔记吗？此操作不可恢复。')) return;
+            
+            try {
+                if (isCloudAvailable) {
+                    await supabase.from('text_files').delete().eq('id', fileId);
+                }
+                files = files.filter(f => f.id !== fileId);
+                if (!isCloudAvailable) {
+                    localStorage.setItem('local_files', JSON.stringify(files));
+                }
+                
+                if (currentFileId === fileId) {
+                    currentFileId = null;
+                    document.getElementById('editor').value = '';
+                    document.getElementById('filename').value = '未命名笔记';
+                    currentBookmarks = [];
+                    renderBookmarks();
+                    if (files.length > 0) {
+                        openFile(files[0].id);
+                    }
+                }
+                
+                await loadFiles();
+                showNotification('笔记已删除', 'success');
+            } catch (e) {
+                showNotification('删除失败: ' + e.message, 'error');
+            }
+        }
+
+        function renderFileList() {
+            const list = document.getElementById('fileList');
+            const escapeHtml = (str) => {
                 const div = document.createElement('div');
                 div.textContent = str;
                 return div.innerHTML;
-            }
+            };
             
-            function getPreviewText(position) {
-                const text = contentEl.value;
-                // 取光标位置后20个字符作为预览
-                let preview = text.substring(position, position + 30).replace(/\n/g, ' ').trim();
-                if (text.length > position + 30) preview += '...';
-                return preview || '(空行)';
-            }
-            
-            function getDefaultBookmarkName(pos) {
-                if (typeof pos !== 'number') pos = contentEl.selectionStart;
-                const text = contentEl.value.substring(0, pos);
-                const line = (text.match(/\n/g) || []).length + 1;
-                const preview = getPreviewText(pos);
-                return `第${line}行: ${preview.substring(0, 15)}`;
-            }
-            
-            function openAddBookmarkModal() {
-                if (!currentFileId) {
-                    showNotification('请先选择或创建一个文件', 'warning');
-                    return;
-                }
+            list.innerHTML = files.map(file => `
+                <div class="file-item ${file.id === currentFileId ? 'active' : ''}" onclick="openFile('${file.id}')">
+                    <span class="file-item-name">${escapeHtml(file.filename)}</span>
+                    <div class="file-item-actions">
+                        <button onclick="deleteFile('${file.id}', event)" title="删除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-                // 编辑模式：以光标位置为准
-                // 阅读模式：只读无法放置光标，则以"当前屏幕顶部"对应的字符位置为准（精确测量，非估算）
-                let position, scrollTop;
-                if (isEditMode) {
-                    position = contentEl.selectionStart;
-                    scrollTop = contentEl.scrollTop;
-                } else {
-                    position = findCharAtPixel(contentEl.scrollTop + 4);
-                    scrollTop = contentEl.scrollTop;
-                }
+        // ==================== 编辑模式切换 ====================
+        function toggleEditMode(forceEdit = null) {
+            const editor = document.getElementById('editor');
+            const editBtn = document.getElementById('editBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const filenameInput = document.getElementById('filename');
+            const modeBadge = document.getElementById('modeBadge');
+            
+            if (forceEdit !== null) {
+                isEditMode = forceEdit;
+            } else {
+                isEditMode = !isEditMode;
+            }
+            
+            if (isEditMode) {
+                editor.removeAttribute('readonly');
+                editor.className = 'editing';
+                editBtn.innerHTML = '<i class="fas fa-check"></i> 完成';
+                editBtn.classList.add('editing');
+                saveBtn.disabled = false;
+                filenameInput.removeAttribute('readonly');
+                modeBadge.textContent = '编辑模式';
+                modeBadge.className = 'mode-badge edit';
+                editor.focus();
+            } else {
+                editor.setAttribute('readonly', 'readonly');
+                editor.className = 'readonly';
+                editBtn.innerHTML = '<i class="fas fa-pen"></i> 编辑';
+                editBtn.classList.remove('editing');
+                saveBtn.disabled = true;
+                filenameInput.setAttribute('readonly', 'readonly');
+                modeBadge.textContent = '阅读模式';
+                modeBadge.className = 'mode-badge read';
+            }
+        }
+        
+        function exitEditMode() {
+            toggleEditMode(false);
+        }
 
-                pendingBookmarkPosition = {
-                    position: position,
-                    scrollTop: scrollTop
-                };
-                bookmarkNameInputEl.value = getDefaultBookmarkName(position);
-                bookmarkModalEl.classList.add('show');
+        // ==================== 侧边栏控制 ====================
+        function initSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+            }
+            // 初始缩放
+            setTimeout(updateEditorScale, 50);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            sidebarCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
+            // 缩放会在resize observer中自动更新
+        }
+
+        function toggleMobileSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        // ==================== 编辑器缩放（不改变排版） ====================
+        function updateEditorScale() {
+            const wrapper = document.getElementById('editorWrapper');
+            const container = document.getElementById('editorContainer');
+            const editor = document.getElementById('editor');
+            
+            const containerWidth = container.clientWidth - 60;
+            const baseWidth = window.innerWidth < 768 ? containerWidth : 800;
+            
+            // 移动窗口时适配
+            if (window.innerWidth < 768) {
+                wrapper.style.width = '100%';
+                wrapper.style.transform = 'none';
+                return;
+            }
+            
+            const scale = Math.min(containerWidth / baseWidth, 2.5);
+            
+            wrapper.style.width = baseWidth + 'px';
+            wrapper.style.transform = `scale(${scale})`;
+            wrapper.style.height = `calc(100% / ${scale})`;
+            wrapper.style.transformOrigin = 'top left';
+            wrapper.style.margin = 0;
+            
+            // 调整容器padding适配缩放
+            const offsetX = (containerWidth - baseWidth * scale) / 2;
+            wrapper.style.marginLeft = Math.max(0, offsetX) + 'px';
+        }
+        
+        function initScaleOnResize() {
+            // 用ResizeObserver实时跟踪容器宽度变化，逐帧更新缩放
+            const container = document.getElementById('editorContainer');
+            if (window.ResizeObserver) {
+                const ro = new ResizeObserver(() => {
+                    requestAnimationFrame(updateEditorScale);
+                });
+                ro.observe(container);
+            }
+            window.addEventListener('resize', updateEditorScale);
+        }
+
+        // ==================== 编辑器功能 ====================
+        function initEditor() {
+            const editor = document.getElementById('editor');
+            
+            editor.addEventListener('click', () => {
+                if (!isEditMode && editor.selectionStart === 0) {
+                    // 仅提示一次，不频繁打扰
+                }
+            });
+            
+            // 更新光标位置显示
+            editor.addEventListener('keyup click', updatePositionInfo);
+            editor.addEventListener('scroll', () => {
+                if (currentFileId) {
+                    saveCurrentPosition();
+                }
+            });
+            
+            // ESC退出编辑模式
+            editor.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && isEditMode) {
+                    exitEditMode();
+                    showNotification('已退出编辑模式，记得保存修改', 'info');
+                }
+            });
+            
+            // 只读状态点击提示
+            editor.addEventListener('mousedown', (e) => {
+                if (!isEditMode) {
+                    // 允许选中文本，不打断
+                }
+            });
+        }
+
+        function updatePositionInfo() {
+            const editor = document.getElementById('editor');
+            const text = editor.value.substring(0, editor.selectionStart);
+            const lines = text.split('\n');
+            const line = lines.length;
+            const col = lines[lines.length - 1].length + 1;
+            document.getElementById('positionInfo').textContent = `行 ${line}, 列 ${col}`;
+        }
+
+        // ==================== 阅读位置记忆 ====================
+        function saveCurrentPosition() {
+            if (!currentFileId) return;
+            const editor = document.getElementById('editor');
+            const pos = {
+                scrollTop: editor.scrollTop,
+                cursorPos: editor.selectionStart,
+                scrollRatio: editor.scrollHeight > 0 ? editor.scrollTop / editor.scrollHeight : 0
+            };
+            localStorage.setItem(`pos_${currentFileId}`, JSON.stringify(pos));
+        }
+
+        function restorePosition() {
+            if (!currentFileId) return;
+            const saved = localStorage.getItem(`pos_${currentFileId}`);
+            if (!saved) return;
+            
+            try {
+                const pos = JSON.parse(saved);
+                const editor = document.getElementById('editor');
                 setTimeout(() => {
-                    bookmarkNameInputEl.focus();
-                    bookmarkNameInputEl.select();
+                    // 优先按比例恢复，兼容缩放后的变化
+                    if (pos.scrollRatio) {
+                        editor.scrollTop = pos.scrollRatio * editor.scrollHeight;
+                    } else if (pos.scrollTop) {
+                        editor.scrollTop = pos.scrollTop;
+                    }
                 }, 100);
-            }
-            
-            function closeAddBookmarkModal() {
-                bookmarkModalEl.classList.remove('show');
-                pendingBookmarkPosition = null;
-            }
-            
-            function addBookmark(name) {
-                if (!pendingBookmarkPosition || !currentFileId) return;
-                
-                const bm = {
-                    id: 'bm_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-                    name: name.trim() || getDefaultBookmarkName(pendingBookmarkPosition.position),
-                    position: pendingBookmarkPosition.position,
-                    scrollTop: pendingBookmarkPosition.scrollTop,
-                    preview: getPreviewText(pendingBookmarkPosition.position),
-                    createdAt: Date.now()
-                };
-                
-                if (!bookmarks[currentFileId]) {
-                    bookmarks[currentFileId] = [];
+            } catch (e) {}
+        }
+
+        // ==================== 书签功能 ====================
+        function toggleBookmarkPanel() {
+            const panel = document.getElementById('bookmarkPanel');
+            panel.classList.toggle('open');
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        async function loadBookmarks(fileId) {
+            currentBookmarks = [];
+            try {
+                if (isCloudAvailable) {
+                    // 尝试从云端加载
+                    const { data, error } = await supabase.from('text_bookmarks')
+                        .select('bookmarks_json')
+                        .eq('file_id', fileId)
+                        .maybeSingle();
+                    if (data && data.bookmarks_json) {
+                        currentBookmarks = data.bookmarks_json;
+                    }
                 }
-                bookmarks[currentFileId].push(bm);
-                scheduleBookmarksSync(currentFileId);
-                renderBookmarkList();
-                closeAddBookmarkModal();
-                showNotification('书签已添加（已同步）', 'success');
+            } catch (e) {
+                console.warn('云端书加载失败，从本地加载:', e);
             }
             
-            function deleteBookmark(bmId) {
-                if (!currentFileId || !bookmarks[currentFileId]) return;
-                bookmarks[currentFileId] = bookmarks[currentFileId].filter(b => b.id !== bmId);
-                scheduleBookmarksSync(currentFileId);
-                // 如果该文件已经没有书签了，顺手删掉云端这一行（保持表干净）
-                if (bookmarks[currentFileId].length === 0 && supabase && !currentFileId.startsWith('new-')) {
-                    supabase.from('text_bookmarks').delete().eq('file_id', currentFileId).then(()=>{}).catch(()=>{});
-                }
-                renderBookmarkList();
-                showNotification('书签已删除', 'success');
-            }
-            
-            function startRenameBookmark(bmId, itemEl) {
-                if (!currentFileId || !bookmarks[currentFileId]) return;
-                const bm = bookmarks[currentFileId].find(b => b.id === bmId);
-                if (!bm) return;
-                
-                const nameDiv = itemEl.querySelector('.bookmark-name');
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'bookmark-name-input';
-                input.value = bm.name;
-                nameDiv.replaceWith(input);
-                input.focus();
-                input.select();
-                
-                const finish = (save) => {
-                    if (save) {
-                        const newName = input.value.trim();
-                        if (newName) {
-                            bm.name = newName;
-                            scheduleBookmarksSync(currentFileId);
+            // 云端没有则从本地读取（兼容旧数据）
+            if (currentBookmarks.length === 0) {
+                const local = localStorage.getItem(`bookmarks_${fileId}`);
+                if (local) {
+                    try {
+                        currentBookmarks = JSON.parse(local);
+                        // 自动迁移到云端
+                        if (isCloudAvailable) {
+                            await saveCurrentBookmarks(true);
                         }
-                    }
-                    renderBookmarkList();
-                };
-                
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        finish(true);
-                    } else if (e.key === 'Escape') {
-                        finish(false);
-                    }
-                });
-                input.addEventListener('blur', () => finish(true));
-            }
-            
-            function jumpToBookmark(bm) {
-                if (!contentEl.value) return;
-                
-                const pos = Math.max(0, Math.min(bm.position, contentEl.value.length));
-                
-                // 编辑模式下同时把光标放到该位置（并聚焦）
-                if (isEditMode) {
-                    contentEl.focus();
-                    try { contentEl.setSelectionRange(pos, pos); } catch(e) {}
-                    requestAnimationFrame(() => {
-                        scrollToCharPos(pos, 24);
-                        saveCurrentPosition();
-                    });
-                } else {
-                    // 阅读模式下只滚动，不 focus（避免移动端唤起键盘）
-                    scrollToCharPos(pos, 24);
-                    setTimeout(saveCurrentPosition, 450);
+                    } catch (e) {}
                 }
-                
-                updateCursorInfo();
-                showBookmarkFlash(bm.name);
             }
             
-            function setupBookmarkEventListeners() {
-                // 切换书签面板
-                bookmarkToggleEl.addEventListener('click', () => {
-                    bookmarkPanelEl.classList.toggle('open');
-                    bookmarkToggleEl.classList.toggle('active');
-                    if (bookmarkPanelEl.classList.contains('open')) {
-                        renderBookmarkList();
+            renderBookmarks();
+            updateBookmarkBadge();
+        }
+
+        async function saveCurrentBookmarks(silent = false) {
+            if (!currentFileId) return;
+            
+            // 始终保存到本地（离线缓存）
+            localStorage.setItem(`bookmarks_${currentFileId}`, JSON.stringify(currentBookmarks));
+            
+            // 云端可用时同步
+            if (!isCloudAvailable) return;
+            
+            try {
+                // upsert：有则更新，无则插入
+                const { error } = await supabase.from('text_bookmarks')
+                    .upsert({
+                        file_id: currentFileId,
+                        bookmarks_json: currentBookmarks,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'file_id' });
+                
+                if (error && !silent) {
+                    console.warn('书签云端同步失败，已保存在本地:', error.message);
+                }
+            } catch (e) {
+                console.warn('书签云端同步异常，已保存在本地:', e);
+            }
+        }
+
+        // 防抖保存
+        let bookmarkSaveTimer = null;
+        function scheduleBookmarkSave() {
+            clearTimeout(bookmarkSaveTimer);
+            bookmarkSaveTimer = setTimeout(() => saveCurrentBookmarks(), 300);
+        }
+
+        function addBookmarkAtCursor() {
+            const editor = document.getElementById('editor');
+            let pos, linePreview;
+            
+            if (isEditMode) {
+                pos = editor.selectionStart;
+                const text = editor.value;
+                const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+                const lineEnd = text.indexOf('\n', pos);
+                linePreview = text.substring(lineStart, lineEnd > -1 ? lineEnd : text.length).trim().substring(0, 20) || '无标题行';
+            } else {
+                // 阅读模式：取当前屏幕顶部对应的位置
+                const lineHeight = parseInt(getComputedStyle(editor).lineHeight);
+                const lineIndex = Math.round(editor.scrollTop / lineHeight);
+                const text = editor.value;
+                let charPos = 0;
+                let lines = 0;
+                for (let i = 0; i < text.length; i++) {
+                    if (text[i] === '\n') lines++;
+                    if (lines >= lineIndex) {
+                        charPos = i;
+                        break;
                     }
-                });
-                
-                closeBookmarkEl.addEventListener('click', () => {
-                    bookmarkPanelEl.classList.remove('open');
-                    bookmarkToggleEl.classList.remove('active');
-                });
-                
-                addBookmarkBtnEl.addEventListener('click', openAddBookmarkModal);
-                
-                bookmarkConfirmEl.addEventListener('click', () => {
-                    addBookmark(bookmarkNameInputEl.value);
-                });
-                
-                bookmarkCancelEl.addEventListener('click', closeAddBookmarkModal);
-                
-                bookmarkNameInputEl.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addBookmark(bookmarkNameInputEl.value);
-                    } else if (e.key === 'Escape') {
-                        closeAddBookmarkModal();
-                    }
-                });
-                
-                bookmarkModalEl.addEventListener('click', (e) => {
-                    if (e.target === bookmarkModalEl) {
-                        closeAddBookmarkModal();
-                    }
-                });
+                }
+                pos = charPos;
+                const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+                const lineEnd = text.indexOf('\n', pos);
+                linePreview = text.substring(lineStart, lineEnd > -1 ? lineEnd : text.length).trim().substring(0, 20) || '无标题行';
             }
             
-            // ========== 原有功能 ==========
+            const defaultName = prompt('书签名称:', linePreview);
+            if (defaultName === null) return;
             
-            function updateCharCount() {
-                charCountEl.textContent = contentEl.value.length;
+            const bookmark = {
+                id: Date.now().toString(),
+                name: defaultName.trim() || linePreview,
+                position: pos,
+                preview: linePreview,
+                createdAt: new Date().toISOString()
+            };
+            
+            currentBookmarks.push(bookmark);
+            currentBookmarks.sort((a, b) => a.position - b.position);
+            
+            renderBookmarks();
+            updateBookmarkBadge();
+            scheduleBookmarkSave();
+            showNotification('书签已添加', 'success');
+        }
+
+        function jumpToBookmark(bookmarkId) {
+            const bookmark = currentBookmarks.find(b => b.id === bookmarkId);
+            if (!bookmark) return;
+            
+            const editor = document.getElementById('editor');
+            editor.focus();
+            
+            // 使用真实排版测量精确定位
+            const lineHeight = parseInt(getComputedStyle(editor).lineHeight);
+            const paddingTop = parseInt(getComputedStyle(editor).paddingTop);
+            
+            // 创建镜像元素测量真实折行后的位置
+            const mirror = document.createElement('div');
+            mirror.style.cssText = `
+                position: absolute;
+                visibility: hidden;
+                width: ${editor.clientWidth - parseInt(getComputedStyle(editor).paddingLeft) - parseInt(getComputedStyle(editor).paddingRight)}px;
+                font-size: ${getComputedStyle(editor).fontSize};
+                font-family: ${getComputedStyle(editor).fontFamily};
+                line-height: ${getComputedStyle(editor).lineHeight};
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                top: 0;
+                left: -9999px;
+            `;
+            mirror.textContent = editor.value.substring(0, bookmark.position);
+            document.body.appendChild(mirror);
+            const targetScrollTop = mirror.offsetHeight - paddingTop + 10;
+            document.body.removeChild(mirror);
+            
+            editor.scrollTop = targetScrollTop;
+            editor.setSelectionRange(bookmark.position, bookmark.position);
+            updatePositionInfo();
+            
+            // 显示跳转提示
+            const toast = document.getElementById('jumpToast');
+            toast.textContent = `已定位: ${bookmark.name}`;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1500);
+        }
+
+        function deleteBookmark(bookmarkId, event) {
+            event.stopPropagation();
+            currentBookmarks = currentBookmarks.filter(b => b.id !== bookmarkId);
+            renderBookmarks();
+            updateBookmarkBadge();
+            scheduleBookmarkSave();
+            showNotification('书签已删除', 'info');
+        }
+
+        function renameBookmark(bookmarkId, event) {
+            event.stopPropagation();
+            const bookmark = currentBookmarks.find(b => b.id === bookmarkId);
+            if (!bookmark) return;
+            
+            const newName = prompt('新名称:', bookmark.name);
+            if (newName === null) return;
+            
+            bookmark.name = newName.trim() || bookmark.name;
+            renderBookmarks();
+            scheduleBookmarkSave();
+        }
+
+        function renderBookmarks() {
+            const list = document.getElementById('bookmarkList');
+            
+            if (currentBookmarks.length === 0) {
+                list.innerHTML = '<div class="empty-bookmarks">暂无书签<br>按 Ctrl+B 快速添加</div>';
+                return;
             }
             
-            async function loadFiles() {
-                try {
-                    const { data, error } = await supabase
-                        .from('text_files')
-                        .select('*')
-                        .order('updated_at', { ascending: false });
-                    
-                    if (error) throw error;
-                    
-                    files = data || [];
-                    renderFileList();
-                    
-                    if (files.length > 0) {
-                        selectFile(files[0].id);
+            list.innerHTML = currentBookmarks.map(b => `
+                <div class="bookmark-item" onclick="jumpToBookmark('${b.id}')">
+                    <div class="bookmark-item-name">${escapeHtml(b.name)}</div>
+                    <div class="bookmark-item-preview">${escapeHtml(b.preview)}</div>
+                    <div class="bookmark-item-actions">
+                        <button onclick="renameBookmark('${b.id}', event)" title="重命名">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button onclick="deleteBookmark('${b.id}', event)" title="删除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateBookmarkBadge() {
+            document.getElementById('bookmarkBadge').textContent = currentBookmarks.length;
+        }
+
+        // ==================== 快捷键 ====================
+        function initShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Ctrl+S 保存
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    if (isEditMode && currentFileId) {
+                        saveFile();
                     } else {
-                        showEmptyEditor();
+                        showNotification('请先进入编辑模式再保存', 'info');
                     }
-                } catch (error) {
-                    console.error('加载文件列表失败:', error);
-                    fileListEl.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <h3>加载失败</h3>
-                            <p>无法从数据库加载文件列表</p>
-                        </div>
-                    `;
                 }
-            }
-            
-            function renderFileList() {
-                fileListEl.innerHTML = '';
-                
-                if (files.length === 0) {
-                    fileListEl.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-folder-open"></i>
-                            <h3>暂无文件</h3>
-                            <p>点击 + 按钮创建新文件</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                const searchTerm = searchInputEl.value.toLowerCase();
-                const filteredFiles = files.filter(file => 
-                    file.filename.toLowerCase().includes(searchTerm)
-                );
-                
-                if (filteredFiles.length === 0) {
-                    fileListEl.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-search"></i>
-                            <h3>未找到匹配文件</h3>
-                            <p>请尝试其他搜索词</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                filteredFiles.forEach(file => {
-                    const fileItem = document.createElement('div');
-                    fileItem.className = `file-item ${currentFileId === file.id ? 'active' : ''}`;
-                    fileItem.dataset.id = file.id;
-                    
-                    const isEditing = editingFileId === file.id;
-                    const safeName = escapeHtml(file.filename);
-                    
-                    fileItem.innerHTML = `
-                        <div class="file-name-container">
-                            ${isEditing ? 
-                                `<input type="text" class="file-name-input" value="${safeName}" data-id="${file.id}">` : 
-                                `<div class="file-name">${safeName}</div>`
-                            }
-                        </div>
-                        <div class="file-actions">
-                            <button class="action-btn edit-btn" title="编辑文件名">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="action-btn delete-btn" title="删除文件">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-                    
-                    fileItem.addEventListener('click', (e) => {
-                        if (e.target.closest('.action-btn') || e.target.classList.contains('file-name-input')) {
-                            return;
-                        }
-                        selectFile(file.id);
-                        if (window.innerWidth <= 768) {
-                            setSidebarCollapsed(true);
-                        }
-                    });
-                    
-                    const editBtn = fileItem.querySelector('.edit-btn');
-                    editBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        startEditing(file.id);
-                    });
-                    
-                    const deleteBtn = fileItem.querySelector('.delete-btn');
-                    deleteBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        deleteFile(file.id);
-                    });
-                    
-                    if (isEditing) {
-                        const inputEl = fileItem.querySelector('.file-name-input');
-                        inputEl.focus();
-                        inputEl.select();
-                        
-                        inputEl.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter') {
-                                finishEditing(file.id, inputEl.value);
-                            } else if (e.key === 'Escape') {
-                                cancelEditing(file.id);
-                            }
-                        });
-                        
-                        inputEl.addEventListener('blur', () => {
-                            finishEditing(file.id, inputEl.value);
-                        });
+                // Ctrl+B 添加书签
+                if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                    e.preventDefault();
+                    if (currentFileId) {
+                        addBookmarkAtCursor();
                     }
-                    
-                    fileListEl.appendChild(fileItem);
-                });
-            }
-            
-            function startEditing(fileId) {
-                editingFileId = fileId;
-                renderFileList();
-            }
-            
-            async function finishEditing(fileId, newName) {
-                if (!newName.trim()) {
-                    showNotification('文件名不能为空', 'warning');
-                    return;
                 }
-                
-                const file = files.find(f => f.id === fileId);
-                if (!file) return;
-                
-                if (file.filename === newName) {
-                    cancelEditing(fileId);
-                    return;
-                }
-                
-                try {
-                    if (fileId.startsWith('new-')) {
-                        file.filename = newName;
-                        cancelEditing(fileId);
-                        if (currentFileId === fileId) {
-                            currentFilenameEl.textContent = newName;
-                            updateModeIndicator(isEditMode ? 'edit' : 'read');
-                        }
-                        showNotification('文件名已更新', 'success');
-                        return;
-                    }
-                    
-                    const { error } = await supabase
-                        .from('text_files')
-                        .update({ filename: newName })
-                        .eq('id', fileId);
-                    
-                    if (error) throw error;
-                    
-                    file.filename = newName;
-                    cancelEditing(fileId);
-                    
-                    if (currentFileId === fileId) {
-                        currentFilenameEl.textContent = newName;
-                        updateModeIndicator(isEditMode ? 'edit' : 'read');
-                    }
-                    
-                    showNotification('文件名更新成功', 'success');
-                } catch (error) {
-                    console.error('更新文件名失败:', error);
-                    showNotification('文件名更新失败: ' + error.message, 'error');
-                    cancelEditing(fileId);
-                }
-            }
-            
-            function cancelEditing(fileId) {
-                editingFileId = null;
-                renderFileList();
-            }
-            
-            function selectFile(fileId) {
-                // 先保存当前文件的位置
-                saveCurrentPosition();
-                
-                currentFileId = fileId;
-                const file = files.find(f => f.id === fileId);
-                
-                if (!file) return;
-                
-                renderFileList();
-                
-                currentFilenameEl.textContent = file.filename;
-                contentEl.value = file.content || '';
-                updateCharCount();
-                updateCursorInfo();
-                
-                editModeBtnEl.disabled = false;
-                
-                // 默认进入阅读模式
-                setReadMode();
-                
-                // 渲染书签并恢复位置
-                renderBookmarkList();
-                restorePosition(fileId);
-            }
-            
-            function showEmptyEditor() {
-                currentFileId = null;
-                currentFilenameEl.textContent = '选择或创建新文本';
-                contentEl.value = '';
-                updateCharCount();
-                updateCursorInfo();
-                editModeBtnEl.disabled = true;
-                saveBtnEl.disabled = true;
-                isEditMode = false;
-                contentEl.readOnly = true;
-                textEditorEl.classList.remove('edit-mode', 'read-mode');
-                const oldIndicator = currentFilenameEl.querySelector('.mode-indicator');
-                if (oldIndicator) oldIndicator.remove();
-                readModeTipEl.classList.remove('show');
-                renderBookmarkList();
-            }
-            
-            function createNewFile() {
-                saveCurrentPosition();
-                
-                const newFile = {
-                    id: 'new-' + Date.now(),
-                    filename: '新文件_' + new Date().toLocaleDateString(),
-                    content: ''
-                };
-                
-                files.unshift(newFile);
-                currentFileId = newFile.id;
-                
-                renderFileList();
-                
-                currentFilenameEl.textContent = newFile.filename;
-                contentEl.value = '';
-                updateCharCount();
-                updateCursorInfo();
-                
-                editModeBtnEl.disabled = false;
-                
-                fileListEl.scrollTop = 0;
-                
-                // 新建文件自动进入编辑模式
-                setEditMode();
-                contentEl.scrollTop = 0;
-                renderBookmarkList();
-            }
-            
-            async function saveFile() {
-                if (!isEditMode) return;
+            });
+        }
 
-                const file = files.find(f => f.id === currentFileId);
-                
-                if (!file) return;
-                
-                const filename = file.filename;
-                const content = contentEl.value;
-                
-                // 保存时也记录当前位置
-                saveCurrentPosition();
-                
-                try {
-                    let result;
-                    let newId = null;
-                    
-                    if (file.id.startsWith('new-')) {
-                        result = await supabase
-                            .from('text_files')
-                            .insert([{
-                                filename: filename,
-                                content: content
-                            }])
-                            .select();
-                    } else {
-                        result = await supabase
-                            .from('text_files')
-                            .update({
-                                content: content,
-                                updated_at: new Date().toISOString()
-                            })
-                            .eq('id', currentFileId)
-                            .select();
-                    }
-                    
-                    const { data, error } = result;
-                    
-                    if (error) throw error;
-                    
-                    // 如果是新文件，需要把旧ID的书签和位置迁移到新ID
-                    if (file.id.startsWith('new-') && data && data.length > 0) {
-                        newId = data[0].id;
-                        // 迁移书签（内存 + 本地缓存 + 云端）
-                        if (bookmarks[file.id]) {
-                            bookmarks[newId] = bookmarks[file.id];
-                            delete bookmarks[file.id];
-                            saveBookmarksToCache();
-                            // 新文件已入库，立刻把书签同步上云
-                            syncBookmarksToCloud(newId).then(() => {
-                                // 尝试把本地旧ID的残留记录清掉
-                                if (supabase) {
-                                    supabase.from('text_bookmarks').delete().eq('file_id', file.id).then(()=>{}).catch(()=>{});
-                                }
-                            });
-                        }
-                        // 迁移位置记忆
-                        try {
-                            const oldKey = `textPosition_${file.id}`;
-                            const oldPos = localStorage.getItem(oldKey);
-                            if (oldPos) {
-                                localStorage.setItem(`textPosition_${newId}`, oldPos);
-                                localStorage.removeItem(oldKey);
-                            }
-                        } catch(e) {}
-                    }
-                    
-                    // 保存前记住当前滚动位置
-                    const savedScrollTop = contentEl.scrollTop;
-                    const savedSelStart = contentEl.selectionStart;
-                    const savedSelEnd = contentEl.selectionEnd;
-                    
-                    await loadFiles();
-                    
-                    if (newId) {
-                        currentFileId = newId;
-                        // selectFile会调用setReadMode，但我们保存后保持在阅读模式
-                        renderFileList();
-                        currentFilenameEl.textContent = filename;
-                        contentEl.value = content;
-                        updateCharCount();
-                        // 保存完成后切换回阅读模式
-                        setReadMode();
-                        renderBookmarkList();
-                        // 保持当前阅读位置
-                        requestAnimationFrame(() => {
-                            isRestoringPosition = true;
-                            contentEl.scrollTop = savedScrollTop;
-                            updateCursorInfo();
-                            setTimeout(() => { isRestoringPosition = false; }, 100);
-                        });
-                    } else {
-                        // 已有文件保存后也回到阅读模式
-                        setReadMode();
-                    }
-                    
-                    showNotification('文件保存成功，已返回阅读模式', 'success');
-                } catch (error) {
-                    console.error('保存文件失败:', error);
-                    showNotification('保存失败: ' + error.message, 'error');
-                }
-            }
+        // ==================== 通知 ====================
+        function showNotification(message, type = 'info') {
+            const el = document.getElementById('notification');
+            const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+            el.className = `notification ${type}`;
+            el.innerHTML = `<i class="fas ${icons[type]}"></i> <span></span>`;
+            el.querySelector('span').textContent = message;
+            el.classList.add('show');
             
-            async function deleteFile(fileId) {
-                if (!confirm('确定要删除这个文件吗？此操作不可撤销。')) {
-                    return;
-                }
-                
-                try {
-                    if (fileId.startsWith('new-')) {
-                        files = files.filter(f => f.id !== fileId);
-                        renderFileList();
-                        if (currentFileId === fileId) {
-                            currentFileId = null;
-                            showEmptyEditor();
-                        }
-                        // 清理书签和位置
-                        delete bookmarks[fileId];
-                        saveBookmarksToCache();
-                        try { localStorage.removeItem(`textPosition_${fileId}`); } catch(e){}
-                        showNotification('未保存的文件已删除', 'success');
-                        return;
-                    }
-                    
-                    const { error } = await supabase
-                        .from('text_files')
-                        .delete()
-                        .eq('id', fileId);
-                    
-                    if (error) throw error;
-                    
-                    if (currentFileId === fileId) {
-                        currentFileId = null;
-                        showEmptyEditor();
-                    }
-                    
-                    // 清理书签（内存 + 本地缓存 + 云端）
-                    delete bookmarks[fileId];
-                    saveBookmarksToCache();
-                    try { localStorage.removeItem(`textPosition_${fileId}`); } catch(e){}
-                    if (supabase) {
-                        supabase.from('text_bookmarks').delete().eq('file_id', fileId).then(()=>{}).catch(()=>{});
-                    }
-                    
-                    await loadFiles();
-                    showNotification('文件删除成功', 'success');
-                } catch (error) {
-                    console.error('删除文件失败:', error);
-                    showNotification('删除失败: ' + error.message, 'error');
-                }
-            }
-            
-            function showNotification(message, type = 'info') {
-                notificationEl.className = `notification ${type}`;
-                
-                let icon = 'fas fa-info-circle';
-                if (type === 'success') icon = 'fas fa-check-circle';
-                if (type === 'error') icon = 'fas fa-exclamation-circle';
-                if (type === 'warning') icon = 'fas fa-exclamation-triangle';
-                
-                // 安全地拼接：图标固定来自白名单，消息用 textContent 避免 XSS
-                notificationEl.textContent = '';
-                const iconEl = document.createElement('i');
-                iconEl.className = icon;
-                const textEl = document.createTextNode(' ' + (message || ''));
-                notificationEl.appendChild(iconEl);
-                notificationEl.appendChild(textEl);
-                
-                notificationEl.classList.add('show');
-                
-                setTimeout(() => {
-                    notificationEl.classList.remove('show');
-                }, 3000);
-            }
+            setTimeout(() => el.classList.remove('show'), 2500);
+        }
 
-            // ========== 侧边栏折叠 + 等比缩放文字（不改变折行） ==========
-            // 核心思路：
-            //   - textarea 始终按"基准排版宽度"排版（桌面端固定 800px），所以"一行显示哪些字符、
-            //     折行点"完全不随侧边栏开关变化，书签定位、阅读位置记忆都不会错位；
-            //   - 缩放比 = 视口宽度 / 基准排版宽度，scaler 的布局宽度就是基准排版宽度，
-            //     因此缩放后的视觉宽度必然正好等于视口宽度 → 文字铺满编辑器框，右侧无空白；
-            //   - 侧边栏收起 → 视口变宽 → 缩放比变大 → 字号变大；
-            //     侧边栏展开 → 视口变窄 → 缩放比变小 → 字号变小。
-            //   - 关键点：侧边栏宽度是 0.3s 过渡动画，视口宽度逐帧变化，
-            //     所以缩放比必须逐帧重算（ResizeObserver），否则动画结束后会残留错误的缩放比。
-            function setSidebarCollapsed(collapsed) {
-                sidebarCollapsed = !!collapsed;
-                if (sidebarCollapsed) {
-                    sidebarEl.classList.add('collapsed');
-                } else {
-                    sidebarEl.classList.remove('collapsed');
-                }
-                requestAnimationFrame(() => {
-                    updateEditorScale();
-                });
-                // 兜底校正：侧边栏宽度过渡为 0.3s，等动画彻底结束后再算一次，
-                // 确保缩放比与最终视口宽度严格一致，不会残留空白或溢出。
-                clearTimeout(sidebarScaleTimer);
-                sidebarScaleTimer = setTimeout(() => {
-                    updateEditorScale();
-                }, 360);
-                try {
-                    localStorage.setItem('sidebarCollapsed', sidebarCollapsed ? '1' : '0');
-                } catch(e) {}
-            }
-
-            function updateEditorScale() {
-                if (!editorViewportEl || !editorScalerEl) return;
-                const vpRect = editorViewportEl.getBoundingClientRect();
-                // 取视口的真实尺寸（不再做 320/200 的最小值兜底，
-                // 否则窄视口下缩放比会大于实际需要，文字会溢出）
-                const vpW = Math.max(1, vpRect.width);
-                const vpH = Math.max(1, vpRect.height);
-                const baseW = getBaseEditorWidth();
-                const scale = vpW / baseW;
-                const baseH = vpH / scale;
-                editorScalerEl.style.width = baseW + 'px';
-                editorScalerEl.style.height = baseH + 'px';
-                editorScalerEl.style.transform = 'scale(' + scale + ')';
-                editorScalerEl._scale = scale;
-                editorScalerEl._baseWidth = baseW;
-                // 因为 textarea 的 clientWidth 始终等于基准排版宽度（不随缩放变化），
-                // 测量镜像 syncMeasureMirrorStyle 读 clientWidth 时拿到的就是基准宽度，定位永远精确。
-            }
-
-            // 逐帧监听编辑视口尺寸：侧边栏过渡动画期间视口每一帧都在变宽/变窄，
-            // 这里每次变化都重算缩放比，保证文字始终严丝合缝地铺满编辑框。
-            function observeEditorViewportSize() {
-                if (!editorViewportEl) return;
-                if (typeof ResizeObserver !== 'undefined') {
-                    const ro = new ResizeObserver(() => {
-                        updateEditorScale();
-                    });
-                    ro.observe(editorViewportEl);
-                } else {
-                    // 老浏览器兜底：窗口尺寸变化时重算（侧边栏动画结束由 setTimeout 兜底校正）
-                    window.addEventListener('resize', updateEditorScale);
-                }
-            }
-
-            function setupEventListeners() {
-                addFileBtnEl.addEventListener('click', createNewFile);
-                saveBtnEl.addEventListener('click', saveFile);
-                editModeBtnEl.addEventListener('click', toggleEditMode);
-                searchInputEl.addEventListener('input', renderFileList);
-                
-                toggleSidebarEl.addEventListener('click', () => {
-                    setSidebarCollapsed(!sidebarCollapsed);
-                });
-                
-                mobileMenuBtnEl.addEventListener('click', () => {
-                    setSidebarCollapsed(!sidebarCollapsed);
-                });
-                
-                document.querySelector('.content-area').addEventListener('click', (e) => {
-                    // 点击内容区时，若在移动端且侧边栏展开，自动收起
-                    if (window.innerWidth <= 768 && !sidebarCollapsed && !e.target.closest('.sidebar')) {
-                        setSidebarCollapsed(true);
-                    }
-                });
-
-                // 窗口尺寸变化时重算缩放
-                window.addEventListener('resize', () => {
-                    updateEditorScale();
-                });
-
-                // 侧边栏宽度过渡动画结束后再校正一次缩放
-                sidebarEl.addEventListener('transitionend', (e) => {
-                    if (e.propertyName === 'width') updateEditorScale();
-                });
-
-                // 逐帧监听编辑视口尺寸变化（侧边栏动画期间同步跟随，避免残留空白）
-                observeEditorViewportSize();
-
-                // 初次渲染：读取用户上次的侧边栏状态
-                let initialCollapsed = false;
-                try {
-                    initialCollapsed = localStorage.getItem('sidebarCollapsed') === '1';
-                } catch(e) {}
-                setSidebarCollapsed(initialCollapsed);
-                // 首次延迟一个事件循环，等布局稳定后再算缩放
-                requestAnimationFrame(() => {
-                    updateEditorScale();
-                });
-                // 页面完全加载后再校正一次（字体/滚动条就绪后尺寸才最终确定）
-                window.addEventListener('load', () => {
-                    updateEditorScale();
-                });
-                
-                document.addEventListener('keydown', (e) => {
-                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                        e.preventDefault();
-                        if (isEditMode && !saveBtnEl.disabled) {
-                            saveFile();
-                        } else if (!isEditMode && currentFileId) {
-                            showNotification('当前为阅读模式，请先点击「编辑」按钮', 'warning');
-                        }
-                    }
-                    // Ctrl+B 添加书签
-                    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-                        e.preventDefault();
-                        // 如果书签面板没打开，先打开
-                        if (!bookmarkPanelEl.classList.contains('open')) {
-                            bookmarkPanelEl.classList.add('open');
-                            bookmarkToggleEl.classList.add('active');
-                            renderBookmarkList();
-                        }
-                        openAddBookmarkModal();
-                    }
-                    // Escape 键退出编辑模式
-                    if (e.key === 'Escape' && isEditMode) {
-                        setReadMode();
-                    }
-                });
-            }
-        })();
+        // ==================== 启动 ====================
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
