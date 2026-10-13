@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文本管理器</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>文本管理器（阅读+编辑模式）</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
         :root {
             --primary: #6366f1;
@@ -1230,7 +1232,9 @@
     </div>
 
     <!-- Supabase客户端库 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"
+            integrity="sha384-YieCqqg9gQufX7+5HcFvCEg/n3KUEdl8/Jb+A6J0npf1mB740VayvwKjTrtCeUoy"
+            crossorigin="anonymous"></script>
     
     <!-- 数据库配置信息 -->
     <script>
@@ -1246,6 +1250,8 @@
             let files = [];
             let editingFileId = null;
             let bookmarks = {}; // { fileId: [{ id, name, position, scrollTop, preview, createdAt }] }
+            let bookmarksLoaded = false;  // 是否已从云端拉取完书签
+            let bookmarkSyncTimer = null; // 防抖同步定时器
             let pendingBookmarkPosition = null;
             let isRestoringPosition = false;
             let isEditMode = false; // 当前是否为编辑模式
@@ -1327,6 +1333,9 @@
                     statusDotEl.style.backgroundColor = 'var(--success)';
                     
                     await loadFiles();
+                    // 从云端拉取书签（会把本地旧缓存覆盖成最新云端数据，之后触发本地→云端的首次迁移）
+                    await loadBookmarksFromCloud();
+                    await migrateLocalBookmarksToCloud();
                     setupEventListeners();
                     setupBookmarkEventListeners();
                     
@@ -1626,6 +1635,7 @@
             
             // ========== 书签功能 ==========
             
+            // 从 localStorage 读离线缓存（首次进页面时兜底显示）
             function loadBookmarksFromStorage() {
                 try {
                     const saved = localStorage.getItem('textBookmarks');
@@ -1635,10 +1645,96 @@
                 } catch(e) { bookmarks = {}; }
             }
             
-            function saveBookmarksToStorage() {
+            // 写入本地离线缓存（localStorage），只作本地兜底，不代表已经同步到云
+            function saveBookmarksToCache() {
                 try {
                     localStorage.setItem('textBookmarks', JSON.stringify(bookmarks));
                 } catch(e) {}
+            }
+            
+            // 防抖：在 300ms 内多次改动只同步一次，减少数据库写入次数
+            function scheduleBookmarksSync(fileId) {
+                saveBookmarksToCache(); // 本地立刻保存（防断电/断网丢数据）
+                if (!supabase || !fileId || fileId.startsWith('new-')) return; // 新文件未入库时不同步
+                clearTimeout(bookmarkSyncTimer);
+                bookmarkSyncTimer = setTimeout(() => {
+                    syncBookmarksToCloud(fileId);
+                }, 300);
+            }
+            
+            // 把某个文件的书签整包同步到云端：upsert（存在则更新，不存在则插入）
+            // 用 bookmarks_json 字段整包存取，避免逐条操作时的竞态
+            async function syncBookmarksToCloud(fileId) {
+                if (!supabase || !fileId || fileId.startsWith('new-')) return;
+                try {
+                    const list = bookmarks[fileId] || [];
+                    const { error } = await supabase
+                        .from('text_bookmarks')
+                        .upsert({
+                            file_id: fileId,
+                            bookmarks_json: list,
+                            updated_at: new Date().toISOString()
+                        }, { onConflict: 'file_id' });
+                    if (error) {
+                        console.warn('书签字段同步失败（已本地保存）:', error.message);
+                    }
+                } catch(e) {
+                    console.warn('书签同步异常:', e);
+                }
+            }
+            
+            // 首次进入时，从云端一次性拉取所有文件的书签，并合并到本地缓存
+            async function loadBookmarksFromCloud() {
+                if (!supabase) return;
+                try {
+                    const { data, error } = await supabase
+                        .from('text_bookmarks')
+                        .select('file_id, bookmarks_json, updated_at');
+                    if (error) {
+                        // 最常见原因：表还没建；给出一次明确提示，不打断主功能
+                        if (error.code === '42P01') {
+                            console.warn('text_bookmarks 表不存在，书签将暂存本地。请在 Supabase SQL 编辑器中执行建表语句启用云同步。');
+                        } else {
+                            console.warn('从云端加载书签失败:', error.message);
+                        }
+                        bookmarksLoaded = true;
+                        return;
+                    }
+                    // 云端数据优先覆盖本地（以 updated_at 为准）
+                    const cloudMap = {};
+                    (data || []).forEach(row => {
+                        cloudMap[row.file_id] = {
+                            list: Array.isArray(row.bookmarks_json) ? row.bookmarks_json : [],
+                            updated_at: row.updated_at || 0
+                        };
+                    });
+                    // 合并：本地有而云端没有的（比如某文件还没建过书签）暂保留，等用户下次改动时再上云
+                    Object.keys(bookmarks).forEach(fid => {
+                        if (!cloudMap[fid]) cloudMap[fid] = { list: bookmarks[fid], updated_at: 0 };
+                    });
+                    bookmarks = {};
+                    Object.keys(cloudMap).forEach(fid => {
+                        bookmarks[fid] = cloudMap[fid].list || [];
+                    });
+                    saveBookmarksToCache();
+                    bookmarksLoaded = true;
+                    // 如果当前已有打开的文件，刷新书签面板（可能刚从云端拉到新数据）
+                    if (currentFileId) renderBookmarkList();
+                } catch(e) {
+                    console.warn('加载云端书签异常:', e);
+                    bookmarksLoaded = true;
+                }
+            }
+            
+            // 迁移：第一次上云同步时，把本地旧书签一次性写上去
+            async function migrateLocalBookmarksToCloud() {
+                if (!supabase) return;
+                const existingIds = Object.keys(bookmarks).filter(fid =>
+                    !fid.startsWith('new-') && Array.isArray(bookmarks[fid]) && bookmarks[fid].length > 0
+                );
+                for (const fid of existingIds) {
+                    await syncBookmarksToCloud(fid);
+                }
             }
             
             function getCurrentFileBookmarks() {
@@ -1802,16 +1898,20 @@
                     bookmarks[currentFileId] = [];
                 }
                 bookmarks[currentFileId].push(bm);
-                saveBookmarksToStorage();
+                scheduleBookmarksSync(currentFileId);
                 renderBookmarkList();
                 closeAddBookmarkModal();
-                showNotification('书签已添加', 'success');
+                showNotification('书签已添加（已同步）', 'success');
             }
             
             function deleteBookmark(bmId) {
                 if (!currentFileId || !bookmarks[currentFileId]) return;
                 bookmarks[currentFileId] = bookmarks[currentFileId].filter(b => b.id !== bmId);
-                saveBookmarksToStorage();
+                scheduleBookmarksSync(currentFileId);
+                // 如果该文件已经没有书签了，顺手删掉云端这一行（保持表干净）
+                if (bookmarks[currentFileId].length === 0 && supabase && !currentFileId.startsWith('new-')) {
+                    supabase.from('text_bookmarks').delete().eq('file_id', currentFileId).then(()=>{}).catch(()=>{});
+                }
                 renderBookmarkList();
                 showNotification('书签已删除', 'success');
             }
@@ -1835,7 +1935,7 @@
                         const newName = input.value.trim();
                         if (newName) {
                             bm.name = newName;
-                            saveBookmarksToStorage();
+                            scheduleBookmarksSync(currentFileId);
                         }
                     }
                     renderBookmarkList();
@@ -1985,12 +2085,13 @@
                     fileItem.dataset.id = file.id;
                     
                     const isEditing = editingFileId === file.id;
+                    const safeName = escapeHtml(file.filename);
                     
                     fileItem.innerHTML = `
                         <div class="file-name-container">
                             ${isEditing ? 
-                                `<input type="text" class="file-name-input" value="${file.filename}" data-id="${file.id}">` : 
-                                `<div class="file-name">${file.filename}</div>`
+                                `<input type="text" class="file-name-input" value="${safeName}" data-id="${file.id}">` : 
+                                `<div class="file-name">${safeName}</div>`
                             }
                         </div>
                         <div class="file-actions">
@@ -2221,11 +2322,18 @@
                     // 如果是新文件，需要把旧ID的书签和位置迁移到新ID
                     if (file.id.startsWith('new-') && data && data.length > 0) {
                         newId = data[0].id;
-                        // 迁移书签
+                        // 迁移书签（内存 + 本地缓存 + 云端）
                         if (bookmarks[file.id]) {
                             bookmarks[newId] = bookmarks[file.id];
                             delete bookmarks[file.id];
-                            saveBookmarksToStorage();
+                            saveBookmarksToCache();
+                            // 新文件已入库，立刻把书签同步上云
+                            syncBookmarksToCloud(newId).then(() => {
+                                // 尝试把本地旧ID的残留记录清掉
+                                if (supabase) {
+                                    supabase.from('text_bookmarks').delete().eq('file_id', file.id).then(()=>{}).catch(()=>{});
+                                }
+                            });
                         }
                         // 迁移位置记忆
                         try {
@@ -2289,7 +2397,7 @@
                         }
                         // 清理书签和位置
                         delete bookmarks[fileId];
-                        saveBookmarksToStorage();
+                        saveBookmarksToCache();
                         try { localStorage.removeItem(`textPosition_${fileId}`); } catch(e){}
                         showNotification('未保存的文件已删除', 'success');
                         return;
@@ -2307,10 +2415,13 @@
                         showEmptyEditor();
                     }
                     
-                    // 清理书签和位置
+                    // 清理书签（内存 + 本地缓存 + 云端）
                     delete bookmarks[fileId];
-                    saveBookmarksToStorage();
+                    saveBookmarksToCache();
                     try { localStorage.removeItem(`textPosition_${fileId}`); } catch(e){}
+                    if (supabase) {
+                        supabase.from('text_bookmarks').delete().eq('file_id', fileId).then(()=>{}).catch(()=>{});
+                    }
                     
                     await loadFiles();
                     showNotification('文件删除成功', 'success');
@@ -2321,7 +2432,6 @@
             }
             
             function showNotification(message, type = 'info') {
-                notificationEl.textContent = message;
                 notificationEl.className = `notification ${type}`;
                 
                 let icon = 'fas fa-info-circle';
@@ -2329,7 +2439,14 @@
                 if (type === 'error') icon = 'fas fa-exclamation-circle';
                 if (type === 'warning') icon = 'fas fa-exclamation-triangle';
                 
-                notificationEl.innerHTML = `<i class="${icon}"></i> ${message}`;
+                // 安全地拼接：图标固定来自白名单，消息用 textContent 避免 XSS
+                notificationEl.textContent = '';
+                const iconEl = document.createElement('i');
+                iconEl.className = icon;
+                const textEl = document.createTextNode(' ' + (message || ''));
+                notificationEl.appendChild(iconEl);
+                notificationEl.appendChild(textEl);
+                
                 notificationEl.classList.add('show');
                 
                 setTimeout(() => {
