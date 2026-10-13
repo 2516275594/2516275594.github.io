@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文本管理器</title>
+    文本管理器</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
-    <!-- Supabase JS SDK - 双CDN回退，去掉易出错的SRI校验 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js'"></script>
-    <style>
+    <!-- Supabase JS SDK - 官方标准路径，兼容所有浏览器模式 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { height: 100vh; display: flex; background: #f0f2f5; overflow: hidden; }
         /* 侧边栏 */
@@ -83,9 +83,6 @@
         /* 状态栏 */
         .statusbar { padding: 8px 20px; background: #fff; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; display: flex; justify-content: space-between; align-items: center; margin-left: 30px; transition: margin-left 0.3s ease; }
         .sidebar.collapsed ~ .main .statusbar { margin-left: 0; }
-        .sync-status { display: flex; align-items: center; gap: 6px; }
-        .sync-status.online { color: #10b981; }
-        .sync-status.offline { color: #f59e0b; }
         /* 跳转提示 */
         .jump-toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .jump-toast.show { opacity: 1; }
@@ -107,11 +104,11 @@
         }
     </style>
 </head>
-<body>
+
     <!-- 侧边栏 -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2>我的笔记</h2>
+            我的笔记</h2>
             <button class="new-file-btn" onclick="createNewFile()">
                 <i class="fas fa-plus"></i> 新建
             </button>
@@ -158,34 +155,30 @@
             <!-- 书签面板 -->
             <div class="bookmark-panel" id="bookmarkPanel">
                 <div class="bookmark-header">
-                    <h3><i class="fas fa-bookmark"></i> 书签</h3>
+                    <i class="fas fa-bookmark"></i> 书签</h3>
                     <button class="add-bookmark-btn" onclick="addBookmarkAtCursor()">
                         <i class="fas fa-plus"></i> 当前位置
                     </button>
                 </div>
                 <div class="bookmark-list" id="bookmarkList">
-                    <div class="empty-bookmarks">暂无书签<br>按 Ctrl+B 快速添加</div>
+                    <div class="empty-bookmarks">暂无书签按 Ctrl+B 快速添加</div>
                 </div>
             </div>
         </div>
 
         <div class="statusbar">
             <div id="positionInfo">行 1, 列 1</div>
-            <div class="sync-status offline" id="syncStatus">
-                <i class="fas fa-database"></i> <span id="syncText">本地模式</span>
-            </div>
         </div>
     </div>
 
     <div class="notification" id="notification"></div>
 
-    <script>
+    
         // ==================== 全局状态 ====================
         const SUPABASE_URL = 'https://ubsdjmcnonsormczvtuq.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic2RqbWNub25zb3JtY3p2dHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NjgwMDAsImV4cCI6MjA3ODQ0NDAwMH0.Cp03e89qS9k2X7z5R8t4Y6u3I1o0P7a2S9d4F6g8H0j2K5l8M3n7B1v9C4x6Z2a3s5D7f9G';
         
-        let supabase = null;
-        let isCloudAvailable = false;
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentFileId = null;
         let isEditMode = false;
         let files = [];
@@ -194,42 +187,16 @@
         
         // ==================== 初始化 ====================
         async function init() {
-            // 1. 先检查Supabase是否加载成功
-            if (window.supabase && window.supabase.createClient) {
-                try {
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                        auth: { persistSession: false }
-                    });
-                    // 测试连接
-                    const { error } = await supabase.from('text_files').select('id', { count: 'exact', head: true });
-                    if (!error) {
-                        isCloudAvailable = true;
-                        updateSyncStatus(true, '云端同步已连接');
-                    } else {
-                        console.warn('云数据库连接失败，自动降级为本地模式:', error.message);
-                    }
-                } catch (e) {
-                    console.warn('Supabase初始化失败，自动降级为本地模式:', e);
-                }
-            } else {
-                console.warn('Supabase SDK加载失败，自动降级为本地模式');
-            }
-            
-            if (!isCloudAvailable) {
-                updateSyncStatus(false, '本地模式（云端不可用）');
-                showNotification('云端连接失败，已自动切换为纯本地模式，书签保存在浏览器中', 'info');
-            }
-
-            // 2. 加载文件列表
+            // 加载文件列表
             await loadFiles();
             
-            // 3. 初始化UI
+            // 初始化UI
             initSidebar();
             initEditor();
             initShortcuts();
             initScaleOnResize();
             
-            // 4. 恢复上次打开的文件
+            // 恢复上次打开的文件
             const lastFileId = localStorage.getItem('lastFileId');
             if (lastFileId) {
                 openFile(lastFileId);
@@ -238,35 +205,15 @@
             }
         }
 
-        function updateSyncStatus(online, text) {
-            const el = document.getElementById('syncStatus');
-            const textEl = document.getElementById('syncText');
-            if (online) {
-                el.className = 'sync-status online';
-                el.innerHTML = `<i class="fas fa-cloud"></i> <span>${text}</span>`;
-            } else {
-                el.className = 'sync-status offline';
-                el.innerHTML = `<i class="fas fa-hdd"></i> <span>${text}</span>`;
-            }
-        }
-
         // ==================== 文件操作 ====================
         async function loadFiles() {
-            try {
-                let result;
-                if (isCloudAvailable) {
-                    result = await supabase.from('text_files').select('*').order('updated_at', { ascending: false });
-                    if (result.error) throw result.error;
-                    files = result.data || [];
-                } else {
-                    files = JSON.parse(localStorage.getItem('local_files') || '[]');
-                }
-                renderFileList();
-            } catch (e) {
-                console.error('加载文件列表失败:', e);
-                files = JSON.parse(localStorage.getItem('local_files') || '[]');
-                renderFileList();
+            const { data, error } = await supabase.from('text_files').select('*').order('updated_at', { ascending: false });
+            if (error) {
+                showNotification('加载文件失败: ' + error.message, 'error');
+                return;
             }
+            files = data || [];
+            renderFileList();
         }
 
         async function createNewFile() {
@@ -278,18 +225,10 @@
                 updated_at: new Date().toISOString()
             };
             
-            try {
-                if (isCloudAvailable) {
-                    const { error } = await supabase.from('text_files').insert(newFile);
-                    if (error) throw error;
-                } else {
-                    files.unshift(newFile);
-                    localStorage.setItem('local_files', JSON.stringify(files));
-                }
-            } catch (e) {
-                console.warn('云端创建失败，保存到本地:', e);
-                files.unshift(newFile);
-                localStorage.setItem('local_files', JSON.stringify(files));
+            const { error } = await supabase.from('text_files').insert(newFile);
+            if (error) {
+                showNotification('创建失败: ' + error.message, 'error');
+                return;
             }
             
             await loadFiles();
@@ -305,20 +244,8 @@
                 await saveCurrentBookmarks();
             }
             
-            let file;
-            try {
-                if (isCloudAvailable) {
-                    const { data, error } = await supabase.from('text_files').select('*').eq('id', fileId).single();
-                    if (error) throw error;
-                    file = data;
-                } else {
-                    file = files.find(f => f.id === fileId);
-                }
-            } catch (e) {
-                file = files.find(f => f.id === fileId);
-            }
-            
-            if (!file) return;
+            const { data: file, error } = await supabase.from('text_files').select('*').eq('id', fileId).single();
+            if (error || !file) return;
             
             currentFileId = fileId;
             document.getElementById('filename').value = file.filename;
@@ -344,70 +271,45 @@
             const content = document.getElementById('editor').value;
             const filename = document.getElementById('filename').value;
             
-            try {
-                if (isCloudAvailable) {
-                    const { error } = await supabase.from('text_files')
-                        .update({ content, filename, updated_at: new Date().toISOString() })
-                        .eq('id', currentFileId);
-                    if (error) throw error;
-                } else {
-                    const idx = files.findIndex(f => f.id === currentFileId);
-                    if (idx >= 0) {
-                        files[idx].content = content;
-                        files[idx].filename = filename;
-                        files[idx].updated_at = new Date().toISOString();
-                        localStorage.setItem('local_files', JSON.stringify(files));
-                    }
-                }
-                
-                exitEditMode();
-                showNotification('保存成功', 'success');
-                await loadFiles();
-            } catch (e) {
-                console.error('保存失败:', e);
-                // 本地兜底保存
-                const idx = files.findIndex(f => f.id === currentFileId);
-                if (idx >= 0) {
-                    files[idx].content = content;
-                    files[idx].filename = filename;
-                    localStorage.setItem('local_files', JSON.stringify(files));
-                    showNotification('云端保存失败，已保存到本地', 'info');
-                    exitEditMode();
-                } else {
-                    showNotification('保存失败: ' + e.message, 'error');
-                }
+            const { error } = await supabase.from('text_files')
+                .update({ content, filename, updated_at: new Date().toISOString() })
+                .eq('id', currentFileId);
+            
+            if (error) {
+                showNotification('保存失败: ' + error.message, 'error');
+                return;
             }
+            
+            exitEditMode();
+            showNotification('保存成功', 'success');
+            await loadFiles();
         }
 
         async function deleteFile(fileId, event) {
             event.stopPropagation();
             if (!confirm('确定要删除这个笔记吗？此操作不可恢复。')) return;
             
-            try {
-                if (isCloudAvailable) {
-                    await supabase.from('text_files').delete().eq('id', fileId);
-                }
-                files = files.filter(f => f.id !== fileId);
-                if (!isCloudAvailable) {
-                    localStorage.setItem('local_files', JSON.stringify(files));
-                }
-                
-                if (currentFileId === fileId) {
-                    currentFileId = null;
-                    document.getElementById('editor').value = '';
-                    document.getElementById('filename').value = '未命名笔记';
-                    currentBookmarks = [];
-                    renderBookmarks();
-                    if (files.length > 0) {
-                        openFile(files[0].id);
-                    }
-                }
-                
-                await loadFiles();
-                showNotification('笔记已删除', 'success');
-            } catch (e) {
-                showNotification('删除失败: ' + e.message, 'error');
+            const { error } = await supabase.from('text_files').delete().eq('id', fileId);
+            if (error) {
+                showNotification('删除失败: ' + error.message, 'error');
+                return;
             }
+            
+            files = files.filter(f => f.id !== fileId);
+            
+            if (currentFileId === fileId) {
+                currentFileId = null;
+                document.getElementById('editor').value = '';
+                document.getElementById('filename').value = '未命名笔记';
+                currentBookmarks = [];
+                renderBookmarks();
+                if (files.length > 0) {
+                    openFile(files[0].id);
+                }
+            }
+            
+            await loadFiles();
+            showNotification('笔记已删除', 'success');
         }
 
         function renderFileList() {
@@ -621,31 +523,22 @@
 
         async function loadBookmarks(fileId) {
             currentBookmarks = [];
-            try {
-                if (isCloudAvailable) {
-                    // 尝试从云端加载
-                    const { data, error } = await supabase.from('text_bookmarks')
-                        .select('bookmarks_json')
-                        .eq('file_id', fileId)
-                        .maybeSingle();
-                    if (data && data.bookmarks_json) {
-                        currentBookmarks = data.bookmarks_json;
-                    }
-                }
-            } catch (e) {
-                console.warn('云端书加载失败，从本地加载:', e);
+            // 尝试从云端加载
+            const { data, error } = await supabase.from('text_bookmarks')
+                .select('bookmarks_json')
+                .eq('file_id', fileId)
+                .maybeSingle();
+            if (data && data.bookmarks_json) {
+                currentBookmarks = data.bookmarks_json;
             }
             
-            // 云端没有则从本地读取（兼容旧数据）
+            // 云端没有则从本地读取（兼容旧数据，自动迁移）
             if (currentBookmarks.length === 0) {
                 const local = localStorage.getItem(`bookmarks_${fileId}`);
                 if (local) {
                     try {
                         currentBookmarks = JSON.parse(local);
-                        // 自动迁移到云端
-                        if (isCloudAvailable) {
-                            await saveCurrentBookmarks(true);
-                        }
+                        await saveCurrentBookmarks(true);
                     } catch (e) {}
                 }
             }
@@ -657,26 +550,19 @@
         async function saveCurrentBookmarks(silent = false) {
             if (!currentFileId) return;
             
-            // 始终保存到本地（离线缓存）
+            // 始终保存到本地（缓存）
             localStorage.setItem(`bookmarks_${currentFileId}`, JSON.stringify(currentBookmarks));
             
-            // 云端可用时同步
-            if (!isCloudAvailable) return;
+            // 同步到云端
+            const { error } = await supabase.from('text_bookmarks')
+                .upsert({
+                    file_id: currentFileId,
+                    bookmarks_json: currentBookmarks,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'file_id' });
             
-            try {
-                // upsert：有则更新，无则插入
-                const { error } = await supabase.from('text_bookmarks')
-                    .upsert({
-                        file_id: currentFileId,
-                        bookmarks_json: currentBookmarks,
-                        updated_at: new Date().toISOString()
-                    }, { onConflict: 'file_id' });
-                
-                if (error && !silent) {
-                    console.warn('书签云端同步失败，已保存在本地:', error.message);
-                }
-            } catch (e) {
-                console.warn('书签云端同步异常，已保存在本地:', e);
+            if (error && !silent) {
+                console.warn('书签同步失败:', error.message);
             }
         }
 
@@ -704,6 +590,7 @@
                 const text = editor.value;
                 let charPos = 0;
                 let lines = 0;
+ lines = 0;
                 for (let i = 0; i < text.length; i++) {
                     if (text[i] === '\n') lines++;
                     if (lines >= lineIndex) {
@@ -804,7 +691,7 @@
             const list = document.getElementById('bookmarkList');
             
             if (currentBookmarks.length === 0) {
-                list.innerHTML = '<div class="empty-bookmarks">暂无书签<br>按 Ctrl+B 快速添加</div>';
+                list.innerHTML = '<div class="empty-bookmarks">暂无书签按 Ctrl+B 快速添加</div>';
                 return;
             }
             
@@ -855,7 +742,7 @@
             const el = document.getElementById('notification');
             const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
             el.className = `notification ${type}`;
-            el.innerHTML = `<i class="fas ${icons[type]}"></i> <span></span>`;
+            el.innerHTML = `<i class="fas ${icons[type]}"></i> </span>`;
             el.querySelector('span').textContent = message;
             el.classList.add('show');
             
