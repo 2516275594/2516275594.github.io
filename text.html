@@ -33,12 +33,7 @@ h1 { font-size: 1.6rem; font-weight: 600; }
 .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: var(--success); animation: pulse 2s infinite; }
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 .container { display: flex; flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; height: calc(100% - 70px); overflow: hidden; }
-/* 侧边栏：收起时用负 margin 真正释放宽度，让编辑区占满 */
-.sidebar { width: var(--sidebar-width); background-color: var(--card-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: margin-left 0.3s ease, transform 0.3s ease; box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05); }
-.sidebar.sidebar-collapsed {
-  margin-left: calc(var(--sidebar-width) * -1);
-  transform: translateX(calc(var(--sidebar-width) * -1));
-}
+.sidebar { width: var(--sidebar-width); background-color: var(--card-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: all 0.3s ease; box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05); }
 .sidebar-header { padding: 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
 .sidebar-header h2 { font-size: 1.25rem; color: var(--text-light); font-weight: 500; }
 .add-btn { background-color: var(--primary); color: white; border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
@@ -62,7 +57,7 @@ h1 { font-size: 1.6rem; font-weight: 600; }
 .action-btn:hover { background-color: #f1f5f9; color: var(--primary); }
 .delete-btn:hover { color: var(--error); background-color: #fee2e2; }
 .edit-btn:hover { color: var(--primary-dark); background-color: #e0e7ff; }
-.content-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+.content-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .content-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background-color: var(--card-bg); }
 .content-header h2 { font-size: 1.3rem; color: var(--text); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
 .mode-indicator { font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 12px; margin-left: 10px; font-weight: 500; vertical-align: middle; }
@@ -88,8 +83,7 @@ h1 { font-size: 1.6rem; font-weight: 600; }
 /* 阅读模式样式 */
 .text-editor.read-mode { background-color: var(--read-bg); }
 .text-editor.edit-mode { background-color: var(--edit-bg); box-shadow: inset 0 0 0 2px var(--warning); }
-/* textarea：内边距变化加过渡，收起侧边栏时右侧留白平滑扩展，正文换行宽度保持不变 */
-.text-editor textarea { flex: 1; padding: 1.5rem; border: none; font-size: 1rem; line-height: 1.7; resize: none; background: transparent; color: var(--text); font-family: 'Consolas', 'Monaco', 'Courier New', 'Microsoft YaHei', monospace; tab-size: 4; transition: background-color 0.3s ease, padding 0.3s ease; }
+.text-editor textarea { flex: 1; padding: 1.5rem; border: none; font-size: 1rem; line-height: 1.7; resize: none; background: transparent; color: var(--text); font-family: 'Consolas', 'Monaco', 'Courier New', 'Microsoft YaHei', monospace; tab-size: 4; transition: background-color 0.3s ease; }
 .text-editor.read-mode textarea { cursor: default; background-color: var(--read-bg); opacity: 0.85; }
 .text-editor.edit-mode textarea { cursor: text; background-color: white; }
 .text-editor textarea:focus { outline: none; }
@@ -145,29 +139,8 @@ h1 { font-size: 1.6rem; font-weight: 600; }
 .modal-btn.cancel:hover { background: #e2e8f0; }
 .modal-btn.confirm { background: var(--primary); color: white; }
 .modal-btn.confirm:hover { background: var(--primary-dark); }
-/* 左侧浮动箭头把手：贴在内容区左边缘，收起侧边栏后仍在页面最左边 */
-.sidebar-toggle-float {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 56px;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-left: none;
-  border-radius: 0 10px 10px 0;
-  color: var(--primary);
-  cursor: pointer;
-  font-size: 0.9rem;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
-  transition: all 0.2s ease;
-}
-.sidebar-toggle-float:hover { background: #eef2ff; width: 30px; }
+.toggle-sidebar { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1.2rem; padding: 0.3rem; border-radius: 4px; transition: all 0.2s ease; }
+.toggle-sidebar:hover { background-color: #eef2ff; }
 .notification { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 8px; color: white; font-weight: 500; box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); transform: translateY(100px); opacity: 0; transition: all 0.5s ease; z-index: 1000; display: flex; align-items: center; gap: 10px; max-width: 400px; }
 .notification.show { transform: translateY(0); opacity: 1; }
 .notification.success { background-color: var(--success); }
@@ -180,12 +153,13 @@ h1 { font-size: 1.6rem; font-weight: 600; }
 .empty-state i { font-size: 3rem; margin-bottom: 1rem; color: #cbd5e1; }
 .empty-state h3 { font-size: 1.4rem; margin-bottom: 0.5rem; color: var(--text); }
 .empty-state p { max-width: 350px; line-height: 1.5; }
+.sidebar-collapsed { transform: translateX(calc(var(--sidebar-width) * -1)); }
 .mobile-menu-btn { display: none; background: none; border: none; color: white; font-size: 1.4rem; cursor: pointer; padding: 0.5rem; margin-right: 1rem; }
 @media (max-width: 768px) {
   .sidebar { position: absolute; height: calc(100% - 70px); z-index: 5; box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1); }
-  .sidebar.sidebar-collapsed { margin-left: 0; transform: translateX(-100%); }
+  .sidebar-collapsed { transform: translateX(-100%); }
   .mobile-menu-btn { display: block; }
-  .sidebar-toggle-float { display: none; }
+  .toggle-sidebar { display: none; }
   .bookmark-panel { width: min(var(--bookmark-width), 82vw); }
   .header-actions { gap: 6px; }
   .edit-mode-btn, .save-btn { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
@@ -229,6 +203,7 @@ h1 { font-size: 1.6rem; font-weight: 600; }
     <div class="content-header">
       <h2 id="current-filename">选择或创建新文本</h2>
       <div class="header-actions">
+        <button class="toggle-sidebar" id="toggle-sidebar" title="隐藏侧边栏"><i class="fas fa-chevron-left"></i></button>
         <div class="icon-btn-wrapper">
           <button class="icon-btn" id="bookmark-toggle" title="书签面板 (Ctrl+B)">
             <i class="fas fa-bookmark"></i>
@@ -242,10 +217,6 @@ h1 { font-size: 1.6rem; font-weight: 600; }
       </div>
     </div>
     <div class="editor-container">
-      <!-- 左侧浮动箭头把手：收起/展开侧边栏 -->
-      <button class="sidebar-toggle-float" id="toggle-sidebar" title="收起侧边栏">
-        <i class="fas fa-chevron-left"></i>
-      </button>
       <div class="text-editor" id="text-editor">
         <div class="read-mode-tip" id="read-mode-tip">
           <i class="fas fa-eye"></i>
@@ -291,29 +262,9 @@ h1 { font-size: 1.6rem; font-weight: 600; }
   </div>
 </div>
 
-<!-- Supabase客户端库：多源降级加载，第一个失败自动换下一个 -->
-<script>
-  (function loadSupabase(sources, i) {
-    if (i >= sources.length) {
-      console.error('所有 Supabase CDN 均加载失败，请检查网络');
-      return;
-    }
-    var s = document.createElement('script');
-    s.src = sources[i];
-    s.onload = function () { console.log('Supabase 库加载成功: ' + sources[i]); };
-    s.onerror = function () {
-      console.warn('CDN 加载失败，尝试下一个源: ' + sources[i + 1]);
-      s.remove();
-      loadSupabase(sources, i + 1);
-    };
-    document.head.appendChild(s);
-  })([
-    'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js',
-    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js',
-    'https://fastly.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js',
-    'https://cdn.staticfile.net/supabase-js/2.45.4/supabase.min.js'
-  ], 0);
-</script>
+<!-- Supabase客户端库 -->
+<script src="./supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- 数据库配置信息 -->
 <script>
 // 数据库配置信息
@@ -331,7 +282,6 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
   let pendingBookmarkPosition = null;
   let isRestoringPosition = false;
   let isEditMode = false; // 当前是否为编辑模式
-  let editorBasePaddingRight = null; // textarea 基础右内边距（收起侧边栏时用）
 
   let measureMirrorEl = null; // 用于测量文本真实排版（含自动换行）的隐藏镜像元素
   let measureTextEl = null;
@@ -371,19 +321,6 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
   document.addEventListener('DOMContentLoaded', initApp);
 
   async function initApp() {
-    // 记录 textarea 基础右内边距（收起侧边栏时把释放的宽度加到这里）
-    editorBasePaddingRight = getComputedStyle(contentEl).paddingRight;
-
-    // 库加载失败防御：CDN 全挂时给出友好提示而不是 TypeError
-    if (!window.supabase) {
-      connectionStatusEl.textContent = '脚本库加载失败';
-      statusDotEl.style.backgroundColor = 'var(--error)';
-      showNotification('Supabase 库加载失败，请检查网络后刷新页面', 'error');
-      setupEventListeners();
-      setupBookmarkEventListeners();
-      return;
-    }
-
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
       showNotification('请先配置Supabase连接信息', 'error');
       connectionStatusEl.textContent = '配置错误';
@@ -398,7 +335,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
       connectionStatusEl.textContent = '已连接到数据库';
       statusDotEl.style.backgroundColor = 'var(--success)';
 
-      // 连接成功后从数据库加载书签（本地缓存会与云端合并）
+      /* ← 修改：连接成功后从数据库加载书签（本地缓存会与云端合并） */
       await loadBookmarksFromDB();
 
       await loadFiles();
@@ -440,25 +377,6 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
       showNotification('数据库连接失败: ' + error.message, 'error');
     }
   }
-
-  // ========== 侧边栏收起/展开（正文换行宽度保持不变） ==========
-  // 收起侧边栏时：把释放出来的宽度加到 textarea 右内边距上，
-  // 正文换行宽度保持不变 → 每行字数不变、书签与阅读位置不会错位
-  function applySidebarPadding(collapsed) {
-    if (window.innerWidth <= 768 || !collapsed) {
-      contentEl.style.paddingRight = '';
-      return;
-    }
-    const sbWidth = sidebarEl.getBoundingClientRect().width || 280;
-    const basePadL = parseFloat(getComputedStyle(contentEl).paddingLeft) || 24;
-    const basePadR = parseFloat(editorBasePaddingRight) || basePadL;
-    contentEl.style.paddingRight = (basePadR + sbWidth) + 'px';
-  }
-
-  // 窗口跨过移动端断点时校正内边距
-  window.addEventListener('resize', () => {
-    applySidebarPadding(sidebarEl.classList.contains('sidebar-collapsed'));
-  });
 
   // ========== 阅读/编辑模式切换 ==========
   function setReadMode() {
@@ -677,7 +595,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
   }
 
   // ========== 书签功能（数据库存储 + 本地缓存降级） ==========
-  // localStorage 仅作为缓存，真实数据以数据库为准
+
+  /* ← 修改：localStorage 仅作为缓存，真实数据以数据库为准 */
   let bookmarksLoaded = false;
 
   // 本地缓存写入（降级/快速显示用）
@@ -887,7 +806,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
       bookmarks[currentFileId] = [];
     }
     bookmarks[currentFileId].push(bm);
-    // 保存到本地缓存 + 数据库
+    /* ← 修改：保存到本地缓存 + 数据库 */
     saveBookmarks();
     renderBookmarkList();
     closeAddBookmarkModal();
@@ -897,7 +816,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
   function deleteBookmark(bmId) {
     if (!currentFileId || !bookmarks[currentFileId]) return;
     bookmarks[currentFileId] = bookmarks[currentFileId].filter(b => b.id !== bmId);
-    // 保存到本地缓存 + 数据库
+    /* ← 修改：保存到本地缓存 + 数据库 */
     saveBookmarks();
     renderBookmarkList();
     showNotification('书签已删除', 'success');
@@ -920,7 +839,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
         const newName = input.value.trim();
         if (newName && newName !== bm.name) {
           bm.name = newName;
-          // 保存到本地缓存 + 数据库
+          /* ← 修改：保存到本地缓存 + 数据库 */
           saveBookmarks();
         }
       }
@@ -1201,7 +1120,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
       if (file.id.startsWith('new-') && data && data.length > 0) {
         newId = data[0].id;
-        // 书签迁移到新 ID 后同步写入数据库
+        /* ← 修改：书签迁移到新 ID 后同步写入数据库 */
         if (bookmarks[file.id]) {
           bookmarks[newId] = bookmarks[file.id];
           delete bookmarks[file.id];
@@ -1305,17 +1224,12 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
     saveBtnEl.addEventListener('click', saveFile);
     editModeBtnEl.addEventListener('click', toggleEditMode);
     searchInputEl.addEventListener('input', renderFileList);
-
-    // 左侧浮动箭头把手：收起/展开侧边栏，同时锁定正文换行宽度
     toggleSidebarEl.addEventListener('click', () => {
-      const collapsed = sidebarEl.classList.toggle('sidebar-collapsed');
-      toggleSidebarEl.innerHTML = collapsed
+      sidebarEl.classList.toggle('sidebar-collapsed');
+      toggleSidebarEl.innerHTML = sidebarEl.classList.contains('sidebar-collapsed')
         ? '<i class="fas fa-chevron-right"></i>'
         : '<i class="fas fa-chevron-left"></i>';
-      toggleSidebarEl.title = collapsed ? '展开侧边栏' : '收起侧边栏';
-      applySidebarPadding(collapsed);
     });
-
     mobileMenuBtnEl.addEventListener('click', () => {
       sidebarEl.classList.toggle('sidebar-collapsed');
     });
