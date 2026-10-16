@@ -88,8 +88,8 @@ h1 { font-size: 1.6rem; font-weight: 600; }
 /* 阅读模式样式 */
 .text-editor.read-mode { background-color: var(--read-bg); }
 .text-editor.edit-mode { background-color: var(--edit-bg); box-shadow: inset 0 0 0 2px var(--warning); }
-/* ← 修改：字号变化加过渡，收起侧边栏时文字平滑放大 */
-.text-editor textarea { flex: 1; padding: 1.5rem; border: none; font-size: 1rem; line-height: 1.7; resize: none; background: transparent; color: var(--text); font-family: 'Consolas', 'Monaco', 'Courier New', 'Microsoft YaHei', monospace; tab-size: 4; transition: background-color 0.3s ease, font-size 0.3s ease; }
+/* ← 修改：去掉字号过渡动画（字号瞬时变化，配合锚点校准让屏幕文字原地不动） */
+.text-editor textarea { flex: 1; padding: 1.5rem; border: none; font-size: 1rem; line-height: 1.7; resize: none; background: transparent; color: var(--text); font-family: 'Consolas', 'Monaco', 'Courier New', 'Microsoft YaHei', monospace; tab-size: 4; transition: background-color 0.3s ease; }
 .text-editor.read-mode textarea { cursor: default; background-color: var(--read-bg); opacity: 0.85; }
 .text-editor.edit-mode textarea { cursor: text; background-color: white; }
 .text-editor textarea:focus { outline: none; }
@@ -418,34 +418,59 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
     }
   }
 
-  // ========== 侧边栏收起/展开：文字等比放大，每行字数保持不变 ==========
+  // ========== 侧边栏收起/展开：文字等比放大 + 保持当前屏幕显示的内容不变 ==========
   /* ← 修改（核心逻辑）：
-     收起侧边栏后，正文可用宽度变为原来的 k 倍。
-     把字号也精确放大 k 倍（上限 1.5 倍），字符宽度同比变大，
-     这样每行显示的字数与收起前完全一致，文字以更大的字号铺满原列表区域。
-     排版测量镜像元素每次都会同步 computedStyle（含新字号），书签/行号定位依然精确。 */
+     1. 锚点保持：切换前先记录"当前视口顶部显示的是哪个字符 + 它在视口内的偏移"，
+        字号变化导致重新换行后，立刻把该字符滚回原来的视口位置 → 屏幕上的文字原地不动。
+     2. 等比放大：收起后正文宽度变为原来的 k 倍，字号也放大 k 倍（上限 1.5 倍），
+        每行显示的字数与收起前完全一致。
+     排版测量镜像每次实时读取 computedStyle（含新字号），书签/行号定位依然精确。 */
   function applySidebarZoom(collapsed) {
+    // 锚点：当前视口顶部显示的字符位置 + 它在视口内的像素偏移
+    const anchorPos = findCharAtPixel(contentEl.scrollTop);
+    const anchorOffset = measureCharTop(anchorPos) - contentEl.scrollTop;
+
+    // 计算并应用等比放大（每行字数不变）
     if (window.innerWidth <= 768 || !collapsed) {
       contentEl.style.fontSize = '';
-      return;
+    } else {
+      const cs = getComputedStyle(contentEl);
+      const padL = parseFloat(cs.paddingLeft) || 0;
+      const padR = parseFloat(cs.paddingRight) || 0;
+      const baseFont = parseFloat(editorBaseFontSize) || 16;
+      // 收起后的内容区实际可用宽度
+      const newContentW = contentEl.clientWidth - padL - padR;
+      // 收起前的内容区宽度 = 收起后宽度 - 侧边栏宽度
+      const sbW = parseFloat(getComputedStyle(sidebarEl).width) || 280;
+      const baseW = Math.max(120, newContentW - sbW);
+      let k = newContentW / baseW;
+      k = Math.max(1, Math.min(k, 1.5)); // 限制放大倍数，避免字号过大
+      contentEl.style.fontSize = (baseFont * k).toFixed(2) + 'px';
     }
-    const cs = getComputedStyle(contentEl);
-    const padL = parseFloat(cs.paddingLeft) || 0;
-    const padR = parseFloat(cs.paddingRight) || 0;
-    const baseFont = parseFloat(editorBaseFontSize) || 16;
-    // 收起后的内容区实际可用宽度
-    const newContentW = contentEl.clientWidth - padL - padR;
-    // 收起前的内容区宽度 = 收起后宽度 - 侧边栏宽度
-    const sbW = parseFloat(getComputedStyle(sidebarEl).width) || 280;
-    const baseW = Math.max(120, newContentW - sbW);
-    let k = newContentW / baseW;
-    k = Math.max(1, Math.min(k, 1.5)); // 限制放大倍数，避免字号过大
-    contentEl.style.fontSize = (baseFont * k).toFixed(2) + 'px';
+
+    // 布局变化完成后，把锚点字符滚回原来的视口位置 → 屏幕上的文字原地不动
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        isRestoringPosition = true;
+        const newTop = Math.max(0, Math.min(
+          measureCharTop(anchorPos) - anchorOffset,
+          getMaxScroll()
+        ));
+        contentEl.scrollTop = newTop;
+        updateCursorInfo();
+        setTimeout(() => { isRestoringPosition = false; }, 150);
+      });
+    });
   }
 
-  // 窗口尺寸变化时，若处于收起状态则重新计算放大倍数
+  // ← 修改：仅在跨过移动端断点时重新应用，普通 resize 下不重复缩放、不引起文字跳动
+  let lastWinWidth = window.innerWidth;
   window.addEventListener('resize', () => {
-    applySidebarZoom(sidebarEl.classList.contains('sidebar-collapsed'));
+    const crossed = (lastWinWidth > 768) !== (window.innerWidth > 768);
+    lastWinWidth = window.innerWidth;
+    if (crossed) {
+      applySidebarZoom(sidebarEl.classList.contains('sidebar-collapsed'));
+    }
   });
 
   // ========== 阅读/编辑模式切换 ==========
@@ -1294,7 +1319,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
     editModeBtnEl.addEventListener('click', toggleEditMode);
     searchInputEl.addEventListener('input', renderFileList);
 
-    // ← 修改：左侧浮动箭头把手，收起/展开侧边栏，同时应用文字放大
+    // ← 修改：左侧浮动箭头把手，收起/展开侧边栏（applySidebarZoom 内含锚点保持）
     toggleSidebarEl.addEventListener('click', () => {
       const collapsed = sidebarEl.classList.toggle('sidebar-collapsed');
       toggleSidebarEl.innerHTML = collapsed
