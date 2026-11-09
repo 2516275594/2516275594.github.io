@@ -118,14 +118,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (error) { setAuthMessage('登录失败：' + error.message); return; }
     setAuthMessage('登录成功', false); showApp(data.user);
   });
-  document.getElementById('signupBtn').addEventListener('click', async () => {
-    const password = document.getElementById('authPassword').value;
-    if (password.length < 12) { setAuthMessage('请设置至少 12 位的强密码，再创建账户。'); return; }
-    const { data, error } = await supabaseClient.auth.signUp({ email: ADMIN_EMAIL, password });
-    if (error) { setAuthMessage('创建账户失败：' + error.message); return; }
-    if (data.session) { setAuthMessage('账户创建成功，已登录。', false); showApp(data.user); }
-    else setAuthMessage('注册请求已提交。请先到邮箱查收 Supabase 验证邮件，完成验证后返回登录。', false);
-  });
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     isEditMode = false; closeEditModal();
     const { error } = await supabaseClient.auth.signOut();
