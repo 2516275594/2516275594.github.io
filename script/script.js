@@ -54,10 +54,15 @@ function renderPagination() {
   const start = Math.max(1, Math.min(currentPage - 2, totalPageCount - 4));
   for (let i = start; i <= Math.min(totalPageCount, start + 4); i++) {
     const btn = document.createElement('button');
-    btn.type = 'button'; btn.textContent = String(i);
-    btn.style.margin = '0 4px';
-    if (i === currentPage) { btn.style.background = '#48BB78'; btn.style.color = '#fff'; }
-    btn.addEventListener('click', () => loadNotes(currentGroup, i));
+    btn.type = 'button';
+    btn.textContent = String(i);
+    btn.className = 'page-number' + (i === currentPage ? ' active' : '');
+    if (i === currentPage) {
+      btn.setAttribute('aria-current', 'page');
+      btn.disabled = true;
+    } else {
+      btn.addEventListener('click', () => loadNotes(currentGroup, i));
+    }
     pageNums.appendChild(btn);
   }
 }
