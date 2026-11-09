@@ -6,7 +6,6 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
 
-let isEditMode = false;
 let currentEditId = null;
 let currentPage = 1;
 let pageSize = 10;
@@ -32,12 +31,6 @@ function showApp(user) {
     setAuthMessage('此账户没有访问权限。');
     supabaseClient.auth.signOut();
   }
-}
-function updateEditButtons() {
-  document.querySelectorAll('.edit-btn,.delete-btn').forEach(btn => {
-    btn.style.opacity = isEditMode ? '1' : '.5';
-    btn.style.pointerEvents = isEditMode ? 'auto' : 'none';
-  });
 }
 function closeEditModal() {
   const modal = document.getElementById('editModal');
@@ -92,11 +85,12 @@ async function loadNotes(group = '', page = 1) {
     if (note.remark) { const remark = document.createElement('div'); remark.style.margin = '8px 0'; remark.textContent = '备注：' + note.remark; card.appendChild(remark); }
     const footer = document.createElement('div'); footer.className = 'note-footer';
     const date = document.createElement('span'); date.textContent = '保存时间：' + formatDate(new Date(note.created_at));
-    const del = document.createElement('span'); del.className = 'delete-btn'; del.dataset.id = note.id; del.textContent = '删除';
-    const edit = document.createElement('span'); edit.className = 'edit-btn'; edit.dataset.id = note.id; edit.textContent = '修改';
-    footer.append(date, del, edit); card.appendChild(footer); container.appendChild(card);
+    const actions = document.createElement('div'); actions.className = 'note-actions';
+    const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'edit-btn'; edit.dataset.id = note.id; edit.textContent = '修改';
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'delete-btn'; del.dataset.id = note.id; del.textContent = '删除';
+    actions.append(edit, del); footer.append(date, actions); card.appendChild(footer); container.appendChild(card);
   });
-  updateEditButtons(); renderPagination();
+  renderPagination();
 }
 document.addEventListener('DOMContentLoaded', async () => {
   // 登录页面每次显示时都要求重新输入邮箱，不从页面或浏览器表单预填。
@@ -122,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setAuthMessage('登录成功', false); showApp(data.user);
   });
   document.getElementById('logoutBtn').addEventListener('click', async () => {
-    isEditMode = false; closeEditModal();
+    closeEditModal();
     const { error } = await supabaseClient.auth.signOut();
     if (error) alert('退出失败：' + error.message);
   });
@@ -138,11 +132,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (error) alert('保存失败：' + error.message);
     else { document.getElementById('mainText').value = ''; document.getElementById('noteText').value = ''; await loadNotes(currentGroup, 1); }
   });
-  document.getElementById('enterEditModeBtn').addEventListener('click', () => {
-    isEditMode = !isEditMode;
-    document.getElementById('editModeIndicator').style.display = isEditMode ? 'inline-block' : 'none';
-    updateEditButtons();
-  });
   document.getElementById('groupFilter').addEventListener('change', e => loadNotes(e.target.value, 1));
   document.getElementById('pageSizeSelect').addEventListener('change', () => loadNotes(currentGroup, 1));
   document.getElementById('prevPage').addEventListener('click', () => currentPage > 1 && loadNotes(currentGroup, currentPage - 1));
@@ -153,6 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     else alert(`请输入 1 到 ${totalPageCount} 之间的页码`);
   });
   document.getElementById('cancelEditBtn').addEventListener('click', closeEditModal);
+  document.getElementById('closeEditBtn').addEventListener('click', closeEditModal);
   window.addEventListener('click', e => { if (e.target === document.getElementById('editModal')) closeEditModal(); });
   document.getElementById('editNoteForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -168,13 +158,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('notesContainer').addEventListener('click', async e => {
     const target = e.target;
     if (target.classList.contains('delete-btn')) {
-      if (!isEditMode) return alert('请先进入修改模式');
       if (!confirm('确定删除这条笔记？')) return;
       const { error } = await supabaseClient.from('notes').delete().eq('id', target.dataset.id);
       if (error) alert('删除失败：' + error.message); else await loadNotes(currentGroup, currentPage);
     }
     if (target.classList.contains('edit-btn')) {
-      if (!isEditMode) return alert('请先进入修改模式');
       const note = filteredData.find(n => n.id === target.dataset.id);
       if (!note) return;
       currentEditId = note.id;
