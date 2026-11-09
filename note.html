@@ -106,6 +106,11 @@
         width: 100%;
       }
     }
+    /* 分页按钮：当前页使用明显的高亮样式 */
+    #paginationControls #pageNumbers { display:inline-flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px; margin:0 8px; }
+    #paginationControls #pageNumbers .page-number { min-width:38px; padding:8px 12px; border:1px solid #d1d5db; border-radius:9px; background:#fff; color:#374151; font-weight:600; transition:all .2s ease; }
+    #paginationControls #pageNumbers .page-number:hover:not(.active) { background:#f3f4f6; border-color:#9ca3af; }
+    #paginationControls #pageNumbers .page-number.active { background:#4f46e5; color:#fff; border:2px solid #3730a3; box-shadow:0 0 0 3px rgba(79,70,229,.18), 0 3px 8px rgba(79,70,229,.22); font-weight:800; transform:translateY(-1px); cursor:default; }
     #editModal { display:none; position:fixed; inset:0; width:100%; height:100%; padding:18px; box-sizing:border-box; background:rgba(15,23,42,.58); backdrop-filter:blur(5px); z-index:1000; justify-content:center; align-items:center; overflow-y:auto; }
     #editModal.show { display:flex; }
     #editModal .modal-content { background:#fff; padding:28px; border-radius:20px; width:100%; max-width:560px; max-height:calc(100vh - 36px); overflow-y:auto; box-shadow:0 24px 80px rgba(15,23,42,.28); border:1px solid #e2e8f0; box-sizing:border-box; }
