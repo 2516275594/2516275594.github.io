@@ -99,6 +99,8 @@ async function loadNotes(group = '', page = 1) {
   updateEditButtons(); renderPagination();
 }
 document.addEventListener('DOMContentLoaded', async () => {
+  // 登录页面每次显示时都要求重新输入邮箱，不从页面或浏览器表单预填。
+  document.getElementById('authEmail').value = '';
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) showApp(session.user);
   supabaseClient.auth.onAuthStateChange((_event, sessionNow) => {
@@ -106,13 +108,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     else {
       document.getElementById('appShell').hidden = true;
       document.getElementById('authPanel').hidden = false;
+      document.getElementById('authEmail').value = '';
       document.getElementById('authPassword').value = '';
     }
   });
 
   document.getElementById('authForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const email = ADMIN_EMAIL;
+    const email = document.getElementById('authEmail').value.trim().toLowerCase();
     const password = document.getElementById('authPassword').value;
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) { setAuthMessage('登录失败：' + error.message); return; }
