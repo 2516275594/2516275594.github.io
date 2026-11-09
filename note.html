@@ -111,24 +111,84 @@
     #paginationControls #pageNumbers .page-number { min-width:38px; padding:8px 12px; border:1px solid #d1d5db; border-radius:9px; background:#fff; color:#374151; font-weight:600; transition:all .2s ease; }
     #paginationControls #pageNumbers .page-number:hover:not(.active) { background:#f3f4f6; border-color:#9ca3af; }
     #paginationControls #pageNumbers .page-number.active { background:#4f46e5; color:#fff; border:2px solid #3730a3; box-shadow:0 0 0 3px rgba(79,70,229,.18), 0 3px 8px rgba(79,70,229,.22); font-weight:800; transform:translateY(-1px); cursor:default; }
-    #editModal { display:none; position:fixed; inset:0; width:100%; height:100%; padding:18px; box-sizing:border-box; background:rgba(15,23,42,.58); backdrop-filter:blur(5px); z-index:1000; justify-content:center; align-items:center; overflow-y:auto; }
+    /* 编辑窗口：独立布局，避免被页面顶部的通用 form 三列样式影响 */
+    #editModal {
+      display:none; position:fixed; inset:0; z-index:1000;
+      align-items:center; justify-content:center; padding:24px;
+      box-sizing:border-box; overflow-y:auto;
+      background:rgba(15,23,42,.62); backdrop-filter:blur(7px);
+    }
     #editModal.show { display:flex; }
-    #editModal .modal-content { background:#fff; padding:28px; border-radius:20px; width:100%; max-width:560px; max-height:calc(100vh - 36px); overflow-y:auto; box-shadow:0 24px 80px rgba(15,23,42,.28); border:1px solid #e2e8f0; box-sizing:border-box; }
-    #editModal .modal-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:22px; }
-    #editModal .modal-kicker { margin:0 0 6px; color:#6366f1; font-size:12px; font-weight:700; letter-spacing:.08em; }
-    #editModal h3 { margin:0; color:#0f172a; font-size:23px; font-weight:750; }
-    #editModal .modal-subtitle { margin:7px 0 0; color:#64748b; font-size:13px; }
-    #editModal .modal-close { flex:0 0 36px; width:36px; height:36px; padding:0; border-radius:10px; background:#f1f5f9; color:#475569; font-size:20px; line-height:1; }
-    #editModal label { display:block; margin:18px 0 8px; color:#334155; font-size:14px; font-weight:650; }
-    #editModal textarea, #editModal input[type="text"], #editModal select { display:block; width:100%; padding:12px 14px; border:1px solid #cbd5e1; border-radius:11px; box-sizing:border-box; background:#f8fafc; color:#0f172a; font:inherit; font-size:15px; transition:border-color .2s, box-shadow .2s; }
-    #editModal textarea:focus, #editModal input[type="text"]:focus, #editModal select:focus { outline:none; border-color:#6366f1; background:#fff; box-shadow:0 0 0 3px rgba(99,102,241,.13); }
-    #editModal textarea { min-height:190px; resize:vertical; line-height:1.7; }
-    #editModal .form-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:24px; padding-top:18px; border-top:1px solid #e2e8f0; }
-    #editModal .form-actions button { width:auto; min-width:104px; padding:11px 20px; border:0; border-radius:10px; cursor:pointer; font-size:14px; font-weight:700; }
+    #editModal .modal-content {
+      width:min(100%, 620px); max-height:min(88vh, 820px); overflow-y:auto;
+      box-sizing:border-box; padding:30px;
+      background:#fff; border:1px solid rgba(226,232,240,.9); border-radius:22px;
+      box-shadow:0 28px 90px rgba(15,23,42,.30);
+    }
+    #editModal .modal-heading {
+      display:flex; align-items:flex-start; justify-content:space-between; gap:18px;
+      padding-bottom:20px; margin-bottom:22px; border-bottom:1px solid #edf0f5;
+    }
+    #editModal .modal-kicker { margin:0 0 6px; color:#4f46e5; font-size:11px; font-weight:800; letter-spacing:.13em; }
+    #editModal h3 { margin:0; color:#172033; font-size:24px; line-height:1.3; font-weight:750; }
+    #editModal .modal-subtitle { margin:7px 0 0; color:#718096; font-size:13px; line-height:1.6; }
+    #editModal .modal-close {
+      flex:0 0 38px; width:38px; height:38px; padding:0; border-radius:12px;
+      background:#f1f5f9; color:#475569; font-size:22px; line-height:1;
+    }
+    #editModal #editNoteForm {
+      display:block; width:100%; margin:0; padding:0;
+      background:transparent; border:0; border-radius:0; box-shadow:none;
+    }
+    #editModal .edit-field { margin:0 0 19px; }
+    #editModal .edit-field label {
+      display:block; margin:0 0 8px; color:#334155; font-size:14px; font-weight:700;
+    }
+    #editModal .field-hint { margin:6px 0 0; color:#94a3b8; font-size:12px; }
+    #editModal #editContent,
+    #editModal #editRemark,
+    #editModal #editGroup {
+      display:block; width:100%; max-width:100%; min-width:0;
+      box-sizing:border-box; margin:0; padding:13px 14px;
+      border:1px solid #d8dee9; border-radius:12px;
+      background:#f8fafc; color:#172033; font:inherit; font-size:15px;
+      transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+    #editModal #editContent { min-height:210px; height: min(34vh, 300px); resize:vertical; line-height:1.75; }
+    #editModal #editRemark { height:48px; }
+    #editModal #editGroup { height:48px; cursor:pointer; }
+    #editModal #editContent:focus,
+    #editModal #editRemark:focus,
+    #editModal #editGroup:focus {
+      outline:none; border-color:#6366f1; background:#fff;
+      box-shadow:0 0 0 4px rgba(99,102,241,.13);
+    }
+    #editModal .form-actions {
+      display:flex; justify-content:flex-end; gap:12px; margin:25px 0 0;
+      padding-top:20px; border-top:1px solid #edf0f5;
+    }
+    #editModal .form-actions button {
+      width:auto; min-width:112px; padding:12px 20px; border:0;
+      border-radius:11px; font-size:14px; font-weight:750; cursor:pointer;
+    }
     #editModal .btn-cancel { background:#f1f5f9; color:#475569; }
-    #editModal .btn-save { background:#4f46e5; color:#fff; }
+    #editModal .btn-cancel:hover { background:#e2e8f0; }
+    #editModal .btn-save { background:#4f46e5; color:#fff; box-shadow:0 4px 10px rgba(79,70,229,.2); }
     #editModal .btn-save:hover { background:#4338ca; }
-    @media(max-width:600px) { #editModal { padding:10px; align-items:flex-end; } #editModal .modal-content { padding:22px 18px; border-radius:20px 20px 14px 14px; max-height:90vh; } #editModal .form-actions { flex-direction:row; } #editModal .form-actions button { flex:1; min-width:0; width:auto; } }
+    @media(max-width:600px) {
+      #editModal { align-items:flex-end; padding:0; }
+      #editModal .modal-content {
+        width:100%; max-height:92vh; padding:24px 18px calc(20px + env(safe-area-inset-bottom));
+        border-radius:22px 22px 0 0; border-bottom:0;
+      }
+      #editModal h3 { font-size:21px; }
+      #editModal #editContent { height:30vh; min-height:160px; }
+      #editModal .form-actions { display:grid; grid-template-columns:1fr 1.35fr; }
+      #editModal .form-actions button { width:100%; min-width:0; }
+    }
+    @media(prefers-reduced-motion:reduce) {
+      #editModal *, #editModal *::before, #editModal *::after { transition:none !important; }
+    }
   </style>
 </head>
 <body>
@@ -214,96 +274,35 @@
         <button type="button" id="closeEditBtn" class="modal-close" aria-label="关闭">×</button>
       </div>
       <form id="editNoteForm">
-        <label>文本内容：</label>
-        <textarea id="editContent" rows="3" required style="height: 180px;"></textarea>
+        <div class="edit-field">
+          <label for="editContent">笔记内容</label>
+          <textarea id="editContent" rows="8" required placeholder="输入笔记内容…"></textarea>
+          <p class="field-hint">支持多行文本，保存后会立即更新笔记。</p>
+        </div>
 
-        <label>备注（可选）：</label>
-        <input type="text" id="editRemark">
+        <div class="edit-field">
+          <label for="editRemark">备注 <span style="color:#94a3b8;font-weight:400;">（可选）</span></label>
+          <input type="text" id="editRemark" placeholder="添加补充说明…">
+        </div>
 
-        <label>分组：</label>
-        <select id="editGroup">
-          <option value="默认">默认</option>
-          <option value="工作">工作</option>
-          <option value="生活">生活</option>
-          <option value="学习">学习</option>
-        </select>
+        <div class="edit-field" style="margin-bottom:0;">
+          <label for="editGroup">所属分组</label>
+          <select id="editGroup">
+            <option value="默认">默认</option>
+            <option value="工作">工作</option>
+            <option value="生活">生活</option>
+            <option value="学习">学习</option>
+          </select>
+        </div>
 
         <div class="form-actions">
           <button type="button" id="cancelEditBtn" class="btn-cancel">取消</button>
-          <button type="submit" class="btn-save">保存</button>
+          <button type="submit" class="btn-save">保存修改</button>
         </div>
       </form>
     </div>
   </div>
 
-  <script>
-    // 修复模态框显示问题的简单JavaScript
-    document.addEventListener('DOMContentLoaded', function() {
-      // 保存原来的脚本函数引用
-      const originalShowModal = window.showEditModal;
-      
-      // 重写showEditModal函数，确保能添加show类
-      if (typeof originalShowModal === 'function') {
-        window.showEditModal = function(note) {
-          // 先调用原始函数
-          originalShowModal.call(this, note);
-          
-          // 然后确保模态框显示
-          const editModal = document.getElementById('editModal');
-          if (editModal) {
-            editModal.style.display = 'flex';
-            editModal.classList.add('show');
-          }
-        };
-      }
-      
-      // 重写hideEditModal函数
-      const originalHideModal = window.hideEditModal;
-      if (typeof originalHideModal === 'function') {
-        window.hideEditModal = function() {
-          // 先移除show类，然后设置display为none
-          const editModal = document.getElementById('editModal');
-          if (editModal) {
-            editModal.classList.remove('show');
-            // 延迟设置display: none，以便过渡效果（如果有）完成
-            setTimeout(() => {
-              editModal.style.display = 'none';
-            }, 300);
-          }
-          
-          // 调用原始函数
-          originalHideModal.call(this);
-        };
-      }
-      
-      // 为取消按钮添加事件监听
-      const cancelBtn = document.getElementById('cancelEditBtn');
-      if (cancelBtn) {
-        cancelBtn.addEventListener('click', function() {
-          const editModal = document.getElementById('editModal');
-          if (editModal) {
-            editModal.classList.remove('show');
-            setTimeout(() => {
-              editModal.style.display = 'none';
-            }, 300);
-          }
-        });
-      }
-      
-      // 如果外部脚本没有正确显示模态框，这是一个备用方案
-      // 监听所有编辑按钮的点击事件
-      document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('edit-btn')) {
-          // 确保模态框显示
-          const editModal = document.getElementById('editModal');
-          if (editModal) {
-            editModal.style.display = 'flex';
-            editModal.classList.add('show');
-          }
-        }
-      });
-    });
-  </script>
 
 </body>
 </html>
