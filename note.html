@@ -303,8 +303,23 @@
   </style>
 </head>
 <body>
-
-  <h1>📝 记事本</h1>
+  <section id="authPanel" style="max-width:420px;margin:8vh auto;padding:28px;background:#fff;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.08);">
+    <h1>🔐 私人记事本</h1>
+    <p style="text-align:center;color:#64748b;">请使用授权邮箱登录后访问笔记</p>
+    <form id="authForm" style="display:grid;grid-template-columns:1fr;gap:12px;">
+      <input id="authEmail" type="email" value="2516275594@qq.com" autocomplete="username" required readonly style="padding:12px;border:1px solid #d1d5db;border-radius:10px;">
+      <input id="authPassword" type="password" placeholder="登录密码" autocomplete="current-password" required style="padding:12px;border:1px solid #d1d5db;border-radius:10px;">
+      <button id="loginBtn" type="submit">登录</button>
+      <button id="signupBtn" type="button" style="background:#4f46e5;">首次使用？创建账户</button>
+    </form>
+    <p id="authMessage" role="status" style="color:#b45309;text-align:center;min-height:24px;"></p>
+  </section>
+  <div id="appShell" hidden>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span id="signedInAs" style="color:#64748b;font-size:14px;"></span>
+    <button id="logoutBtn" type="button" style="background:#64748b;">退出登录</button>
+  </div>
+  <h1>📝 私人记事本</h1>
 
   <form id="noteForm">
     <input type="text" id="mainText" placeholder="输入要保存的文本..." required>
@@ -357,6 +372,8 @@
       <button id="gotoPageBtn">跳转</button>
     </div>
   </div>
+
+  </div><!-- /appShell -->
 
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
