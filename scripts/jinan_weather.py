@@ -114,29 +114,24 @@ def parse_daily_item(text: str):
 
 
 def parse_daily_forecast(soup: BeautifulSoup) -> list:
-    """优先从单日卡片提取；若网站拆分标签，再用文本邻近窗口兜底。"""
+    """只遍历一次页面文本，避免逐层读取嵌套 div 导致性能问题。"""
+    lines = [x.strip() for x in soup.get_text("\\n", strip=True).splitlines() if x.strip()]
     candidates = []
-    for node in soup.find_all(["li", "article", "div", "a", "p"]):
-        text = node.get_text(" ", strip=True)
-        if 8 <= len(text) <= 240 and DATE_RE.search(text):
-            item = parse_daily_item(text)
-            if item:
-                candidates.append((len(text), item))
-
-    lines = [x.strip() for x in soup.get_text("\n", strip=True).splitlines() if x.strip()]
     for i, line in enumerate(lines):
-        if DATE_RE.search(line):
-            window = " ".join(lines[i:i + 9])
-            item = parse_daily_item(window)
-            if item:
-                candidates.append((len(window), item))
+        if not DATE_RE.search(line):
+            continue
+        # 2345 会把日期、天气、温度、风力拆成相邻节点，组合附近文本再解析。
+        window = " ".join(lines[i:i + 18])
+        item = parse_daily_item(window)
+        if item:
+            candidates.append((len(window), item))
 
     by_date = {}
     for length, item in sorted(candidates, key=lambda x: x[0]):
         by_date.setdefault(item["date"], item)
     result = sorted(by_date.values(), key=lambda x: x["date"])
     if not result:
-        raise RuntimeError("未能从 2345 多日预报页面识别出日期、天气和温度；为避免覆盖旧数据，本次不写入 JSON。")
+        raise RuntimeError("未能从 2345 多日预报页面识别出日期、天气和带温度单位的温度范围；为避免覆盖旧数据，本次不写入 JSON。")
     return result[:15]
 
 
