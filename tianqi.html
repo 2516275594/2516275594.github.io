@@ -155,41 +155,40 @@ function skyconCode(v){
 function normalizeApiZero(raw){
  const root=raw?.result||raw?.data||raw||{};
  if(root.current&&root.daily&&root.hourly)return {weather:root,alerts:root.alerts||root.alert?.content||[]};
- const rt=root.realtime||root.current||{};
+ const rt=root.realtime||root.current||{},summary=root.summary||{};
  const hr=root.hourly||{},dy=root.daily||{};
  const wind=rt.wind||{},prec=rt.precipitation?.local||rt.precipitation||{};
- const currentTime=rt.observation_time?new Date(rt.observation_time*1000).toISOString().slice(0,19):new Date().toISOString().slice(0,19);
- const tempArr=seriesValues(hr.temperature), tempTimes=seriesTimes(hr.temperature);
- const pick=(name)=>seriesValues(hr[name]);
- const pickDaily=(name)=>seriesValues(dy[name]);
- const hourlyCode=seriesValues(hr.skycon).map(skyconCode);
- const hourlyWind=hr.wind||{};
+ const tempArr=seriesValues(hr.temperature),tempTimes=seriesTimes(hr.temperature);
+ const pick=name=>seriesValues(hr[name]);
+ const hourlyWind=Array.isArray(hr.wind)?hr.wind:[];
  const hourlyPrecip=Array.isArray(hr.precipitation)?hr.precipitation:[];
  const dailyTemp=Array.isArray(dy.temperature)?dy.temperature:[];
  const dailyAppTemp=Array.isArray(dy.apparent_temperature)?dy.apparent_temperature:[];
  const dailyPrecip=Array.isArray(dy.precipitation)?dy.precipitation:[];
  const dailyWind=Array.isArray(dy.wind)?dy.wind:[];
+ const hourlyCode=seriesValues(hr.skycon).map(skyconCode);
  const hourly={
   time:tempTimes.length?tempTimes:seriesTimes(hr.skycon),
   temperature_2m:tempArr,
   relative_humidity_2m:pick('humidity').map(v=>v<=1?v*100:v),
   dew_point_2m:pick('dew_point'),
-  apparent_temperature:pick('apparent_temperature'),
+  apparent_temperature:pick('apparent_temperature').length?pick('apparent_temperature'):tempArr,
   precipitation_probability:hourlyPrecip.map(v=>v&&typeof v==='object'?(v.probability??v.prob??0):0),
   precipitation:hourlyPrecip.map(v=>v&&typeof v==='object'?(v.value??v.avg??0):v),
-  weather_code:hourlyCode,
-  wind_speed_10m:seriesValues(hourlyWind.speed).map(v=>v*3.6),
-  wind_direction_10m:seriesValues(hourlyWind.direction),
-  wind_gusts_10m:seriesValues(hourlyWind.gust).map(v=>v*3.6),
-  visibility:pick('visibility').map(v=>v<=100?v*1000:v),
+  weather_code:hourlyCode.length?hourlyCode:tempArr.map(()=>skyconCode(rt.skycon||summary.skycon_code)),
+  wind_speed_10m:hourlyWind.map(v=>Number(v?.speed??v?.value??0)*3.6),
+  wind_direction_10m:hourlyWind.map(v=>Number(v?.direction??0)),
+  wind_gusts_10m:hourlyWind.map(v=>Number(v?.gust??v?.speed??0)*3.6),
+  visibility:pick('visibility').length?pick('visibility').map(v=>v<=100?v*1000:v):tempArr.map(()=>Number(rt.visibility??summary.visibility_km??0)*1000),
   uv_index:pick('ultraviolet').length?pick('ultraviolet'):pick('uv_index'),
-  cloud_cover:pick('cloudrate').map(v=>v*100),
-  pressure_msl:pick('pressure')
+  cloud_cover:pick('cloudrate').map(v=>v<=1?v*100:v),
+  pressure_msl:pick('pressure').map(v=>v>2000?v/100:v)
  };
  const dayTimes=seriesTimes(dy.temperature);
  const dayCodes=seriesValues(dy.skycon).map(skyconCode);
- const sunrise=seriesValues(dy.sunrise).map(v=>v?.time||v||'');
- const sunset=seriesValues(dy.sunset).map(v=>v?.time||v||'');
+ const astro=Array.isArray(dy.astro)?dy.astro:[];
+ const sunrise=astro.map(v=>v?.sunrise||'');
+ const sunset=astro.map(v=>v?.sunset||'');
  const daily={
   time:dayTimes.length?dayTimes:seriesTimes(dy.skycon),
   weather_code:dayCodes,
@@ -198,35 +197,34 @@ function normalizeApiZero(raw){
   apparent_temperature_max:dailyAppTemp.map(v=>v&&typeof v==='object'?(v.max??v.value??0):v),
   apparent_temperature_min:dailyAppTemp.map(v=>v&&typeof v==='object'?(v.min??v.value??0):v),
   sunrise,sunset,
-  daylight_duration:seriesValues(dy.sunrise).map((v,i)=>{const a=Date.parse(sunrise[i]),b=Date.parse(sunset[i]);return Number.isFinite(a)&&Number.isFinite(b)?(b-a)/1000:0}),
+  daylight_duration:sunrise.map((v,i)=>{const a=Date.parse(v),b=Date.parse(sunset[i]);return Number.isFinite(a)&&Number.isFinite(b)?(b-a)/1000:0}),
   sunshine_duration:seriesValues(dy.sunshine).map(v=>typeof v==='number'?v*3600:(v?.duration||0)),
   uv_index_max:seriesValues(dy.ultraviolet).map(v=>v?.max??v),
   precipitation_probability_max:dailyPrecip.map(v=>v&&typeof v==='object'?(v.probability??v.max??0):0),
   precipitation_sum:dailyPrecip.map(v=>v&&typeof v==='object'?(v.avg??v.max??v.value??0):v),
-  precipitation_hours:seriesValues(dy.precipitation).map(v=>v?.hours??0),
+  precipitation_hours:dailyPrecip.map(v=>v?.hours??0),
   snowfall_sum:seriesValues(dy.snow).map(v=>v?.avg??v?.max??0),
   wind_speed_10m_max:dailyWind.map(v=>((typeof v?.max==='object'?v.max.speed:v?.max)??v?.speed??0)*3.6),
   wind_gusts_10m_max:dailyWind.map(v=>((typeof v?.max==='object'?v.max.speed:v?.max)??v?.speed??0)*3.6),
   wind_direction_10m_dominant:dailyWind.map(v=>v?.avg?.direction??v?.max?.direction??v?.direction??0)
  };
- const humidity=Number(rt.humidity??0);
+ const humidity=Number(summary.humidity_percent??(Number(rt.humidity??0)*100));
  const current={
-  time:currentTime,
-  temperature_2m:Number(rt.temperature??rt.temperature_2m??0),
-  relative_humidity_2m:humidity<=1?humidity*100:humidity,
-  apparent_temperature:Number(rt.apparent_temperature??rt.feels_like??rt.temperature??0),
-  is_day:!String(rt.skycon||'').includes('NIGHT'),
+  time:new Date().toISOString(),
+  temperature_2m:Number(summary.temperature??rt.temperature??rt.temperature_2m??0),
+  relative_humidity_2m:humidity,
+  apparent_temperature:Number(summary.apparent_temperature??rt.apparent_temperature??rt.temperature??0),
+  is_day:!String(rt.skycon||summary.skycon_code||'').includes('NIGHT'),
   precipitation:Number(prec.intensity??prec.value??0),
-  weather_code:skyconCode(rt.skycon),
-  wind_speed_10m:Number(wind.speed??0)*3.6,
-  wind_direction_10m:Number(wind.direction??0),
+  weather_code:skyconCode(summary.skycon_code||rt.skycon),
+  wind_speed_10m:Number(summary.wind?.speed_ms??wind.speed??0)*3.6,
+  wind_direction_10m:Number(summary.wind?.direction_deg??wind.direction??0),
   wind_gusts_10m:Number(wind.gust??wind.speed??0)*3.6,
-  pressure_msl:Number(rt.pressure??0),
-  cloud_cover:Number(rt.cloudrate??0)*100
+  pressure_msl:Number(rt.pressure??0)>2000?Number(rt.pressure)/100:Number(rt.pressure??0),
+  cloud_cover:Number(summary.cloudrate_percent??Number(rt.cloudrate??0)*100)
  };
- return {weather:{current,daily,hourly,timezone:root.timezone||'auto'},alerts:(Array.isArray(root.alert)?root.alert:(root.alert?.content||root.alerts||[]))};
+ return {weather:{current,daily,hourly,timezone:root.location?.timezone||'auto'},alerts:root.alerts||[]};
 }
-
 function renderHourly(hourly,currentTime){const root=$('hourly');root.innerHTML='';if(!hourly?.time)return;let start=hourly.time.findIndex(t=>t>=currentTime);if(start<0)start=0;for(let i=start;i<Math.min(start+12,hourly.time.length);i++){const w=info(hourly.weather_code[i]),el=document.createElement('div');el.className='hour';el.innerHTML='<time>'+hourly.time[i].slice(11,16)+'</time><div class="ico">'+w[1]+'</div><strong>'+Math.round(hourly.temperature_2m[i])+'°</strong><small>'+w[0]+'<br>💧 '+(hourly.precipitation_probability[i]??0)+'%<br>风 '+windDirection(hourly.wind_direction_10m[i])+'<br>'+((hourly.visibility[i]/1000).toFixed(1))+' km</small>';root.appendChild(el)}}
 function renderAlerts(d,c,h,nativeAlerts,provider){
  const root=$('alerts');root.innerHTML='';
