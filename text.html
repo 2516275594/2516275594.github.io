@@ -370,7 +370,15 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
       return;
     }
     try {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          // 本页面是公开文本管理器，不应继承同域 note.html 的登录会话。
+          // 强制使用 anon 身份，匹配 text_bookmarks 表现有的 anon RLS 策略。
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
+      });
       const { data, error } = await supabase.from('text_files').select('id').limit(1);
       if (error) throw error;
       connectionStatusEl.textContent = '已连接到数据库';
