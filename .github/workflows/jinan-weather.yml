@@ -1,0 +1,39 @@
+name: Update Jinan Weather
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-weather:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade requests beautifulsoup4
+
+      - name: Crawl Jinan weather
+        run: python scripts/jinan_weather.py
+
+      - name: Commit updated weather JSON
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/jinan_weather.json
+          if git diff --cached --quiet; then
+            echo "Weather data unchanged; skip commit."
+          else
+            git commit -m "Update Jinan weather data"
+            git push
+          fi
