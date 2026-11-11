@@ -164,14 +164,19 @@ function normalizeApiZero(raw){
  const pickDaily=(name)=>seriesValues(dy[name]);
  const hourlyCode=seriesValues(hr.skycon).map(skyconCode);
  const hourlyWind=hr.wind||{};
- const hourly={
+ const hourlyPrecip=Array.isArray(hr.precipitation)?hr.precipitation:[];
+ const dailyTemp=Array.isArray(dy.temperature)?dy.temperature:[];
+ const dailyAppTemp=Array.isArray(dy.apparent_temperature)?dy.apparent_temperature:[];
+ const dailyPrecip=Array.isArray(dy.precipitation)?dy.precipitation:[];
+ const dailyWind=Array.isArray(dy.wind)?dy.wind:[];
+ const daily={
   time:tempTimes.length?tempTimes:seriesTimes(hr.skycon),
   temperature_2m:tempArr,
   relative_humidity_2m:pick('humidity').map(v=>v<=1?v*100:v),
   dew_point_2m:pick('dew_point'),
   apparent_temperature:pick('apparent_temperature'),
-  precipitation_probability:pick('precipitation').map(v=>typeof v==='object'?v.probability??0:v),
-  precipitation:pick('precipitation').map(v=>typeof v==='object'?v.value??v.avg??0:v),
+  precipitation_probability:hourlyPrecip.map(v=>v&&typeof v==='object'?(v.probability??v.prob??0):0),
+  precipitation:hourlyPrecip.map(v=>v&&typeof v==='object'?(v.value??v.avg??0):v),
   weather_code:hourlyCode,
   wind_speed_10m:seriesValues(hourlyWind.speed).map(v=>v*3.6),
   wind_direction_10m:seriesValues(hourlyWind.direction),
@@ -188,21 +193,21 @@ function normalizeApiZero(raw){
  const daily={
   time:dayTimes.length?dayTimes:seriesTimes(dy.skycon),
   weather_code:dayCodes,
-  temperature_2m_max:seriesValues(dy.temperature).map(v=>v?.max??v),
-  temperature_2m_min:seriesValues(dy.temperature).map(v=>v?.min??v),
-  apparent_temperature_max:seriesValues(dy.apparent_temperature).map(v=>v?.max??v),
-  apparent_temperature_min:seriesValues(dy.apparent_temperature).map(v=>v?.min??v),
+  temperature_2m_max:dailyTemp.map(v=>v&&typeof v==='object'?(v.max??v.value??0):v),
+  temperature_2m_min:dailyTemp.map(v=>v&&typeof v==='object'?(v.min??v.value??0):v),
+  apparent_temperature_max:dailyAppTemp.map(v=>v&&typeof v==='object'?(v.max??v.value??0):v),
+  apparent_temperature_min:dailyAppTemp.map(v=>v&&typeof v==='object'?(v.min??v.value??0):v),
   sunrise,sunset,
   daylight_duration:seriesValues(dy.sunrise).map((v,i)=>{const a=Date.parse(sunrise[i]),b=Date.parse(sunset[i]);return Number.isFinite(a)&&Number.isFinite(b)?(b-a)/1000:0}),
   sunshine_duration:seriesValues(dy.sunshine).map(v=>typeof v==='number'?v*3600:(v?.duration||0)),
   uv_index_max:seriesValues(dy.ultraviolet).map(v=>v?.max??v),
-  precipitation_probability_max:seriesValues(dy.precipitation).map(v=>v?.probability??v?.max??0),
-  precipitation_sum:seriesValues(dy.precipitation).map(v=>v?.avg??v?.max??v?.value??0),
+  precipitation_probability_max:dailyPrecip.map(v=>v&&typeof v==='object'?(v.probability??v.max??0):0),
+  precipitation_sum:dailyPrecip.map(v=>v&&typeof v==='object'?(v.avg??v.max??v.value??0):v),
   precipitation_hours:seriesValues(dy.precipitation).map(v=>v?.hours??0),
   snowfall_sum:seriesValues(dy.snow).map(v=>v?.avg??v?.max??0),
-  wind_speed_10m_max:seriesValues(dy.wind).map(v=>(v?.max??v?.speed??0)*3.6),
-  wind_gusts_10m_max:seriesValues(dy.wind).map(v=>(v?.max??v?.speed??0)*3.6),
-  wind_direction_10m_dominant:seriesValues(dy.wind).map(v=>v?.avg??v?.direction??0)
+  wind_speed_10m_max:dailyWind.map(v=>((typeof v?.max==='object'?v.max.speed:v?.max)??v?.speed??0)*3.6),
+  wind_gusts_10m_max:dailyWind.map(v=>((typeof v?.max==='object'?v.max.speed:v?.max)??v?.speed??0)*3.6),
+  wind_direction_10m_dominant:dailyWind.map(v=>v?.avg?.direction??v?.max?.direction??v?.direction??0)
  };
  const humidity=Number(rt.humidity??0);
  const current={
