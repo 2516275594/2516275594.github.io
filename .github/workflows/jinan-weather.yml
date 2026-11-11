@@ -8,7 +8,7 @@ on:
       - 'scripts/openmeteo_weather.py'
       - 'tianqi.html'
   schedule:
-    - cron: '7,27,47 * * * *'
+    - cron: '9,29,49 * * * *'
   workflow_dispatch:
 
 permissions:
