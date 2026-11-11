@@ -84,7 +84,7 @@ body:before{background:#7dd9e8}body:after{background:#b9b4ff}
  <div class="search"><input id="cityInput" type="search" placeholder="输入城市名称，例如：上海、Tokyo" autocomplete="off"><button id="searchBtn" type="button">搜索</button><div class="suggestions" id="suggestions"></div></div></div>
  <div id="currentArea" class="hidden">
   <div class="current"><div class="temperature"><div><div class="weather-icon" id="currentIcon">☀️</div></div><div><div class="temp" id="temperature">--<sup>°C</sup></div><div class="condition" id="condition">天气加载中</div><div class="feels" id="feels">体感温度 --°</div></div></div>
-  <div class="metrics"><div class="metric"><span>相对湿度</span><strong id="humidity">--</strong><small>%</small></div><div class="metric"><span>风向</span><strong id="windDir">--</strong></div><div class="metric"><span>风速</span><strong id="wind">--</strong><small>km/h</small></div><div class="metric"><span>阵风</span><strong id="gust">--</strong><small>km/h</small></div><div class="metric"><span>气压</span><strong id="pressure">--</strong><small>hPa</small></div><div class="metric"><span>云量</span><strong id="cloud">--</strong><small>%</small></div><div class="metric"><span>降水量</span><strong id="precip">--</strong><small>mm</small></div><div class="metric"><span>紫外线指数</span><strong id="uv">--</strong><small>UV</small></div></div></div>
+  <div class="metrics"><div class="metric"><span>相对湿度</span><strong id="humidity">--</strong><small>%</small></div><div class="metric"><span>风向</span><strong id="windDir">--</strong></div><div class="metric"><span>风力</span><strong id="wind">--</strong><small>级</small></div><div class="metric"><span>阵风</span><strong id="gust">--</strong><small>km/h</small></div><div class="metric"><span>气压</span><strong id="pressure">--</strong><small>hPa</small></div><div class="metric"><span>云量</span><strong id="cloud">--</strong><small>%</small></div><div class="metric"><span>降水量</span><strong id="precip">--</strong><small>mm</small></div><div class="metric"><span>紫外线</span><strong id="uv">--</strong><small id="uvUnit"></small></div></div></div>
   <div class="extra-strip"><span>🌫️ 能见度 <b id="visibility">--</b></span><span>💧 露点 <b id="dewpoint">--</b></span><span>🌅 日出 <b id="sunrise">--</b></span><span>🌇 日落 <b id="sunset">--</b></span><span>☀️ 日照 <b id="sunshine">--</b></span></div>
  </div>
  <div id="error" class="error"></div>
@@ -133,7 +133,7 @@ function generalAdvice(d,c){
 }
 function windDirection(deg){if(!Number.isFinite(Number(deg)))return '--';return ['北风','东北风','东风','东南风','南风','西南风','西风','西北风'][Math.round(Number(deg)/45)%8]+' '+Math.round(Number(deg))+'°'}
 function clock(value){if(!value)return '--';const s=String(value);return s.includes('T')?(s.split('T')[1]?.slice(0,5)||'--'):s.slice(0,5)}
-function duration(seconds){if(!Number.isFinite(Number(seconds)))return '--';const h=Math.floor(seconds/3600),m=Math.round(seconds%3600/60);return h+'小时'+m+'分'}
+function duration(seconds){if(seconds===null||seconds===undefined||seconds==='')return '--';if(!Number.isFinite(Number(seconds)))return '--';const h=Math.floor(seconds/3600),m=Math.round(seconds%3600/60);return h+'小时'+m+'分'}
 function timeAtOrAfter(candidate,target){if(/[Z+]/.test(candidate))return Date.parse(candidate)>=Date.parse(target);return candidate>=target}
 function nearestHour(hourly,time){if(!hourly?.time?.length)return null;let i=hourly.time.findIndex(t=>timeAtOrAfter(t,time));if(i<0)i=0;const o={};Object.keys(hourly).forEach(k=>{if(Array.isArray(hourly[k]))o[k]=hourly[k][i]});return o}
 
@@ -251,18 +251,6 @@ function renderAlerts(nativeAlerts,alertsProvider){
  });
 }
 function showError(msg){$('error').textContent=msg}
-async function searchCities(){
- const q=$('cityInput').value.trim();if(!q){showError('请先输入城市名称');return}
- showError('');$('searchBtn').disabled=true;$('searchBtn').textContent='搜索中…';
- try{
-  const url='https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=8&language=zh&format=json';
-  const r=await fetch(url);if(!r.ok)throw Error('城市搜索服务暂时不可用');const data=await r.json();
-  const list=data.results||[];if(!list.length){showError('没有找到这个城市，试试中文名、英文名或拼音');return}
-  const box=$('suggestions');box.innerHTML='';
-  list.forEach(place=>{const b=document.createElement('button');b.type='button';b.textContent=[place.name,place.admin1,place.country].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(' · ');b.addEventListener('click',()=>{box.classList.remove('show');$('cityInput').value='';loadWeather(place)});box.appendChild(b)});
-  box.classList.add('show');
- }catch(e){showError(e.message||'搜索失败，请稍后重试')}finally{$('searchBtn').disabled=false;$('searchBtn').textContent='搜索'}
-}
 async function loadWeather(){
  $('currentArea').classList.add('loading');showError('');
  const place={name:'济南',admin1:'山东省',country:'中国'};
@@ -358,7 +346,7 @@ function renderWeather(place,label,data,provider='open-meteo',nativeAlerts=[],al
  const c=data.current,d=data.daily,now=info(c.weather_code),today=info(d.weather_code[0]);
  $('cityName').textContent=label;$('updated').textContent='2345 天气 · '+new Date(data.fetchedAt||c.time).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 更新 · 预警：'+(alertsProvider==='apizero'?'极数本源':'暂不可用');
  $('currentIcon').textContent=now[1];$('temperature').innerHTML=Math.round(c.temperature_2m)+'<sup>°C</sup>';$('condition').textContent=now[0];$('feels').textContent='体感温度 '+Math.round(c.apparent_temperature)+'°C';
- $('humidity').textContent=Number.isFinite(c.relative_humidity_2m)?Math.round(c.relative_humidity_2m):'--';$('wind').textContent=Number.isFinite(c.wind_speed_10m)?Math.round(c.wind_speed_10m):'--';$('windDir').textContent=c.wind_direction_text||windDirection(c.wind_direction_10m);$('gust').textContent=Number.isFinite(c.wind_gusts_10m)?Math.round(c.wind_gusts_10m):'--';$('pressure').textContent=Number.isFinite(c.pressure_msl)?Math.round(c.pressure_msl):'--';$('cloud').textContent=Number.isFinite(c.cloud_cover)?Math.round(c.cloud_cover):'--';$('precip').textContent=Number.isFinite(c.precipitation)?Number(c.precipitation).toFixed(1):'--';$('uv').textContent=c.ultraviolet_text|| (Number.isFinite(d.uv_index_max?.[0])?Number(d.uv_index_max[0]).toFixed(1):'--');
+ $('humidity').textContent=Number.isFinite(c.relative_humidity_2m)?Math.round(c.relative_humidity_2m):'--';$('wind').textContent=Number.isFinite(c.wind_speed_10m)?Math.round(c.wind_speed_10m):'--';$('windDir').textContent=c.wind_direction_text||windDirection(c.wind_direction_10m);$('gust').textContent=Number.isFinite(c.wind_gusts_10m)?Math.round(c.wind_gusts_10m):'--';$('pressure').textContent=Number.isFinite(c.pressure_msl)?Math.round(c.pressure_msl):'--';$('cloud').textContent=Number.isFinite(c.cloud_cover)?Math.round(c.cloud_cover):'--';$('precip').textContent=Number.isFinite(c.precipitation)?Number(c.precipitation).toFixed(1):'--';$('uv').textContent=c.ultraviolet_text|| (Number.isFinite(d.uv_index_max?.[0])?Number(d.uv_index_max[0]).toFixed(1):'--');$('uvUnit').textContent=c.ultraviolet_text?'':'UV';
  const h=nearestHour(data.hourly,c.time);$('visibility').textContent=h&&Number.isFinite(h.visibility)?((h.visibility/1000).toFixed(1)+' km'):'--';$('dewpoint').textContent=h&&Number.isFinite(h.dew_point_2m)?(Math.round(h.dew_point_2m)+'°C'):'--';$('sunrise').textContent=clock(d.sunrise[0]);$('sunset').textContent=clock(d.sunset[0]);$('sunshine').textContent=duration(d.sunshine_duration?.[0]);
  $('weatherFx').className=now[2];$('currentArea').classList.remove('hidden');$('empty').classList.add('hidden');$('forecastSection').classList.remove('hidden');$('adviceSection').classList.remove('hidden');$('alertsSection').classList.remove('hidden');$('hourlySection').classList.remove('hidden');
  renderAlerts(nativeAlerts,alertsProvider);if(data.hourly?.time?.length){$('hourlySection').classList.remove('hidden');renderHourly(data.hourly,c.time)}else{$('hourlySection').classList.add('hidden')};
@@ -367,13 +355,12 @@ function renderWeather(place,label,data,provider='open-meteo',nativeAlerts=[],al
   const w=info(d.weather_code[i]),dt=new Date(date+'T12:00:00'),day=document.createElement('article');day.className='day'+(i===0?' today':'');
   const weekday=i===0?'今天':i===1?'明天':dt.toLocaleDateString('zh-CN',{weekday:'short'});
   const rain=d.precipitation_probability_max?.[i];
-  day.innerHTML='<div class="day-name">'+weekday+'</div><div class="day-date">'+(dt.getMonth()+1)+'/'+dt.getDate()+'</div><div class="day-icon">'+w[1]+'</div><div class="day-desc">'+w[0]+'</div><div class="range"><span>'+Math.round(d.temperature_2m_max[i])+'°</span><span class="low">'+Math.round(d.temperature_2m_min[i])+'°</span></div><div class="rain-chance">💧 '+rain+'%</div><div class="day-extra">风 '+windDirection(d.wind_direction_10m_dominant?.[i])+' · 阵风 '+Math.round(d.wind_gusts_10m_max?.[i]??0)+' km/h</div><div class="day-extra">☀️ '+duration(d.sunshine_duration?.[i])+' · 降水 '+Number(d.precipitation_sum?.[i]??0).toFixed(1)+' mm</div>';
+  day.innerHTML='<div class="day-name">'+weekday+'</div><div class="day-date">'+(dt.getMonth()+1)+'/'+dt.getDate()+'</div><div class="day-icon">'+w[1]+'</div><div class="day-desc">'+w[0]+'</div><div class="range"><span>'+ (Number.isFinite(d.temperature_2m_max[i])?Math.round(d.temperature_2m_max[i])+'°':'--') +'</span><span class="low">'+ (Number.isFinite(d.temperature_2m_min[i])?Math.round(d.temperature_2m_min[i])+'°':'--') +'</span></div><div class="rain-chance">💧 '+(rain==null?'--':rain+'%')+'</div><div class="day-extra">风 '+(d.wind_text?.[i]||windDirection(d.wind_direction_10m_dominant?.[i]))+' · 阵风 '+(Number.isFinite(d.wind_gusts_10m_max?.[i])?Math.round(d.wind_gusts_10m_max[i])+' km/h':'--')+'</div><div class="day-extra">☀️ '+duration(d.sunshine_duration?.[i])+' · 降水 '+(Number.isFinite(d.precipitation_sum?.[i])?Number(d.precipitation_sum[i]).toFixed(1)+' mm':'--')+'</div>';
   forecast.appendChild(day);
  });
- const cards=generalAdvice({weather_code:d.weather_code[0],precipitation_probability_max:d.precipitation_probability_max?.[0]??0,temperature_2m_max:d.temperature_2m_max[0],temperature_2m_min:d.temperature_2m_min[0],uv_index_max:d.uv_index_max[0]},c);
+ const cards=generalAdvice({weather_code:d.weather_code[0],precipitation_probability_max:d.precipitation_probability_max?.[0]??null,temperature_2m_max:d.temperature_2m_max[0],temperature_2m_min:d.temperature_2m_min[0],uv_index_max:d.uv_index_max[0]??null},c);
  $('advice').innerHTML=cards.map(a=>'<article class="glass advice"><div class="advice-icon">'+a[0]+'</div><h3>'+a[1]+'</h3><p>'+a[2]+'</p><span class="hint">'+a[3]+'</span></article>').join('');
 }
-$('searchBtn').addEventListener('click',searchCities);$('cityInput').addEventListener('keydown',e=>{if(e.key==='Enter')searchCities()});$('cityInput').addEventListener('input',()=>$('suggestions').classList.remove('show'));document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('suggestions').classList.remove('show')});
 loadWeather()
 </script>
 </body>
