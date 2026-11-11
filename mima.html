@@ -17,13 +17,13 @@
     button{border:0;border-radius:12px;padding:12px 17px;font:600 14px inherit;cursor:pointer;transition:transform .18s,filter .18s}button:hover{filter:brightness(1.1);transform:translateY(-1px)}button:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
     .copy{flex:0 0 auto;color:#10182d;background:linear-gradient(110deg,#bcb0ff,#75e1e8)}
     .field{margin:20px 0}.field-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.field label,.field-title{font-size:14px;font-weight:600}.hint{color:var(--muted);font-size:12px}
-    input[type=number]{width:84px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.06);color:var(--text);font:inherit}
+    .length-row{display:flex;align-items:center;gap:10px}.length-row input[type=number]{width:76px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.06);color:var(--text);font:inherit}
+    .generate{flex:1;color:#10182d;background:linear-gradient(110deg,#bcb0ff,#75e1e8);white-space:nowrap}
     .options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.option{display:flex;align-items:center;gap:10px;padding:13px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.035);color:#dce5fb;font-size:13px}
     input[type=checkbox]{width:17px;height:17px;accent-color:#a99aff}
-    .actions{display:flex;gap:10px;margin-top:26px}.generate{flex:1;color:#10182d;background:linear-gradient(110deg,#bcb0ff,#75e1e8)}.secondary{color:#dce5fb;background:rgba(255,255,255,.09);border:1px solid var(--line)}
-    #message{min-height:20px;margin:14px 0 0;color:var(--cyan);font-size:12px;text-align:center}
+        #message{min-height:20px;margin:14px 0 0;color:var(--cyan);font-size:12px;text-align:center}
     footer{margin-top:28px;color:#7785a3;font-size:11px;text-align:center}
-    @media(max-width:460px){.output{flex-direction:column}.copy{width:100%}.options{grid-template-columns:1fr}.actions button{padding:12px 10px}}
+    @media(max-width:460px){.output{flex-direction:column}.copy{width:100%}.options{grid-template-columns:1fr}.length-row{gap:8px}.length-row .generate{padding:11px 10px;font-size:13px}}
   </style>
 </head>
 <body>
@@ -39,23 +39,19 @@
 
     <div class="field">
       <div class="field-head"><label for="length">密码长度</label><span class="hint">建议至少 12 位</span></div>
-      <input id="length" type="number" min="8" max="64" value="16" inputmode="numeric">
+      <div class="length-row"><input id="length" type="number" min="8" max="64" value="16" inputmode="numeric"><button class="generate" id="generateBtn" type="button">⟳ 生成新密码</button></div>
     </div>
 
     <div class="field">
       <div class="field-head"><span class="field-title">字符类型</span><span class="hint">默认组合</span></div>
       <div class="options">
+        <label class="option"><input id="symbols" type="checkbox"> 特殊符号 (!@#$…)</label>
         <label class="option"><input type="checkbox" checked disabled> 小写字母 (a-z)</label>
         <label class="option"><input type="checkbox" checked disabled> 大写字母 (A-Z)</label>
         <label class="option"><input type="checkbox" checked disabled> 数字 (0-9)</label>
-        <label class="option"><input id="symbols" type="checkbox"> 特殊符号 (!@#$…)</label>
       </div>
     </div>
 
-    <div class="actions">
-      <button class="generate" id="generateBtn" type="button">⟳ 生成新密码</button>
-      <button class="secondary" id="selectBtn" type="button">选中密码</button>
-    </div>
     <p id="message" role="status" aria-live="polite"></p>
     <footer>密码仅在当前浏览器本地生成，不会上传到服务器。</footer>
   </main>
@@ -123,12 +119,6 @@
 
     document.getElementById("generateBtn").addEventListener("click", generatePassword);
     document.getElementById("copyBtn").addEventListener("click", copyPassword);
-    document.getElementById("selectBtn").addEventListener("click", () => {
-      const input = document.getElementById("password");
-      input.focus();
-      input.select();
-      document.getElementById("message").textContent = "密码已选中，可以复制";
-    });
     generatePassword();
   </script>
 </body>
