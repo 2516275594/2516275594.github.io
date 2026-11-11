@@ -142,6 +142,15 @@ def parse_daily_forecast(soup: BeautifulSoup) -> list:
 def main():
     realtime_soup = fetch_soup(REALTIME_URL)
     forecast_soup = fetch_soup(FORECAST_URL)
+    script_hits = 0
+    for tag in forecast_soup.find_all("script"):
+        script_text = tag.string or tag.get_text()
+        if script_text and any(key in script_text.lower() for key in ("forecast", "weather", "temp", "11/11", "11-11")):
+            print("SCRIPT_SRC:", tag.get("src", "inline"))
+            print("SCRIPT_TEXT:", script_text[:1400].replace("\\n", " "))
+            script_hits += 1
+            if script_hits >= 8:
+                break
     realtime = parse_realtime(realtime_soup)
     daily = parse_daily_forecast(forecast_soup)
 
