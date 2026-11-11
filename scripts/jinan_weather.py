@@ -114,11 +114,10 @@ def parse_daily_item(text: str):
 
 
 def parse_daily_forecast(soup: BeautifulSoup) -> list:
-    """从页面内嵌 fortyData 读取真实逐日高低温，并从预报卡片补充风向风力。"""
+    """从 fortyData 内嵌对象提取高低温，并从可见预报卡片补充风向风力。"""
     lines = [x.strip() for x in soup.get_text("\\n", strip=True).splitlines() if x.strip()]
     wind_by_date = {}
 
-    # 页面文字中的卡片结构：日期、天气、风向、风力、空气质量。
     for i, line in enumerate(lines):
         if not re.fullmatch(r"\\d{1,2}/\\d{1,2}", line):
             continue
@@ -133,52 +132,47 @@ def parse_daily_forecast(soup: BeautifulSoup) -> list:
             "wind": (wind_match.group(1) + (wind_match.group(2) or "")) if wind_match else None,
         }
 
-    forecast_rows = []
+    # fortyData 是页面内嵌的 JSON 风格对象；直接提取其逐日字段，兼容脚本末尾缺少分号的情况。
+    row_pattern = re.compile(
+        r'"date"\\s*:\\s*"([^"]+)"\\s*,\\s*'
+        r'"weather"\\s*:\\s*"([^"]+)"\\s*,\\s*'
+        r'"day_img"\\s*:\\s*"[^"]*"\\s*,\\s*'
+        r'"day_temp"\\s*:\\s*"(-?\\d+)"\\s*,\\s*'
+        r'"night_temp"\\s*:\\s*"(-?\\d+)"',
+        re.S,
+    )
+    rows = []
     for tag in soup.find_all("script"):
         script_text = tag.string or tag.get_text()
         if not script_text or "fortyData" not in script_text:
             continue
-        match = re.search(r"\\bfortyData\\s*=\\s*(\\{.*?\\})\\s*;", script_text, re.S)
-        if not match:
-            continue
-        try:
-            parsed = json.loads(match.group(1))
-        except json.JSONDecodeError:
-            continue
-        rows = parsed.get("data", []) if isinstance(parsed, dict) else []
-        if isinstance(rows, list) and rows:
-            forecast_rows = rows
+        for match in row_pattern.finditer(script_text):
+            try:
+                date_text = json.loads('"' + match.group(1) + '"')
+                weather = json.loads('"' + match.group(2) + '"')
+            except json.JSONDecodeError:
+                continue
+            date = parse_date(date_text)
+            if not date:
+                continue
+            day_temp, night_temp = int(match.group(3)), int(match.group(4))
+            weekday = "一二三四五六日"[datetime.strptime(date, "%Y-%m-%d").weekday()]
+            card = wind_by_date.get(date, {})
+            rows.append({
+                "date": date,
+                "weekday": weekday,
+                "weather": weather or card.get("weather") or "天气变化",
+                "temp_min": min(day_temp, night_temp),
+                "temp_max": max(day_temp, night_temp),
+                "wind": card.get("wind"),
+            })
+        if rows:
             break
 
-    result = []
-    for row in forecast_rows:
-        if not isinstance(row, dict):
-            continue
-        date = parse_date(str(row.get("date", "")))
-        try:
-            day_temp = int(float(row.get("day_temp")))
-            night_temp = int(float(row.get("night_temp")))
-        except (TypeError, ValueError):
-            continue
-        if not date:
-            continue
-        card = wind_by_date.get(date, {})
-        weather = row.get("weather") or card.get("weather") or "天气变化"
-        weekday = "一二三四五六日"[datetime.strptime(date, "%Y-%m-%d").weekday()]
-        result.append({
-            "date": date,
-            "weekday": weekday,
-            "weather": str(weather),
-            "temp_min": min(day_temp, night_temp),
-            "temp_max": max(day_temp, night_temp),
-            "wind": card.get("wind"),
-            "sleet": bool(row.get("sleet", 0)),
-        })
-
-    result.sort(key=lambda x: x["date"])
-    if not result:
-        raise RuntimeError("未能从 2345 页面内嵌 fortyData 读取有效的逐日高低温；为避免覆盖旧数据，本次不写入 JSON。")
-    return result[:15]
+    rows.sort(key=lambda x: x["date"])
+    if not rows:
+        raise RuntimeError("未能从 2345 页面 fortyData 中提取逐日温度；为避免覆盖旧数据，本次不写入 JSON。")
+    return rows[:15]
 
 
 def main():
