@@ -72,6 +72,7 @@ body:before{background:#7dd9e8}body:after{background:#b9b4ff}
 .error{color:#c34b4b}
 @media(prefers-reduced-motion:reduce){body{animation:none}}
 
+.search{display:none!important}
 </style>
 </head>
 <body>
@@ -79,7 +80,7 @@ body:before{background:#7dd9e8}body:after{background:#b9b4ff}
 <main class="shell">
 <header class="topbar"><div class="brand"><span class="brand-mark">☼</span><span>SKY · WEATHER</span></div><a class="top-link" href="./">← 返回首页</a></header>
 <section class="hero">
- <div class="hero-head"><div><div class="eyebrow">LIVE WEATHER · 15 DAY OUTLOOK</div><h1 class="city" id="cityName">探索一座城市</h1><div class="updated" id="updated">搜索城市，开启天气之旅</div></div>
+ <div class="hero-head"><div><div class="eyebrow">LIVE WEATHER · 15 DAY OUTLOOK</div><h1 class="city" id="cityName">济南 · 山东省</h1><div class="updated" id="updated">正在获取济南天气…</div></div>
  <div class="search"><input id="cityInput" type="search" placeholder="输入城市名称，例如：上海、Tokyo" autocomplete="off"><button id="searchBtn" type="button">搜索</button><div class="suggestions" id="suggestions"></div></div></div>
  <div id="currentArea" class="hidden">
   <div class="current"><div class="temperature"><div><div class="weather-icon" id="currentIcon">☀️</div></div><div><div class="temp" id="temperature">--<sup>°C</sup></div><div class="condition" id="condition">天气加载中</div><div class="feels" id="feels">体感温度 --°</div></div></div>
@@ -93,7 +94,7 @@ body:before{background:#7dd9e8}body:after{background:#b9b4ff}
 <section id="empty" class="glass empty"><div class="empty-icon">🌤️</div><h2>今天，想看看哪里的天空？</h2><p>在上方搜索框输入城市名称，选择结果即可查看实时天气、未来15天预报，以及每天的穿衣和出行建议。你选择的城市会自动保存在当前浏览器中。</p></section>
 <section id="forecastSection" class="section hidden"><div class="section-head"><h2>未来 15 天</h2><p>DAILY FORECAST · 15 DAYS</p></div><div class="glass"><div class="forecast" id="forecast"></div></div></section>
 <section id="adviceSection" class="section hidden"><div class="section-head"><h2>今日生活指南</h2><p>LIFESTYLE INSIGHTS</p></div><div class="advice-grid" id="advice"></div></section>
-<footer class="foot">FORECAST BY OPEN-METEO · ALERTS BY APIZERO · 愿每一天都有好天气</footer>
+<footer class="foot">WEATHER BY 2345 · ALERTS BY APIZERO · 愿每一天都有好天气</footer>
 </main>
 <script>
 const $=id=>document.getElementById(id);
@@ -120,14 +121,14 @@ function clothes(min,max,code,rain){
  return tips.join('；')+'。';
 }
 function generalAdvice(d,c){
- const code=d.weather_code, rain=d.precipitation_probability_max??0, max=d.temperature_2m_max, min=d.temperature_2m_min, uv=d.uv_index_max??0;
- const rainText=rain>=60?'降水概率较高，外出请带伞':rain>=30?'可能有短时降雨，建议随身带伞':'降雨概率较低，适合安排户外活动';
- const uvText=uv>=8?'紫外线很强，建议使用高倍防晒并减少正午暴晒':uv>=5?'紫外线较强，出门做好防晒':'紫外线相对温和，长时间户外仍建议防晒';
+ const code=d.weather_code, rain=d.precipitation_probability_max, max=d.temperature_2m_max, min=d.temperature_2m_min, uv=d.uv_index_max;
+ const rainText=rain==null?'暂未提供降水概率，请留意天气变化':rain>=60?'降水概率较高，外出请带伞':rain>=30?'可能有短时降雨，建议随身带伞':'降雨概率较低，适合安排户外活动';
+ const uvText=uv==null?'暂未提供紫外线指数，长时间户外建议做好基础防晒':uv>=8?'紫外线很强，建议使用高倍防晒并减少正午暴晒':uv>=5?'紫外线较强，出门做好防晒':'紫外线相对温和，长时间户外仍建议防晒';
  const tempText=max-min>=9?'昼夜温差明显，采用方便增减的分层穿搭':max>=32?'天气炎热，注意补水并避免长时间暴晒':min<=5?'早晚寒冷，注意头颈和手脚保暖':'体感相对舒适，根据早晚温度适当增减衣物';
  return [
   ['🧥','穿衣建议',clothes(min,max,code,rain),'按当日最高、最低气温及降水情况生成'],
-  ['☂️','出行建议',rainText+'；'+(max>=33?'尽量避开高温时段。':min<=0?'注意防寒及道路结冰。':'出门前可再查看临近天气。'),'降水概率 '+rain+'%'],
-  ['☀️','防晒与温差',uvText+'；'+tempText+'。','紫外线指数 '+uv]
+  ['☂️','出行建议',rainText+'；'+(max>=33?'尽量避开高温时段。':min<=0?'注意防寒及道路结冰。':'出门前可再查看临近天气。'),rain==null?'降水概率暂无':'降水概率 '+rain+'%'],
+  ['☀️','防晒与温差',uvText+'；'+tempText+'。',uv==null?'紫外线指数暂无':'紫外线指数 '+uv]
  ];
 }
 function windDirection(deg){if(!Number.isFinite(Number(deg)))return '--';return ['北风','东北风','东风','东南风','南风','西南风','西风','西北风'][Math.round(Number(deg)/45)%8]+' '+Math.round(Number(deg))+'°'}
@@ -262,39 +263,110 @@ async function searchCities(){
   box.classList.add('show');
  }catch(e){showError(e.message||'搜索失败，请稍后重试')}finally{$('searchBtn').disabled=false;$('searchBtn').textContent='搜索'}
 }
-async function loadWeather(place){
- $('searchBtn').disabled=true;$('currentArea').classList.add('loading');showError('');
- const city=String(place.name||place.city||'').trim();
- const label=[place.name,place.admin1,place.country].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(' · ')||city;
+async function loadWeather(){
+ $('currentArea').classList.add('loading');showError('');
+ const place={name:'济南',admin1:'山东省',country:'中国'};
  try{
-  const res=await fetch('https://bamboo-weather-api.wangbamboo4.workers.dev/api/weather?city='+encodeURIComponent(city));
-  if(!res.ok)throw Error('天气代理暂时不可用（HTTP '+res.status+'）');
+  const res=await fetch('./data/jinan_weather.json?ts='+Date.now(),{cache:'no-store'});
+  if(!res.ok)throw Error('济南天气数据暂时不可用（HTTP '+res.status+'）');
   const payload=await res.json();
-  if(!payload.ok||!payload.data)throw Error(payload.error||'天气服务暂时没有返回有效数据');
-  const provider=payload.provider||'open-meteo';
-  const alertsProvider=payload.alertsProvider||'unavailable';
-  const nativeAlerts=Array.isArray(payload.alerts)?payload.alerts:[];
-  let data;
-  if(provider==='apizero')data=normalizeApiZero(payload.data).weather;
-  else data=payload.data;
-  if(!data.daily||!data.current||!data.hourly)throw Error('天气数据结构不完整，请稍后重试');
-  localStorage.setItem('sky_saved_city',JSON.stringify(place));
-  renderWeather(place,label,data,provider,nativeAlerts,alertsProvider);
- }catch(e){showError(e.message||'天气加载失败');$('empty').classList.remove('hidden')}finally{$('currentArea').classList.remove('loading');$('searchBtn').disabled=false}
+  if(!payload.realtime||!Array.isArray(payload.daily_forecast)||!payload.daily_forecast.length)throw Error('济南天气数据格式不完整');
+  const data=normalizeJinanWeather(payload);
+  renderWeather(place,'济南 · 山东省',data,'2345',[],'unavailable');
+  fetch('https://bamboo-weather-api.wangbamboo4.workers.dev/api/weather?city='+encodeURIComponent('济南'))
+   .then(r=>r.ok?r.json():Promise.reject(new Error('alert request failed')))
+   .then(alertPayload=>renderAlerts(Array.isArray(alertPayload.alerts)?alertPayload.alerts:[],alertPayload.alertsProvider||'unavailable'))
+   .catch(()=>renderAlerts([],'unavailable'));
+ }catch(e){showError(e.message||'天气加载失败');$('empty').classList.remove('hidden')}
+ finally{$('currentArea').classList.remove('loading')}
 }
+
+function jinanWeatherCode(desc){
+ const v=String(desc||'');
+ if(/雷/.test(v))return 95;
+ if(/暴雨|大雨/.test(v))return 65;
+ if(/中雨/.test(v))return 63;
+ if(/小雨|阵雨/.test(v))return 61;
+ if(/雪/.test(v))return /大雪|暴雪/.test(v)?75:71;
+ if(/雾|霾|沙尘/.test(v))return 45;
+ if(/阴/.test(v))return /多云/.test(v)?2:3;
+ if(/多云/.test(v))return 2;
+ if(/晴/.test(v))return 0;
+ return 3;
+}
+function jinanWindDegrees(text){
+ const v=String(text||'');
+ if(v.includes('东北'))return 45;
+ if(v.includes('东南'))return 135;
+ if(v.includes('西南'))return 225;
+ if(v.includes('西北'))return 315;
+ if(v.includes('东风'))return 90;
+ if(v.includes('南风'))return 180;
+ if(v.includes('西风'))return 270;
+ if(v.includes('北风'))return 0;
+ return null;
+}
+function normalizeJinanWeather(payload){
+ const rt=payload.realtime||{};
+ const days=Array.isArray(payload.daily_forecast)?payload.daily_forecast:[];
+ const number=value=>{
+  if(value===null||value===undefined||value==='')return null;
+  const n=Number.parseFloat(String(value).replace(/[^\d.+-]/g,''));
+  return Number.isFinite(n)?n:null;
+ };
+ const dailyWind=days.map(x=>x.wind||'');
+ return {
+  fetchedAt:payload.crawl_time,
+  current:{
+   time:payload.crawl_time||new Date().toISOString(),
+   temperature_2m:number(rt.temperature),
+   relative_humidity_2m:number(rt.humidity),
+   apparent_temperature:number(rt.temperature),
+   weather_code:jinanWeatherCode(rt.weather),
+   wind_speed_10m:number(rt.wind_level),
+   wind_level_text:number(rt.wind_level),
+   wind_direction_10m:jinanWindDegrees(rt.wind_direction),
+   wind_direction_text:rt.wind_direction||'--',
+   wind_gusts_10m:null,
+   pressure_msl:number(rt.pressure),
+   cloud_cover:null,
+   precipitation:null,
+   ultraviolet_text:rt.ultraviolet||'--'
+  },
+  daily:{
+   time:days.map(x=>x.date),
+   weather_code:days.map(x=>jinanWeatherCode(x.weather)),
+   temperature_2m_max:days.map(x=>number(x.temp_max)),
+   temperature_2m_min:days.map(x=>number(x.temp_min)),
+   apparent_temperature_max:days.map(x=>number(x.temp_max)),
+   apparent_temperature_min:days.map(x=>number(x.temp_min)),
+   sunrise:days.map((x,i)=>i===0?(rt.sunrise||''):''),
+   sunset:days.map((x,i)=>i===0?(rt.sunset||''):''),
+   sunshine_duration:days.map(()=>null),
+   uv_index_max:days.map(()=>null),
+   precipitation_probability_max:days.map(()=>null),
+   precipitation_sum:days.map(()=>null),
+   wind_gusts_10m_max:days.map(()=>null),
+   wind_direction_10m_dominant:dailyWind.map(jinanWindDegrees),
+   wind_text:dailyWind
+  },
+  hourly:{time:[]}
+ };
+}
+
 function renderWeather(place,label,data,provider='open-meteo',nativeAlerts=[],alertsProvider='unavailable'){
  const c=data.current,d=data.daily,now=info(c.weather_code),today=info(d.weather_code[0]);
- $('cityName').textContent=label;$('updated').textContent='实时天气 · '+new Date().toLocaleString('zh-CN',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 更新 · 天气：'+(provider==='apizero'?'极数本源备用':'Open-Meteo')+' · 预警：'+(alertsProvider==='apizero'?'极数本源':'暂不可用');
+ $('cityName').textContent=label;$('updated').textContent='2345 天气 · '+new Date(data.fetchedAt||c.time).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 更新 · 预警：'+(alertsProvider==='apizero'?'极数本源':'暂不可用');
  $('currentIcon').textContent=now[1];$('temperature').innerHTML=Math.round(c.temperature_2m)+'<sup>°C</sup>';$('condition').textContent=now[0];$('feels').textContent='体感温度 '+Math.round(c.apparent_temperature)+'°C';
- $('humidity').textContent=Math.round(c.relative_humidity_2m);$('wind').textContent=Math.round(c.wind_speed_10m);$('windDir').textContent=windDirection(c.wind_direction_10m);$('gust').textContent=Math.round(c.wind_gusts_10m??0);$('pressure').textContent=Math.round(c.pressure_msl);$('cloud').textContent=Math.round(c.cloud_cover);$('precip').textContent=Number(c.precipitation).toFixed(1);$('uv').textContent=Number(d.uv_index_max[0]).toFixed(1);
- const h=nearestHour(data.hourly,c.time);$('visibility').textContent=h?((h.visibility/1000).toFixed(1)+' km'):'--';$('dewpoint').textContent=h?(Math.round(h.dew_point_2m)+'°C'):'--';$('sunrise').textContent=clock(d.sunrise[0]);$('sunset').textContent=clock(d.sunset[0]);$('sunshine').textContent=duration(d.sunshine_duration?.[0]);
+ $('humidity').textContent=Number.isFinite(c.relative_humidity_2m)?Math.round(c.relative_humidity_2m):'--';$('wind').textContent=Number.isFinite(c.wind_speed_10m)?Math.round(c.wind_speed_10m):'--';$('windDir').textContent=c.wind_direction_text||windDirection(c.wind_direction_10m);$('gust').textContent=Number.isFinite(c.wind_gusts_10m)?Math.round(c.wind_gusts_10m):'--';$('pressure').textContent=Number.isFinite(c.pressure_msl)?Math.round(c.pressure_msl):'--';$('cloud').textContent=Number.isFinite(c.cloud_cover)?Math.round(c.cloud_cover):'--';$('precip').textContent=Number.isFinite(c.precipitation)?Number(c.precipitation).toFixed(1):'--';$('uv').textContent=c.ultraviolet_text|| (Number.isFinite(d.uv_index_max?.[0])?Number(d.uv_index_max[0]).toFixed(1):'--');
+ const h=nearestHour(data.hourly,c.time);$('visibility').textContent=h&&Number.isFinite(h.visibility)?((h.visibility/1000).toFixed(1)+' km'):'--';$('dewpoint').textContent=h&&Number.isFinite(h.dew_point_2m)?(Math.round(h.dew_point_2m)+'°C'):'--';$('sunrise').textContent=clock(d.sunrise[0]);$('sunset').textContent=clock(d.sunset[0]);$('sunshine').textContent=duration(d.sunshine_duration?.[0]);
  $('weatherFx').className=now[2];$('currentArea').classList.remove('hidden');$('empty').classList.add('hidden');$('forecastSection').classList.remove('hidden');$('adviceSection').classList.remove('hidden');$('alertsSection').classList.remove('hidden');$('hourlySection').classList.remove('hidden');
- renderAlerts(nativeAlerts,alertsProvider);renderHourly(data.hourly,c.time);
+ renderAlerts(nativeAlerts,alertsProvider);if(data.hourly?.time?.length){$('hourlySection').classList.remove('hidden');renderHourly(data.hourly,c.time)}else{$('hourlySection').classList.add('hidden')};
  const forecast=$('forecast');forecast.innerHTML='';
  d.time.forEach((date,i)=>{
   const w=info(d.weather_code[i]),dt=new Date(date+'T12:00:00'),day=document.createElement('article');day.className='day'+(i===0?' today':'');
   const weekday=i===0?'今天':i===1?'明天':dt.toLocaleDateString('zh-CN',{weekday:'short'});
-  const rain=d.precipitation_probability_max?.[i]??0;
+  const rain=d.precipitation_probability_max?.[i];
   day.innerHTML='<div class="day-name">'+weekday+'</div><div class="day-date">'+(dt.getMonth()+1)+'/'+dt.getDate()+'</div><div class="day-icon">'+w[1]+'</div><div class="day-desc">'+w[0]+'</div><div class="range"><span>'+Math.round(d.temperature_2m_max[i])+'°</span><span class="low">'+Math.round(d.temperature_2m_min[i])+'°</span></div><div class="rain-chance">💧 '+rain+'%</div><div class="day-extra">风 '+windDirection(d.wind_direction_10m_dominant?.[i])+' · 阵风 '+Math.round(d.wind_gusts_10m_max?.[i]??0)+' km/h</div><div class="day-extra">☀️ '+duration(d.sunshine_duration?.[i])+' · 降水 '+Number(d.precipitation_sum?.[i]??0).toFixed(1)+' mm</div>';
   forecast.appendChild(day);
  });
@@ -302,7 +374,7 @@ function renderWeather(place,label,data,provider='open-meteo',nativeAlerts=[],al
  $('advice').innerHTML=cards.map(a=>'<article class="glass advice"><div class="advice-icon">'+a[0]+'</div><h3>'+a[1]+'</h3><p>'+a[2]+'</p><span class="hint">'+a[3]+'</span></article>').join('');
 }
 $('searchBtn').addEventListener('click',searchCities);$('cityInput').addEventListener('keydown',e=>{if(e.key==='Enter')searchCities()});$('cityInput').addEventListener('input',()=>$('suggestions').classList.remove('show'));document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('suggestions').classList.remove('show')});
-try{const saved=JSON.parse(localStorage.getItem('sky_saved_city')||'null');if(saved&&Number.isFinite(saved.latitude)&&Number.isFinite(saved.longitude))loadWeather(saved)}catch(e){localStorage.removeItem('sky_saved_city')}
+loadWeather()
 </script>
 </body>
 </html>
