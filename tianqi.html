@@ -88,7 +88,7 @@ body:before{background:#7dd9e8}body:after{background:#b9b4ff}
  </div>
  <div id="error" class="error"></div>
 </section>
-<section id="alertsSection" class="section hidden"><div class="section-head"><h2>⚠️ 天气预警与风险提醒</h2><p>WEATHER ALERTS · 平台预警 / 模型风险</p></div><div id="alerts" class="alert-list"></div><p class="notice">提示：以下为天气模型数据生成的风险提示，不等同于当地气象部门正式预警；遇到恶劣天气请以当地官方发布为准。</p></section>
+<section id="alertsSection" class="section hidden"><div class="section-head"><h2>⚠️ 天气预警与风险提醒</h2><p>WEATHER ALERTS · 平台预警 / 模型风险</p></div><div id="alerts" class="alert-list"></div><p class="notice">提示：优先展示极数本源返回的预警信息；备用模型风险提示不等同于当地气象部门正式预警。遇到恶劣天气请以当地官方发布为准。</p></section>
 <section id="hourlySection" class="section hidden"><div class="section-head"><h2>未来 24 小时</h2><p>HOURLY OUTLOOK</p></div><div class="glass hourly-wrap"><div id="hourly" class="hourly"></div></div></section>
 <section id="empty" class="glass empty"><div class="empty-icon">🌤️</div><h2>今天，想看看哪里的天空？</h2><p>在上方搜索框输入城市名称，选择结果即可查看实时天气、未来15天预报，以及每天的穿衣和出行建议。你选择的城市会自动保存在当前浏览器中。</p></section>
 <section id="forecastSection" class="section hidden"><div class="section-head"><h2>未来 15 天</h2><p>DAILY FORECAST · 15 DAYS</p></div><div class="glass"><div class="forecast" id="forecast"></div></div></section>
@@ -131,7 +131,7 @@ function generalAdvice(d,c){
  ];
 }
 function windDirection(deg){if(!Number.isFinite(Number(deg)))return '--';return ['北风','东北风','东风','东南风','南风','西南风','西风','西北风'][Math.round(Number(deg)/45)%8]+' '+Math.round(Number(deg))+'°'}
-function clock(value){if(!value)return '--';return value.split('T')[1]?.slice(0,5)||'--'}
+function clock(value){if(!value)return '--';const s=String(value);return s.includes('T')?(s.split('T')[1]?.slice(0,5)||'--'):s.slice(0,5)}
 function duration(seconds){if(!Number.isFinite(Number(seconds)))return '--';const h=Math.floor(seconds/3600),m=Math.round(seconds%3600/60);return h+'小时'+m+'分'}
 function nearestHour(hourly,time){if(!hourly?.time?.length)return null;let i=hourly.time.findIndex(t=>t>=time);if(i<0)i=0;const o={};Object.keys(hourly).forEach(k=>{if(Array.isArray(hourly[k]))o[k]=hourly[k][i]});return o}
 
@@ -224,7 +224,7 @@ function normalizeApiZero(raw){
   pressure_msl:Number(rt.pressure??0),
   cloud_cover:Number(rt.cloudrate??0)*100
  };
- return {weather:{current,daily,hourly,timezone:root.timezone||'auto'},alerts:root.alert?.content||root.alerts||[]};
+ return {weather:{current,daily,hourly,timezone:root.timezone||'auto'},alerts:(Array.isArray(root.alert)?root.alert:(root.alert?.content||root.alerts||[]))};
 }
 
 function renderHourly(hourly,currentTime){const root=$('hourly');root.innerHTML='';if(!hourly?.time)return;let start=hourly.time.findIndex(t=>t>=currentTime);if(start<0)start=0;for(let i=start;i<Math.min(start+12,hourly.time.length);i++){const w=info(hourly.weather_code[i]),el=document.createElement('div');el.className='hour';el.innerHTML='<time>'+hourly.time[i].slice(11,16)+'</time><div class="ico">'+w[1]+'</div><strong>'+Math.round(hourly.temperature_2m[i])+'°</strong><small>'+w[0]+'<br>💧 '+(hourly.precipitation_probability[i]??0)+'%<br>风 '+windDirection(hourly.wind_direction_10m[i])+'<br>'+((hourly.visibility[i]/1000).toFixed(1))+' km</small>';root.appendChild(el)}}
@@ -237,9 +237,11 @@ function renderAlerts(d,c,h,nativeAlerts,provider){
     const levelText=String(a.level||a.color||'').toLowerCase();
     const level=/red|orange|严重|重大|一级|二级/.test(levelText)?'high':/yellow|蓝|一般|三级|四级/.test(levelText)?'medium':'';
     const el=document.createElement('div');el.className='alert '+level;
-    const title=a.title||a.event_type||a.type||'气象预警';
-    const desc=[a.description||a.content||a.text||'',a.source?'发布来源：'+a.source:'',a.pub_time?'发布时间：'+a.pub_time:''].filter(Boolean).join(' · ');
-    el.innerHTML='<div class="alert-icon">⚠️</div><div><strong>'+title+'</strong><p>'+desc+'</p></div>';root.appendChild(el);
+    const icon=document.createElement('div');icon.className='alert-icon';icon.textContent='⚠️';
+    const body=document.createElement('div'),strong=document.createElement('strong'),p=document.createElement('p');
+    strong.textContent=a.title||a.event_type||a.type||'气象预警';
+    p.textContent=[a.description||a.content||a.text||'',a.source?'发布来源：'+a.source:'',a.pub_time?'发布时间：'+a.pub_time:''].filter(Boolean).join(' · ');
+    body.append(strong,p);el.append(icon,body);root.appendChild(el);
    });
   }else root.innerHTML='<div class="alert"><div class="alert-icon">✅</div><div><strong>接口暂未返回气象预警</strong><p>当前未获取到平台发布的预警信息；请以当地气象部门实时发布为准。</p></div></div>';
   return;
@@ -294,7 +296,7 @@ async function loadWeather(place){
 }
 function renderWeather(place,label,data,provider='open-meteo',nativeAlerts=[]){
  const c=data.current,d=data.daily,now=info(c.weather_code),today=info(d.weather_code[0]);
- $('cityName').textContent=label;$('updated').textContent='实时天气 · '+new Date().toLocaleString('zh-CN',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 更新';
+ $('cityName').textContent=label;$('updated').textContent='实时天气 · '+new Date().toLocaleString('zh-CN',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 更新 · 数据源：'+(provider==='apizero'?'极数本源':'Open-Meteo 备用');
  $('currentIcon').textContent=now[1];$('temperature').innerHTML=Math.round(c.temperature_2m)+'<sup>°C</sup>';$('condition').textContent=now[0];$('feels').textContent='体感温度 '+Math.round(c.apparent_temperature)+'°C';
  $('humidity').textContent=Math.round(c.relative_humidity_2m);$('wind').textContent=Math.round(c.wind_speed_10m);$('windDir').textContent=windDirection(c.wind_direction_10m);$('gust').textContent=Math.round(c.wind_gusts_10m??0);$('pressure').textContent=Math.round(c.pressure_msl);$('cloud').textContent=Math.round(c.cloud_cover);$('precip').textContent=Number(c.precipitation).toFixed(1);$('uv').textContent=Number(d.uv_index_max[0]).toFixed(1);
  const h=nearestHour(data.hourly,c.time);$('visibility').textContent=h?((h.visibility/1000).toFixed(1)+' km'):'--';$('dewpoint').textContent=h?(Math.round(h.dew_point_2m)+'°C'):'--';$('sunrise').textContent=clock(d.sunrise[0]);$('sunset').textContent=clock(d.sunset[0]);$('sunshine').textContent=duration(d.sunshine_duration?.[0]);
