@@ -117,9 +117,13 @@ def parse_daily_forecast(soup: BeautifulSoup) -> list:
     """只遍历一次页面文本，避免逐层读取嵌套 div 导致性能问题。"""
     lines = [x.strip() for x in soup.get_text("\\n", strip=True).splitlines() if x.strip()]
     candidates = []
+    debug_count = 0
     for i, line in enumerate(lines):
         if not DATE_RE.search(line):
             continue
+        if debug_count < 4:
+            print("FORECAST_DEBUG:", " | ".join(lines[i:i + 12]))
+            debug_count += 1
         # 2345 会把日期、天气、温度、风力拆成相邻节点，组合附近文本再解析。
         window = " ".join(lines[i:i + 18])
         item = parse_daily_item(window)
