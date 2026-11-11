@@ -115,11 +115,11 @@ def parse_daily_item(text: str):
 
 def parse_daily_forecast(soup: BeautifulSoup) -> list:
     """从 fortyData 内嵌对象提取高低温，并从可见预报卡片补充风向风力。"""
-    lines = [x.strip() for x in soup.get_text("\\n", strip=True).splitlines() if x.strip()]
+    lines = [x.strip() for x in soup.get_text("\n", strip=True).splitlines() if x.strip()]
     wind_by_date = {}
 
     for i, line in enumerate(lines):
-        if not re.fullmatch(r"\\d{1,2}/\\d{1,2}", line):
+        if not re.fullmatch(r"\d{1,2}/\d{1,2}", line):
             continue
         date = parse_date(line)
         if not date:
@@ -134,11 +134,11 @@ def parse_daily_forecast(soup: BeautifulSoup) -> list:
 
     # fortyData 是页面内嵌的 JSON 风格对象；直接提取其逐日字段，兼容脚本末尾缺少分号的情况。
     row_pattern = re.compile(
-        r'"date"\\s*:\\s*"([^"]+)"\\s*,\\s*'
-        r'"weather"\\s*:\\s*"([^"]+)"\\s*,\\s*'
-        r'"day_img"\\s*:\\s*"[^"]*"\\s*,\\s*'
-        r'"day_temp"\\s*:\\s*"(-?\\d+)"\\s*,\\s*'
-        r'"night_temp"\\s*:\\s*"(-?\\d+)"',
+        r'"date"\s*:\s*"([^"]+)"\s*,\s*'
+        r'"weather"\s*:\s*"([^"]+)"\s*,\s*'
+        r'"day_img"\s*:\s*"[^"]*"\s*,\s*'
+        r'"day_temp"\s*:\s*"(-?\d+)"\s*,\s*'
+        r'"night_temp"\s*:\s*"(-?\d+)"',
         re.S,
     )
     rows = []
