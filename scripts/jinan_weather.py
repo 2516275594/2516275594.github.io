@@ -121,7 +121,7 @@ def parse_daily_forecast(soup: BeautifulSoup) -> list:
         if 8 <= len(text) <= 240 and DATE_RE.search(text):
             item = parse_daily_item(text)
             if item:
-                candidates.append((len(text), item, text))
+                candidates.append((len(text), item))
 
     lines = [x.strip() for x in soup.get_text("\n", strip=True).splitlines() if x.strip()]
     for i, line in enumerate(lines):
@@ -129,17 +129,12 @@ def parse_daily_forecast(soup: BeautifulSoup) -> list:
             window = " ".join(lines[i:i + 9])
             item = parse_daily_item(window)
             if item:
-                candidates.append((len(window), item, window))
+                candidates.append((len(window), item))
 
     by_date = {}
-    debug_text = {}
-    for length, item, raw_text in sorted(candidates, key=lambda x: x[0]):
-        if item["date"] not in by_date:
-            by_date[item["date"]] = item
-            debug_text[item["date"]] = raw_text[:180]
+    for length, item in sorted(candidates, key=lambda x: x[0]):
+        by_date.setdefault(item["date"], item)
     result = sorted(by_date.values(), key=lambda x: x["date"])
-    for item in result:
-        print(f"DEBUG {item[chr(100)+chr(97)+chr(116)+chr(101)]}: {debug_text[item[chr(100)+chr(97)+chr(116)+chr(101)]]}")
     if not result:
         raise RuntimeError("未能从 2345 多日预报页面识别出日期、天气和温度；为避免覆盖旧数据，本次不写入 JSON。")
     return result[:15]
