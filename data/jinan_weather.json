@@ -4,25 +4,25 @@
   "source": "2345天气",
   "source_url": "https://tianqi.2345.com/jinan1d/54823.htm",
   "forecast_source_url": "https://tianqi.2345.com/jinan/54823.htm",
-  "crawl_time": "2026-11-11T06:56:42+00:00",
+  "crawl_time": "2026-11-11T08:05:19+00:00",
   "realtime": {
-    "temperature": "17",
+    "temperature": "16",
     "weather": "晴",
-    "publish_time": "14:30",
+    "publish_time": "15:45",
     "today_range": "9~17℃",
     "today_weather": "晴",
     "yesterday_range": "6~16℃",
     "yesterday_weather": "晴",
     "wind_direction": "西南风",
     "wind_level": "3级",
-    "humidity": "25%",
+    "humidity": "26%",
     "ultraviolet": "很弱",
     "pressure": "1018hPa",
     "sunrise": "06:44",
     "sunset": "17:06",
     "air_quality": {
       "level": "优",
-      "aqi": "31"
+      "aqi": "33"
     }
   },
   "daily_forecast": [
