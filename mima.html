@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10182d">
+  <meta name="description" content="在线随机密码生成器，支持大小写字母、数字和可选特殊符号。">
+  <title>随机密码生成器</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b1020;--panel:rgba(22,32,56,.82);--line:rgba(255,255,255,.12);--text:#f3f6ff;--muted:#9aa8c4;--accent:#a99aff;--cyan:#70dce8}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;padding:28px 18px;display:grid;place-items:center;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Microsoft YaHei",sans-serif;background:radial-gradient(ellipse at 15% 10%,rgba(101,217,232,.16),transparent 35%),radial-gradient(ellipse at 90% 20%,rgba(155,140,255,.2),transparent 35%),var(--bg)}
+    .card{width:min(620px,100%);padding:clamp(22px,5vw,40px);border:1px solid var(--line);border-radius:26px;background:var(--panel);box-shadow:0 24px 70px rgba(0,0,0,.28);backdrop-filter:blur(18px)}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px}.back{color:#bcb2ff;text-decoration:none;font-size:13px}.tag{padding:7px 11px;border:1px solid var(--line);border-radius:99px;color:var(--muted);font-size:11px;letter-spacing:.08em}
+    h1{margin:24px 0 8px;font-size:clamp(28px,6vw,38px);letter-spacing:-.04em} .desc{margin:0;color:var(--muted);font-size:14px;line-height:1.8}
+    .output{display:flex;gap:10px;margin:28px 0 22px;padding:12px;border:1px solid rgba(169,154,255,.3);border-radius:16px;background:rgba(7,12,25,.55)}
+    #password{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#fff;font:600 16px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.02em}
+    button{border:0;border-radius:12px;padding:12px 17px;font:600 14px inherit;cursor:pointer;transition:transform .18s,filter .18s}button:hover{filter:brightness(1.1);transform:translateY(-1px)}button:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+    .copy{flex:0 0 auto;color:#10182d;background:linear-gradient(110deg,#bcb0ff,#75e1e8)}
+    .field{margin:20px 0}.field-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.field label,.field-title{font-size:14px;font-weight:600}.hint{color:var(--muted);font-size:12px}
+    input[type=number]{width:84px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.06);color:var(--text);font:inherit}
+    .options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.option{display:flex;align-items:center;gap:10px;padding:13px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.035);color:#dce5fb;font-size:13px}
+    input[type=checkbox]{width:17px;height:17px;accent-color:#a99aff}
+    .actions{display:flex;gap:10px;margin-top:26px}.generate{flex:1;color:#10182d;background:linear-gradient(110deg,#bcb0ff,#75e1e8)}.secondary{color:#dce5fb;background:rgba(255,255,255,.09);border:1px solid var(--line)}
+    #message{min-height:20px;margin:14px 0 0;color:var(--cyan);font-size:12px;text-align:center}
+    footer{margin-top:28px;color:#7785a3;font-size:11px;text-align:center}
+    @media(max-width:460px){.output{flex-direction:column}.copy{width:100%}.options{grid-template-columns:1fr}.actions button{padding:12px 10px}}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="top"><a class="back" href="./">← 返回主页</a><span class="tag">SECURE PASSWORD</span></div>
+    <h1>随机密码生成器</h1>
+    <p class="desc">一键生成随机密码。默认包含小写字母、大写字母和数字，特殊符号可按需开启。</p>
+
+    <div class="output">
+      <input id="password" type="text" value="" readonly aria-label="生成的随机密码" spellcheck="false">
+      <button class="copy" id="copyBtn" type="button">复制密码</button>
+    </div>
+
+    <div class="field">
+      <div class="field-head"><label for="length">密码长度</label><span class="hint">建议至少 12 位</span></div>
+      <input id="length" type="number" min="8" max="64" value="16" inputmode="numeric">
+    </div>
+
+    <div class="field">
+      <div class="field-head"><span class="field-title">字符类型</span><span class="hint">默认组合</span></div>
+      <div class="options">
+        <label class="option"><input type="checkbox" checked disabled> 小写字母 (a-z)</label>
+        <label class="option"><input type="checkbox" checked disabled> 大写字母 (A-Z)</label>
+        <label class="option"><input type="checkbox" checked disabled> 数字 (0-9)</label>
+        <label class="option"><input id="symbols" type="checkbox"> 特殊符号 (!@#$…)</label>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="generate" id="generateBtn" type="button">⟳ 生成新密码</button>
+      <button class="secondary" id="selectBtn" type="button">选中密码</button>
+    </div>
+    <p id="message" role="status" aria-live="polite"></p>
+    <footer>密码仅在当前浏览器本地生成，不会上传到服务器。</footer>
+  </main>
+
+  <script>
+    const lower = "abcdefghijklmnopqrstuvwxyz";
+    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const digits = "0123456789";
+    const symbols = "!@#$%^&*()-_=+[]{};:,.?";
+
+    function secureIndex(max) {
+      const limit = Math.floor(256 / max) * max;
+      const bytes = new Uint8Array(1);
+      do { crypto.getRandomValues(bytes); } while (bytes[0] >= limit);
+      return bytes[0] % max;
+    }
+
+    function shuffle(items) {
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = secureIndex(i + 1);
+        [items[i], items[j]] = [items[j], items[i]];
+      }
+      return items;
+    }
+
+    function generatePassword() {
+      const lengthInput = document.getElementById("length");
+      const length = Number.parseInt(lengthInput.value, 10);
+      const message = document.getElementById("message");
+      if (!Number.isInteger(length) || length < 8 || length > 64) {
+        message.textContent = "请输入 8 到 64 之间的密码长度。";
+        lengthInput.focus();
+        return;
+      }
+
+      const pools = [lower, upper, digits];
+      if (document.getElementById("symbols").checked) pools.push(symbols);
+      if (length < pools.length) {
+        message.textContent = "密码长度不足以包含所有已选字符类型。";
+        return;
+      }
+
+      const chars = pools.map(pool => pool[secureIndex(pool.length)]);
+      const allChars = pools.join("");
+      while (chars.length < length) chars.push(allChars[secureIndex(allChars.length)]);
+      document.getElementById("password").value = shuffle(chars).join("");
+      message.textContent = "已生成新密码";
+    }
+
+    async function copyPassword() {
+      const input = document.getElementById("password");
+      const message = document.getElementById("message");
+      if (!input.value) generatePassword();
+      if (!input.value) return;
+      try {
+        await navigator.clipboard.writeText(input.value);
+        message.textContent = "密码已复制到剪贴板";
+      } catch {
+        input.focus();
+        input.select();
+        const copied = document.execCommand("copy");
+        message.textContent = copied ? "密码已复制到剪贴板" : "复制失败，请手动选中并复制";
+      }
+    }
+
+    document.getElementById("generateBtn").addEventListener("click", generatePassword);
+    document.getElementById("copyBtn").addEventListener("click", copyPassword);
+    document.getElementById("selectBtn").addEventListener("click", () => {
+      const input = document.getElementById("password");
+      input.focus();
+      input.select();
+      document.getElementById("message").textContent = "密码已选中，可以复制";
+    });
+    generatePassword();
+  </script>
+</body>
+</html>
