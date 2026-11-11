@@ -4,25 +4,25 @@
   "source": "2345天气",
   "source_url": "https://tianqi.2345.com/jinan1d/54823.htm",
   "forecast_source_url": "https://tianqi.2345.com/jinan/54823.htm",
-  "crawl_time": "2026-11-11T17:24:17+00:00",
+  "crawl_time": "2026-11-11T23:37:03+00:00",
   "realtime": {
-    "temperature": "10",
-    "weather": "多云",
-    "publish_time": "01:00",
-    "today_range": "9~18℃",
+    "temperature": "11",
+    "weather": "晴",
+    "publish_time": "07:30",
+    "today_range": "11~17℃",
     "today_weather": "晴转多云",
     "yesterday_range": "9~17℃",
     "yesterday_weather": "晴",
-    "wind_direction": "西南风",
+    "wind_direction": "南风",
     "wind_level": "2级",
-    "humidity": "44%",
-    "ultraviolet": "无",
+    "humidity": "46%",
+    "ultraviolet": "很弱",
     "pressure": "1019hPa",
     "sunrise": "06:45",
     "sunset": "17:05",
     "air_quality": {
       "level": "优",
-      "aqi": "29"
+      "aqi": "42"
     }
   },
   "daily_forecast": [
@@ -30,23 +30,23 @@
       "date": "2026-11-12",
       "weekday": "四",
       "weather": "晴转多云",
-      "temp_min": 9,
-      "temp_max": 18,
+      "temp_min": 11,
+      "temp_max": 17,
       "wind": "西南风2级"
     },
     {
       "date": "2026-11-13",
       "weekday": "五",
       "weather": "多云",
-      "temp_min": 10,
-      "temp_max": 19,
-      "wind": "西南风1级"
+      "temp_min": 9,
+      "temp_max": 20,
+      "wind": "西风1级"
     },
     {
       "date": "2026-11-14",
       "weekday": "六",
       "weather": "晴转多云",
-      "temp_min": 8,
+      "temp_min": 9,
       "temp_max": 19,
       "wind": "西北风1级"
     },
@@ -56,7 +56,7 @@
       "weather": "多云转阴",
       "temp_min": 7,
       "temp_max": 16,
-      "wind": "东北风2级"
+      "wind": "东北风3级"
     },
     {
       "date": "2026-11-16",
@@ -72,13 +72,13 @@
       "weather": "小雨",
       "temp_min": 2,
       "temp_max": 8,
-      "wind": "北风1级"
+      "wind": "东北风2级"
     },
     {
       "date": "2026-11-18",
       "weekday": "三",
       "weather": "晴",
-      "temp_min": 3,
+      "temp_min": 4,
       "temp_max": 8,
       "wind": "西北风1级"
     },
@@ -86,65 +86,65 @@
       "date": "2026-11-19",
       "weekday": "四",
       "weather": "多云转阴",
-      "temp_min": 3,
-      "temp_max": 12,
+      "temp_min": 4,
+      "temp_max": 13,
       "wind": "西风2级"
     },
     {
       "date": "2026-11-20",
       "weekday": "五",
-      "weather": "阴转多云",
-      "temp_min": 3,
-      "temp_max": 12,
-      "wind": "东北风1级"
+      "weather": "阴转晴",
+      "temp_min": 4,
+      "temp_max": 14,
+      "wind": "西风1级"
     },
     {
       "date": "2026-11-21",
       "weekday": "六",
-      "weather": "晴转多云",
-      "temp_min": 4,
-      "temp_max": 14,
-      "wind": "北风1级"
+      "weather": "晴",
+      "temp_min": 3,
+      "temp_max": 10,
+      "wind": "西南风1级"
     },
     {
       "date": "2026-11-22",
       "weekday": "日",
-      "weather": "晴转多云",
-      "temp_min": 7,
-      "temp_max": 14,
-      "wind": "西北风1级"
+      "weather": "晴",
+      "temp_min": 3,
+      "temp_max": 10,
+      "wind": "西南风1级"
     },
     {
       "date": "2026-11-23",
       "weekday": "一",
-      "weather": "晴",
+      "weather": "阴转晴",
       "temp_min": 5,
-      "temp_max": 16,
-      "wind": "西北风2级"
+      "temp_max": 14,
+      "wind": "西南风1级"
     },
     {
       "date": "2026-11-24",
       "weekday": "二",
       "weather": "阴",
       "temp_min": 7,
-      "temp_max": 15,
-      "wind": "北风1级"
+      "temp_max": 13,
+      "wind": "西北风2级"
     },
     {
       "date": "2026-11-25",
       "weekday": "三",
-      "weather": "阴转晴",
-      "temp_min": 4,
+      "weather": "多云转晴",
+      "temp_min": 5,
       "temp_max": 14,
-      "wind": "西南风1级"
+      "wind": "北风2级"
     },
     {
       "date": "2026-11-26",
       "weekday": "四",
-      "weather": "晴",
-      "temp_min": 1,
-      "temp_max": 10,
-      "wind": null
+      "weather": "晴转多云",
+      "temp_min": 9,
+      "temp_max": 14,
+      "wind": "西北风2级"
     }
   ]
 }
