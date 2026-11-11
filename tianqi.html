@@ -72,7 +72,6 @@ body:before{background:#7dd9e8}body:after{background:#b9b4ff}
 .error{color:#c34b4b}
 @media(prefers-reduced-motion:reduce){body{animation:none}}
 
-.search{display:none!important}
 
 /* Blue-sky theme with soft drifting clouds */
 body{
@@ -114,7 +113,7 @@ body:after{right:-240px;bottom:8%;animation-delay:-17s;opacity:.43}
 <header class="topbar"><div class="brand"><span class="brand-mark">☼</span><span>SKY · WEATHER</span></div><a class="top-link" href="./">← 返回首页</a></header>
 <section class="hero">
  <div class="hero-head"><div><div class="eyebrow">LIVE WEATHER · 15 DAY OUTLOOK</div><h1 class="city" id="cityName">济南 · 山东省</h1><div class="updated" id="updated">正在获取济南天气…</div></div>
- <div class="search"><input id="cityInput" type="search" placeholder="输入城市名称，例如：上海、Tokyo" autocomplete="off"><button id="searchBtn" type="button">搜索</button><div class="suggestions" id="suggestions"></div></div></div>
+ <div class="search"><input id="cityInput" type="search" placeholder="搜索城市，例如：上海、北京、Tokyo" autocomplete="off"><button id="searchBtn" type="button">搜索</button><div class="suggestions" id="suggestions"></div></div></div>
  <div id="currentArea" class="hidden">
   <div class="current"><div class="temperature"><div><div class="weather-icon" id="currentIcon">☀️</div></div><div><div class="temp" id="temperature">--<sup>°C</sup></div><div class="condition" id="condition">天气加载中</div><div class="feels" id="feels">体感温度 --°</div></div></div>
   <div class="metrics"><div class="metric"><span>相对湿度</span><strong id="humidity">--</strong><small>%</small></div><div class="metric"><span>风向</span><strong id="windDir">--</strong></div><div class="metric"><span>风力</span><strong id="wind">--</strong><small>km/h</small></div><div class="metric"><span>阵风</span><strong id="gust">--</strong><small>km/h</small></div><div class="metric"><span>气压</span><strong id="pressure">--</strong><small>hPa</small></div><div class="metric"><span>云量</span><strong id="cloud">--</strong><small>%</small></div><div class="metric"><span>降水量</span><strong id="precip">--</strong><small>mm</small></div><div class="metric"><span>紫外线</span><strong id="uv">--</strong><small id="uvUnit"></small></div></div></div>
@@ -124,7 +123,7 @@ body:after{right:-240px;bottom:8%;animation-delay:-17s;opacity:.43}
 </section>
 <section id="alertsSection" class="section hidden"><div class="section-head"><h2>⚠️ 天气预警与风险提醒</h2><p>WEATHER ALERTS · APIZERO ALERT FEED</p></div><div id="alerts" class="alert-list"></div><p class="notice">提示：此处只显示极数本源接口返回的预警，不使用 Open-Meteo 模型推测预警。若接口暂不可用，请以当地气象部门实时发布为准。</p></section>
 <section id="hourlySection" class="section hidden"><div class="section-head"><h2>未来 24 小时</h2><p>HOURLY OUTLOOK</p></div><div class="glass hourly-wrap"><div id="hourly" class="hourly"></div></div></section>
-<section id="empty" class="glass empty"><div class="empty-icon">🌤️</div><h2>今天，想看看哪里的天空？</h2><p>当前固定显示济南天气。数据由 GitHub Actions 定时抓取并缓存，包含实时天气、逐小时预报、未来16天趋势，以及每天的生活建议。</p></section>
+<section id="empty" class="glass empty"><div class="empty-icon">🌤️</div><h2>今天，想看看哪里的天空？</h2><p>默认显示济南天气。可在上方搜索框输入其他城市，查看该城市实时天气、逐小时预报和未来16天趋势。</p></section>
 <section id="forecastSection" class="section hidden"><div class="section-head"><h2>未来 15 天</h2><p>DAILY FORECAST · 15 DAYS</p></div><div class="glass"><div class="forecast" id="forecast"></div></div></section>
 <section id="adviceSection" class="section hidden"><div class="section-head"><h2>今日生活指南</h2><p>LIFESTYLE INSIGHTS</p></div><div class="advice-grid" id="advice"></div></section>
 <footer class="foot">WEATHER BY <a href="https://open-meteo.com/" target="_blank" rel="noopener">OPEN-METEO</a> · CC BY 4.0 · 2345 FALLBACK · ALERTS BY APIZERO · 愿每一天都有好天气</footer>
@@ -284,37 +283,80 @@ function renderAlerts(nativeAlerts,alertsProvider){
  });
 }
 function showError(msg){$('error').textContent=msg}
-async function loadWeather(){
+async function loadWeather(city='济南',knownPlace=null){
  $('currentArea').classList.add('loading');showError('');
- const place={name:'济南',admin1:'山东省',country:'中国'};
- let data=null,provider='Open-Meteo',sourceTime='';
+ let place=knownPlace,data=null,provider='Open-Meteo',sourceTime='';
  try{
-  const res=await fetch('./data/openmeteo_weather.json?ts='+Date.now(),{cache:'no-store'});
-  if(!res.ok)throw Error('Open-Meteo 缓存暂不可用（HTTP '+res.status+'）');
-  const payload=await res.json();
-  if(!payload.current||!payload.daily?.time?.length||!payload.hourly?.time?.length)throw Error('Open-Meteo 缓存数据不完整');
-  const fetchedAt=Date.parse(payload.fetched_at||'');
-  if(!Number.isFinite(fetchedAt)||Date.now()-fetchedAt>90*60*1000)throw Error('Open-Meteo 缓存超过 90 分钟未更新，切换备用数据');
-  data=normalizeOpenMeteo(payload);sourceTime=payload.fetched_at||payload.current.time;
- }catch(primaryError){
-  try{
-   const res=await fetch('./data/jinan_weather.json?ts='+Date.now(),{cache:'no-store'});
-   if(!res.ok)throw Error('2345 备用数据暂不可用（HTTP '+res.status+'）');
+  if(city==='济南'&&!knownPlace){
+   place={name:'济南',admin1:'山东省',country:'中国'};
+   try{
+    const res=await fetch('./data/openmeteo_weather.json?ts='+Date.now(),{cache:'no-store'});
+    if(!res.ok)throw Error('缓存不可用');
+    const payload=await res.json();
+    const fetchedAt=Date.parse(payload.fetched_at||'');
+    if(!payload.current||!payload.daily?.time?.length||!payload.hourly?.time?.length||!Number.isFinite(fetchedAt)||Date.now()-fetchedAt>90*60*1000)throw Error('缓存数据过期或不完整');
+    data=normalizeOpenMeteo(payload);sourceTime=payload.fetched_at||payload.current.time;
+   }catch(e){
+    const res=await fetch('./data/jinan_weather.json?ts='+Date.now(),{cache:'no-store'});
+    if(!res.ok)throw Error('济南天气缓存暂不可用');
+    const payload=await res.json();
+    if(!payload.realtime||!Array.isArray(payload.daily_forecast)||!payload.daily_forecast.length)throw Error('济南备用天气数据不完整');
+    data=normalizeJinanWeather(payload);provider='2345 备用';sourceTime=payload.crawl_time;
+    showError('济南 Open-Meteo 缓存暂不可用，当前显示 2345 备用天气。');
+   }
+  }else{
+   place=place||await geocodeCity(city);
+   const params=new URLSearchParams({
+    latitude:place.latitude,longitude:place.longitude,timezone:'auto',forecast_days:'16',
+    wind_speed_unit:'kmh',temperature_unit:'celsius',precipitation_unit:'mm',
+    current:'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,cloud_cover',
+    hourly:'temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,uv_index,cloud_cover,pressure_msl',
+    daily:'weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max,precipitation_probability_max,precipitation_sum,wind_gusts_10m_max,wind_direction_10m_dominant'
+   });
+   const res=await fetch('https://api.open-meteo.com/v1/forecast?'+params.toString());
+   if(!res.ok)throw Error('天气服务暂时无法访问（HTTP '+res.status+'）');
    const payload=await res.json();
-   if(!payload.realtime||!Array.isArray(payload.daily_forecast)||!payload.daily_forecast.length)throw Error('2345 备用数据格式不完整');
-   data=normalizeJinanWeather(payload);provider='2345 备用';sourceTime=payload.crawl_time;
-   showError('Open-Meteo 数据暂不可用，当前显示 2345 备用天气数据。');
-  }catch(fallbackError){
-   throw new Error('天气数据暂时不可用：'+(fallbackError.message||primaryError.message));
+   if(!payload.current||!payload.daily?.time?.length)throw Error('该城市暂时没有可用天气数据');
+   data=normalizeOpenMeteo(payload);sourceTime=new Date().toISOString();
   }
- }
- data.fetchedAt=sourceTime;
- renderWeather(place,'济南 · 山东省',data,provider,[],'unavailable');
- fetch('https://bamboo-weather-api.wangbamboo4.workers.dev/api/weather?city='+encodeURIComponent('济南'))
-  .then(r=>r.ok?r.json():Promise.reject(new Error('alert request failed')))
-  .then(alertPayload=>renderAlerts(Array.isArray(alertPayload.alerts)?alertPayload.alerts:[],alertPayload.alertsProvider||'unavailable'))
-  .catch(()=>renderAlerts([],'unavailable'));
+  data.fetchedAt=sourceTime;
+  const label=[place.name,place.admin1,place.country].filter(Boolean).join(' · ');
+  renderWeather(place,label,data,provider,[],'unavailable');
+  fetch('https://bamboo-weather-api.wangbamboo4.workers.dev/api/weather?city='+encodeURIComponent(place.name))
+   .then(r=>r.ok?r.json():Promise.reject(new Error('alert request failed')))
+   .then(p=>renderAlerts(Array.isArray(p.alerts)?p.alerts:[],p.alertsProvider||'unavailable'))
+   .catch(()=>renderAlerts([],'unavailable'));
+ }catch(error){
+  showError(error.message||'天气数据加载失败，请稍后重试。');
+  if(!$('currentArea').classList.contains('hidden'))$('currentArea').classList.remove('loading');
+ }finally{$('currentArea').classList.remove('loading')}
 }
+
+async function geocodeCity(query){
+ const url='https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(query)+'&count=8&language=zh&format=json';
+ const res=await fetch(url);
+ if(!res.ok)throw Error('城市搜索服务暂时不可用');
+ const payload=await res.json(),items=payload.results||[];
+ if(!items.length)throw Error('没有找到这个城市，请检查名称后重试');
+ const exact=items.find(x=>x.name.toLowerCase()===query.trim().toLowerCase());
+ const p=exact||items[0];
+ return {name:p.name,admin1:p.admin1||'',country:p.country||'',latitude:p.latitude,longitude:p.longitude};
+}
+
+async function searchCity(){
+ const query=$('cityInput').value.trim();
+ if(!query){showError('请先输入城市名称');return}
+ $('suggestions').classList.remove('show');
+ $('searchBtn').disabled=true;$('searchBtn').textContent='搜索中…';
+ try{
+  const place=await geocodeCity(query);
+  $('cityInput').value=place.name;
+  await loadWeather(place.name,place);
+ }catch(e){showError(e.message||'城市搜索失败')}
+ finally{$('searchBtn').disabled=false;$('searchBtn').textContent='搜索'}
+}
+$('searchBtn').addEventListener('click',searchCity);
+$('cityInput').addEventListener('keydown',e=>{if(e.key==='Enter')searchCity()});
 
 function normalizeOpenMeteo(payload){
  const current={...payload.current};
@@ -418,7 +460,7 @@ function renderWeather(place,label,data,provider='open-meteo',nativeAlerts=[],al
  const cards=generalAdvice({weather_code:d.weather_code[0],precipitation_probability_max:d.precipitation_probability_max?.[0]??null,temperature_2m_max:d.temperature_2m_max[0],temperature_2m_min:d.temperature_2m_min[0],uv_index_max:d.uv_index_max[0]??null},c);
  $('advice').innerHTML=cards.map(a=>'<article class="glass advice"><div class="advice-icon">'+a[0]+'</div><h3>'+a[1]+'</h3><p>'+a[2]+'</p><span class="hint">'+a[3]+'</span></article>').join('');
 }
-loadWeather()
+loadWeather('济南');
 </script>
 </body>
 </html>
