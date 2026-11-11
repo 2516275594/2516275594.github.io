@@ -1,6 +1,10 @@
 name: Update Jinan Weather
 
 on:
+  push:
+    paths:
+      - '.github/workflows/jinan-weather.yml'
+      - 'scripts/jinan_weather.py'
   schedule:
     - cron: '*/30 * * * *'
   workflow_dispatch:
