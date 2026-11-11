@@ -4,7 +4,7 @@
   "source": "2345天气",
   "source_url": "https://tianqi.2345.com/jinan1d/54823.htm",
   "forecast_source_url": "https://tianqi.2345.com/jinan/54823.htm",
-  "crawl_time": "2026-11-11T06:25:47+00:00",
+  "crawl_time": "2026-11-11T06:26:42+00:00",
   "realtime": {
     "temperature": "17",
     "weather": "晴",

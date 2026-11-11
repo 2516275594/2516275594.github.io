@@ -1,7 +1,7 @@
 {
   "latitude": 36.66081,
   "longitude": 117.12975,
-  "generationtime_ms": 2.916574478149414,
+  "generationtime_ms": 2.6521682739257812,
   "utc_offset_seconds": 28800,
   "timezone": "Asia/Shanghai",
   "timezone_abbreviation": "GMT+8",
@@ -9373,7 +9373,7 @@
   },
   "source": "Open-Meteo",
   "source_url": "https://api.open-meteo.com/v1/forecast?latitude=36.6512&longitude=117.1201&timezone=Asia%2FShanghai&forecast_days=16&temperature_unit=celsius&wind_speed_unit=kmh&precipitation_unit=mm&current=temperature_2m%2Crelative_humidity_2m%2Capparent_temperature%2Cis_day%2Cprecipitation%2Crain%2Cshowers%2Csnowfall%2Cweather_code%2Ccloud_cover%2Cpressure_msl%2Csurface_pressure%2Cwind_speed_10m%2Cwind_direction_10m%2Cwind_gusts_10m&hourly=temperature_2m%2Crelative_humidity_2m%2Cdew_point_2m%2Capparent_temperature%2Cprecipitation_probability%2Cprecipitation%2Crain%2Cshowers%2Csnowfall%2Cweather_code%2Cpressure_msl%2Csurface_pressure%2Ccloud_cover%2Ccloud_cover_low%2Ccloud_cover_mid%2Ccloud_cover_high%2Cvisibility%2Cwind_speed_10m%2Cwind_direction_10m%2Cwind_gusts_10m%2Cuv_index%2Cis_day&daily=weather_code%2Ctemperature_2m_max%2Ctemperature_2m_min%2Capparent_temperature_max%2Capparent_temperature_min%2Csunrise%2Csunset%2Cdaylight_duration%2Csunshine_duration%2Cuv_index_max%2Cprecipitation_sum%2Crain_sum%2Cshowers_sum%2Csnowfall_sum%2Cprecipitation_hours%2Cprecipitation_probability_max%2Cwind_speed_10m_max%2Cwind_gusts_10m_max%2Cwind_direction_10m_dominant%2Ccloud_cover_mean%2Ccloud_cover_max&timeformat=iso8601",
-  "fetched_at": "2026-11-11T14:25:43+08:00",
+  "fetched_at": "2026-11-11T14:26:38+08:00",
   "city": "济南",
   "attribution": "Weather data by Open-Meteo (CC BY 4.0)"
 }
