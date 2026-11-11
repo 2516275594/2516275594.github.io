@@ -88,12 +88,12 @@ body:before{background:#7dd9e8}body:after{background:#b9b4ff}
  </div>
  <div id="error" class="error"></div>
 </section>
-<section id="alertsSection" class="section hidden"><div class="section-head"><h2>⚠️ 天气预警与风险提醒</h2><p>WEATHER ALERTS · 平台预警 / 模型风险</p></div><div id="alerts" class="alert-list"></div><p class="notice">提示：优先展示极数本源返回的预警信息；备用模型风险提示不等同于当地气象部门正式预警。遇到恶劣天气请以当地官方发布为准。</p></section>
+<section id="alertsSection" class="section hidden"><div class="section-head"><h2>⚠️ 天气预警与风险提醒</h2><p>WEATHER ALERTS · APIZERO ALERT FEED</p></div><div id="alerts" class="alert-list"></div><p class="notice">提示：此处只显示极数本源接口返回的预警，不使用 Open-Meteo 模型推测预警。若接口暂不可用，请以当地气象部门实时发布为准。</p></section>
 <section id="hourlySection" class="section hidden"><div class="section-head"><h2>未来 24 小时</h2><p>HOURLY OUTLOOK</p></div><div class="glass hourly-wrap"><div id="hourly" class="hourly"></div></div></section>
 <section id="empty" class="glass empty"><div class="empty-icon">🌤️</div><h2>今天，想看看哪里的天空？</h2><p>在上方搜索框输入城市名称，选择结果即可查看实时天气、未来15天预报，以及每天的穿衣和出行建议。你选择的城市会自动保存在当前浏览器中。</p></section>
 <section id="forecastSection" class="section hidden"><div class="section-head"><h2>未来 15 天</h2><p>DAILY FORECAST · 15 DAYS</p></div><div class="glass"><div class="forecast" id="forecast"></div></div></section>
 <section id="adviceSection" class="section hidden"><div class="section-head"><h2>今日生活指南</h2><p>LIFESTYLE INSIGHTS</p></div><div class="advice-grid" id="advice"></div></section>
-<footer class="foot">WEATHER DATA VIA APIZERO · OPEN-METEO FALLBACK · 愿每一天都有好天气</footer>
+<footer class="foot">FORECAST BY OPEN-METEO · ALERTS BY APIZERO · 愿每一天都有好天气</footer>
 </main>
 <script>
 const $=id=>document.getElementById(id);
@@ -227,40 +227,27 @@ function normalizeApiZero(raw){
  return {weather:{current,daily,hourly,timezone:root.location?.timezone||'auto'},alerts:root.alerts||[]};
 }
 function renderHourly(hourly,currentTime){const root=$('hourly');root.innerHTML='';if(!hourly?.time)return;let start=hourly.time.findIndex(t=>timeAtOrAfter(t,currentTime));if(start<0)start=0;for(let i=start;i<Math.min(start+12,hourly.time.length);i++){const w=info(hourly.weather_code[i]),el=document.createElement('div');el.className='hour';el.innerHTML='<time>'+hourly.time[i].slice(11,16)+'</time><div class="ico">'+w[1]+'</div><strong>'+Math.round(hourly.temperature_2m[i])+'°</strong><small>'+w[0]+'<br>💧 '+(hourly.precipitation_probability[i]??0)+'%<br>风 '+windDirection(hourly.wind_direction_10m[i])+'<br>'+((hourly.visibility[i]/1000).toFixed(1))+' km</small>';root.appendChild(el)}}
-function renderAlerts(d,c,h,nativeAlerts,provider){
+function renderAlerts(nativeAlerts,alertsProvider){
  const root=$('alerts');root.innerHTML='';
- if(provider==='apizero'){
-  const items=Array.isArray(nativeAlerts)?nativeAlerts:(nativeAlerts?.content||[]);
-  if(items.length){
-   items.forEach(a=>{
-    const levelText=String(a.level||a.color||'').toLowerCase();
-    const level=/red|orange|严重|重大|一级|二级/.test(levelText)?'high':/yellow|蓝|一般|三级|四级/.test(levelText)?'medium':'';
-    const el=document.createElement('div');el.className='alert '+level;
-    const icon=document.createElement('div');icon.className='alert-icon';icon.textContent='⚠️';
-    const body=document.createElement('div'),strong=document.createElement('strong'),p=document.createElement('p');
-    strong.textContent=a.title||a.event_type||a.type||'气象预警';
-    p.textContent=[a.description||a.content||a.text||'',a.source?'发布来源：'+a.source:'',a.pub_time?'发布时间：'+a.pub_time:''].filter(Boolean).join(' · ');
-    body.append(strong,p);el.append(icon,body);root.appendChild(el);
-   });
-  }else root.innerHTML='<div class="alert"><div class="alert-icon">✅</div><div><strong>接口暂未返回气象预警</strong><p>当前未获取到平台发布的预警信息；请以当地气象部门实时发布为准。</p></div></div>';
+ if(alertsProvider!=='apizero'){
+  root.innerHTML='<div class="alert medium"><div class="alert-icon">ℹ️</div><div><strong>预警数据暂时不可用</strong><p>极数本源预警接口暂未成功返回数据。这里不会用 Open-Meteo 模型推测或替代官方预警，请以当地气象部门发布为准。</p></div></div>';
   return;
  }
- const code=d.weather_code[0],rain=d.precipitation_probability_max?.[0]??0,amount=d.precipitation_sum?.[0]??0,gust=Math.max(c.wind_gusts_10m??0,d.wind_gusts_10m_max?.[0]??0),max=d.temperature_2m_max[0],min=d.temperature_2m_min[0],uv=d.uv_index_max?.[0]??0,snow=d.snowfall_sum?.[0]??0,vis=h?.visibility??99999;
- const alerts=[];const add=(level,icon,title,desc)=>alerts.push({level,icon,title,desc});
- if([95,96,99].includes(code))add('high','⛈️','雷暴风险','预报出现雷暴天气。尽量留在室内，远离高处、树木、水面和空旷地带。');
- if(amount>=50||(rain>=80&&amount>=25))add('high','🌧️','强降雨风险','预计降水量约 '+amount.toFixed(1)+' mm，降水概率 '+rain+'%。注意积水、低洼路段和山洪风险，避免涉水。');
- else if(rain>=60||amount>=10)add('medium','☔','降雨提醒','今天有较明显降雨可能，外出带伞，留意短时强降水变化。');
- if(gust>=70)add('high','💨','强阵风风险','最大阵风约 '+Math.round(gust)+' km/h。远离临时搭建物、广告牌和树木，骑行及驾车注意横风。');
- else if(gust>=50)add('medium','🌬️','大风提醒','预计阵风约 '+Math.round(gust)+' km/h，注意高空坠物及骑行安全。');
- if(max>=38)add('high','🥵','极端高温风险','最高气温约 '+Math.round(max)+'°C。减少正午户外活动，及时补水并注意中暑。');
- else if(max>=35)add('medium','🌡️','高温提醒','最高气温约 '+Math.round(max)+'°C，注意防暑降温和补水。');
- if(min<=-10)add('high','🥶','严寒风险','最低气温约 '+Math.round(min)+'°C。注意防冻保暖，留意道路结冰。');
- else if(min<=0)add('medium','🧊','低温结冰提醒','最低气温约 '+Math.round(min)+'°C，早晚注意保暖，留意结冰路面。');
- if(snow>=10)add('high','❄️','明显降雪提醒','预计降雪约 '+snow.toFixed(1)+' cm，出行注意积雪、结冰及能见度下降。');
- if(uv>=8)add('medium','☀️','强紫外线提醒','紫外线指数 '+uv.toFixed(1)+'，建议使用防晒用品、遮阳帽并减少正午暴晒。');
- if(vis<1000)add('medium','🌫️','低能见度提醒','当前能见度约 '+Math.round(vis)+' 米，驾车减速、保持车距并开启合适灯光。');
- if(!alerts.length)root.innerHTML='<div class="alert"><div class="alert-icon">✅</div><div><strong>暂未发现明显天气风险</strong><p>根据 Open-Meteo 预报模型，暂未触发明显天气风险阈值；这不是官方气象预警。</p></div></div>';
- else alerts.forEach(a=>{const el=document.createElement('div');el.className='alert '+a.level;el.innerHTML='<div class="alert-icon">'+a.icon+'</div><div><strong>'+a.title+'</strong><p>'+a.desc+'</p></div>';root.appendChild(el)});
+ const items=Array.isArray(nativeAlerts)?nativeAlerts:(nativeAlerts?.content||[]);
+ if(!items.length){
+  root.innerHTML='<div class="alert"><div class="alert-icon">ℹ️</div><div><strong>极数本源当前未返回预警信息</strong><p>这表示接口本次没有提供预警条目，不代表当地一定没有天气风险；请以当地气象部门实时发布为准。</p></div></div>';
+  return;
+ }
+ items.forEach(a=>{
+  const levelText=String(a.level||a.color||'').toLowerCase();
+  const level=/red|orange|严重|重大|一级|二级/.test(levelText)?'high':/yellow|blue|黄色|蓝色|一般|三级|四级/.test(levelText)?'medium':'';
+  const el=document.createElement('div');el.className='alert '+level;
+  const icon=document.createElement('div');icon.className='alert-icon';icon.textContent='⚠️';
+  const body=document.createElement('div'),strong=document.createElement('strong'),p=document.createElement('p');
+  strong.textContent=a.title||a.event_type||a.type||'气象预警';
+  p.textContent=[a.description||a.content||a.text||'',a.source?'发布来源：'+a.source:'',a.pub_time?'发布时间：'+a.pub_time:''].filter(Boolean).join(' · ');
+  body.append(strong,p);el.append(icon,body);root.appendChild(el);
+ });
 }
 function showError(msg){$('error').textContent=msg}
 async function searchCities(){
@@ -284,23 +271,25 @@ async function loadWeather(place){
   if(!res.ok)throw Error('天气代理暂时不可用（HTTP '+res.status+'）');
   const payload=await res.json();
   if(!payload.ok||!payload.data)throw Error(payload.error||'天气服务暂时没有返回有效数据');
-  let data,provider=payload.provider,nativeAlerts=[];
-  if(provider==='apizero'){
-   const normalized=normalizeApiZero(payload.data);data=normalized.weather;nativeAlerts=normalized.alerts;
-  }else data=payload.data;
+  const provider=payload.provider||'open-meteo';
+  const alertsProvider=payload.alertsProvider||'unavailable';
+  const nativeAlerts=Array.isArray(payload.alerts)?payload.alerts:[];
+  let data;
+  if(provider==='apizero')data=normalizeApiZero(payload.data).weather;
+  else data=payload.data;
   if(!data.daily||!data.current||!data.hourly)throw Error('天气数据结构不完整，请稍后重试');
   localStorage.setItem('sky_saved_city',JSON.stringify(place));
-  renderWeather(place,label,data,provider,nativeAlerts);
+  renderWeather(place,label,data,provider,nativeAlerts,alertsProvider);
  }catch(e){showError(e.message||'天气加载失败');$('empty').classList.remove('hidden')}finally{$('currentArea').classList.remove('loading');$('searchBtn').disabled=false}
 }
-function renderWeather(place,label,data,provider='open-meteo',nativeAlerts=[]){
+function renderWeather(place,label,data,provider='open-meteo',nativeAlerts=[],alertsProvider='unavailable'){
  const c=data.current,d=data.daily,now=info(c.weather_code),today=info(d.weather_code[0]);
- $('cityName').textContent=label;$('updated').textContent='实时天气 · '+new Date().toLocaleString('zh-CN',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 更新 · 数据源：'+(provider==='apizero'?'极数本源':'Open-Meteo 备用');
+ $('cityName').textContent=label;$('updated').textContent='实时天气 · '+new Date().toLocaleString('zh-CN',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 更新 · 天气：'+(provider==='apizero'?'极数本源备用':'Open-Meteo')+' · 预警：'+(alertsProvider==='apizero'?'极数本源':'暂不可用');
  $('currentIcon').textContent=now[1];$('temperature').innerHTML=Math.round(c.temperature_2m)+'<sup>°C</sup>';$('condition').textContent=now[0];$('feels').textContent='体感温度 '+Math.round(c.apparent_temperature)+'°C';
  $('humidity').textContent=Math.round(c.relative_humidity_2m);$('wind').textContent=Math.round(c.wind_speed_10m);$('windDir').textContent=windDirection(c.wind_direction_10m);$('gust').textContent=Math.round(c.wind_gusts_10m??0);$('pressure').textContent=Math.round(c.pressure_msl);$('cloud').textContent=Math.round(c.cloud_cover);$('precip').textContent=Number(c.precipitation).toFixed(1);$('uv').textContent=Number(d.uv_index_max[0]).toFixed(1);
  const h=nearestHour(data.hourly,c.time);$('visibility').textContent=h?((h.visibility/1000).toFixed(1)+' km'):'--';$('dewpoint').textContent=h?(Math.round(h.dew_point_2m)+'°C'):'--';$('sunrise').textContent=clock(d.sunrise[0]);$('sunset').textContent=clock(d.sunset[0]);$('sunshine').textContent=duration(d.sunshine_duration?.[0]);
  $('weatherFx').className=now[2];$('currentArea').classList.remove('hidden');$('empty').classList.add('hidden');$('forecastSection').classList.remove('hidden');$('adviceSection').classList.remove('hidden');$('alertsSection').classList.remove('hidden');$('hourlySection').classList.remove('hidden');
- renderAlerts(d,c,h,nativeAlerts,provider);renderHourly(data.hourly,c.time);
+ renderAlerts(nativeAlerts,alertsProvider);renderHourly(data.hourly,c.time);
  const forecast=$('forecast');forecast.innerHTML='';
  d.time.forEach((date,i)=>{
   const w=info(d.weather_code[i]),dt=new Date(date+'T12:00:00'),day=document.createElement('article');day.className='day'+(i===0?' today':'');
