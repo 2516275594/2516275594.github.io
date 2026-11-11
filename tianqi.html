@@ -169,6 +169,7 @@ function normalizeApiZero(raw){
  const dailyAppTemp=Array.isArray(dy.apparent_temperature)?dy.apparent_temperature:[];
  const dailyPrecip=Array.isArray(dy.precipitation)?dy.precipitation:[];
  const dailyWind=Array.isArray(dy.wind)?dy.wind:[];
+ const hourly={
   time:tempTimes.length?tempTimes:seriesTimes(hr.skycon),
   temperature_2m:tempArr,
   relative_humidity_2m:pick('humidity').map(v=>v<=1?v*100:v),
