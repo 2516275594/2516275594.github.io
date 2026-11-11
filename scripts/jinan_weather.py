@@ -114,43 +114,76 @@ def parse_daily_item(text: str):
 
 
 def parse_daily_forecast(soup: BeautifulSoup) -> list:
-    """只遍历一次页面文本，避免逐层读取嵌套 div 导致性能问题。"""
+    """从页面内嵌 fortyData 读取真实逐日高低温，并从预报卡片补充风向风力。"""
     lines = [x.strip() for x in soup.get_text("\\n", strip=True).splitlines() if x.strip()]
-    candidates = []
-    debug_count = 0
-    for i, line in enumerate(lines):
-        if not DATE_RE.search(line):
-            continue
-        if debug_count < 4:
-            print("FORECAST_DEBUG:", " | ".join(lines[i:i + 12]))
-            debug_count += 1
-        # 2345 会把日期、天气、温度、风力拆成相邻节点，组合附近文本再解析。
-        window = " ".join(lines[i:i + 18])
-        item = parse_daily_item(window)
-        if item:
-            candidates.append((len(window), item))
+    wind_by_date = {}
 
-    by_date = {}
-    for length, item in sorted(candidates, key=lambda x: x[0]):
-        by_date.setdefault(item["date"], item)
-    result = sorted(by_date.values(), key=lambda x: x["date"])
+    # 页面文字中的卡片结构：日期、天气、风向、风力、空气质量。
+    for i, line in enumerate(lines):
+        if not re.fullmatch(r"\\d{1,2}/\\d{1,2}", line):
+            continue
+        date = parse_date(line)
+        if not date:
+            continue
+        window = " ".join(lines[i + 1:i + 7])
+        weather_match = WEATHER_RE.search(window)
+        wind_match = WIND_RE.search(window)
+        wind_by_date[date] = {
+            "weather": (weather_match.group(1) + ("转" + weather_match.group(2) if weather_match.group(2) else "")) if weather_match else None,
+            "wind": (wind_match.group(1) + (wind_match.group(2) or "")) if wind_match else None,
+        }
+
+    forecast_rows = []
+    for tag in soup.find_all("script"):
+        script_text = tag.string or tag.get_text()
+        if not script_text or "fortyData" not in script_text:
+            continue
+        match = re.search(r"\\bfortyData\\s*=\\s*(\\{.*?\\})\\s*;", script_text, re.S)
+        if not match:
+            continue
+        try:
+            parsed = json.loads(match.group(1))
+        except json.JSONDecodeError:
+            continue
+        rows = parsed.get("data", []) if isinstance(parsed, dict) else []
+        if isinstance(rows, list) and rows:
+            forecast_rows = rows
+            break
+
+    result = []
+    for row in forecast_rows:
+        if not isinstance(row, dict):
+            continue
+        date = parse_date(str(row.get("date", "")))
+        try:
+            day_temp = int(float(row.get("day_temp")))
+            night_temp = int(float(row.get("night_temp")))
+        except (TypeError, ValueError):
+            continue
+        if not date:
+            continue
+        card = wind_by_date.get(date, {})
+        weather = row.get("weather") or card.get("weather") or "天气变化"
+        weekday = "一二三四五六日"[datetime.strptime(date, "%Y-%m-%d").weekday()]
+        result.append({
+            "date": date,
+            "weekday": weekday,
+            "weather": str(weather),
+            "temp_min": min(day_temp, night_temp),
+            "temp_max": max(day_temp, night_temp),
+            "wind": card.get("wind"),
+            "sleet": bool(row.get("sleet", 0)),
+        })
+
+    result.sort(key=lambda x: x["date"])
     if not result:
-        raise RuntimeError("未能从 2345 多日预报页面识别出日期、天气和带温度单位的温度范围；为避免覆盖旧数据，本次不写入 JSON。")
+        raise RuntimeError("未能从 2345 页面内嵌 fortyData 读取有效的逐日高低温；为避免覆盖旧数据，本次不写入 JSON。")
     return result[:15]
 
 
 def main():
     realtime_soup = fetch_soup(REALTIME_URL)
     forecast_soup = fetch_soup(FORECAST_URL)
-    script_hits = 0
-    for tag in forecast_soup.find_all("script"):
-        script_text = tag.string or tag.get_text()
-        if script_text and any(key in script_text.lower() for key in ("forecast", "weather", "temp", "11/11", "11-11")):
-            print("SCRIPT_SRC:", tag.get("src", "inline"))
-            print("SCRIPT_TEXT:", script_text[:1400].replace("\\n", " "))
-            script_hits += 1
-            if script_hits >= 8:
-                break
     realtime = parse_realtime(realtime_soup)
     daily = parse_daily_forecast(forecast_soup)
 
