@@ -133,7 +133,8 @@ function generalAdvice(d,c){
 function windDirection(deg){if(!Number.isFinite(Number(deg)))return '--';return ['北风','东北风','东风','东南风','南风','西南风','西风','西北风'][Math.round(Number(deg)/45)%8]+' '+Math.round(Number(deg))+'°'}
 function clock(value){if(!value)return '--';const s=String(value);return s.includes('T')?(s.split('T')[1]?.slice(0,5)||'--'):s.slice(0,5)}
 function duration(seconds){if(!Number.isFinite(Number(seconds)))return '--';const h=Math.floor(seconds/3600),m=Math.round(seconds%3600/60);return h+'小时'+m+'分'}
-function nearestHour(hourly,time){if(!hourly?.time?.length)return null;let i=hourly.time.findIndex(t=>t>=time);if(i<0)i=0;const o={};Object.keys(hourly).forEach(k=>{if(Array.isArray(hourly[k]))o[k]=hourly[k][i]});return o}
+function timeAtOrAfter(candidate,target){if(/[Z+]/.test(candidate))return Date.parse(candidate)>=Date.parse(target);return candidate>=target}
+function nearestHour(hourly,time){if(!hourly?.time?.length)return null;let i=hourly.time.findIndex(t=>timeAtOrAfter(t,time));if(i<0)i=0;const o={};Object.keys(hourly).forEach(k=>{if(Array.isArray(hourly[k]))o[k]=hourly[k][i]});return o}
 
 function seriesValues(arr){return Array.isArray(arr)?arr.map(x=>x&&typeof x==='object'?(x.value??x.avg??x.max??x.min??null):x):[]}
 function seriesTimes(arr){return Array.isArray(arr)?arr.map(x=>x&&typeof x==='object'?(x.datetime||x.date||x.time||''): ''):[]}
@@ -225,7 +226,7 @@ function normalizeApiZero(raw){
  };
  return {weather:{current,daily,hourly,timezone:root.location?.timezone||'auto'},alerts:root.alerts||[]};
 }
-function renderHourly(hourly,currentTime){const root=$('hourly');root.innerHTML='';if(!hourly?.time)return;let start=hourly.time.findIndex(t=>t>=currentTime);if(start<0)start=0;for(let i=start;i<Math.min(start+12,hourly.time.length);i++){const w=info(hourly.weather_code[i]),el=document.createElement('div');el.className='hour';el.innerHTML='<time>'+hourly.time[i].slice(11,16)+'</time><div class="ico">'+w[1]+'</div><strong>'+Math.round(hourly.temperature_2m[i])+'°</strong><small>'+w[0]+'<br>💧 '+(hourly.precipitation_probability[i]??0)+'%<br>风 '+windDirection(hourly.wind_direction_10m[i])+'<br>'+((hourly.visibility[i]/1000).toFixed(1))+' km</small>';root.appendChild(el)}}
+function renderHourly(hourly,currentTime){const root=$('hourly');root.innerHTML='';if(!hourly?.time)return;let start=hourly.time.findIndex(t=>timeAtOrAfter(t,currentTime));if(start<0)start=0;for(let i=start;i<Math.min(start+12,hourly.time.length);i++){const w=info(hourly.weather_code[i]),el=document.createElement('div');el.className='hour';el.innerHTML='<time>'+hourly.time[i].slice(11,16)+'</time><div class="ico">'+w[1]+'</div><strong>'+Math.round(hourly.temperature_2m[i])+'°</strong><small>'+w[0]+'<br>💧 '+(hourly.precipitation_probability[i]??0)+'%<br>风 '+windDirection(hourly.wind_direction_10m[i])+'<br>'+((hourly.visibility[i]/1000).toFixed(1))+' km</small>';root.appendChild(el)}}
 function renderAlerts(d,c,h,nativeAlerts,provider){
  const root=$('alerts');root.innerHTML='';
  if(provider==='apizero'){
