@@ -73,6 +73,39 @@ body:before{background:#7dd9e8}body:after{background:#b9b4ff}
 @media(prefers-reduced-motion:reduce){body{animation:none}}
 
 .search{display:none!important}
+
+/* Blue-sky theme with soft drifting clouds */
+body{
+ color:#183b5d;
+ background:linear-gradient(180deg,#55afea 0%,#8ed0f3 34%,#c9eaff 72%,#eaf7ff 100%);
+ background-attachment:fixed;
+}
+body:before,body:after{
+ z-index:0;
+ width:420px;height:190px;
+ border-radius:50%;
+ filter:blur(24px);
+ opacity:.58;
+ background:
+  radial-gradient(ellipse at 24% 62%,rgba(255,255,255,.92) 0 22%,transparent 23%),
+  radial-gradient(ellipse at 43% 40%,rgba(255,255,255,.96) 0 30%,transparent 31%),
+  radial-gradient(ellipse at 64% 57%,rgba(255,255,255,.9) 0 25%,transparent 26%),
+  radial-gradient(ellipse at 50% 76%,rgba(255,255,255,.82) 0 30%,transparent 31%);
+ animation:cloudDrift 34s ease-in-out infinite alternate;
+}
+body:before{top:10%;left:-220px}
+body:after{right:-240px;bottom:8%;animation-delay:-17s;opacity:.43}
+@keyframes cloudDrift{to{transform:translate(100px,-18px)}}
+#weatherFx{z-index:0;opacity:.12}
+.hero{
+ background:linear-gradient(135deg,rgba(255,255,255,.91),rgba(239,249,255,.83));
+ border-color:rgba(255,255,255,.9);
+ box-shadow:0 22px 60px rgba(38,105,157,.16);
+}
+.glass{background:rgba(255,255,255,.82);border-color:rgba(255,255,255,.9)}
+.metric,.hour{background:rgba(255,255,255,.76)}
+.top-link{background:rgba(255,255,255,.72)}
+@media(prefers-reduced-motion:reduce){body:before,body:after{animation:none}}
 </style>
 </head>
 <body>
