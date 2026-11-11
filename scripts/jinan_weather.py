@@ -93,7 +93,9 @@ def parse_date(text: str):
 
 def parse_daily_item(text: str):
     date = parse_date(text)
-    temp = TEMP_RE.search(text)
+    # 先移除日期，避免把“11月11日”中的 11-11 误识别为温度范围。
+    text_without_date = DATE_RE.sub(" ", text, count=1)
+    temp = TEMP_RE.search(text_without_date)
     weather = WEATHER_RE.search(text)
     if not (date and temp and weather):
         return None
