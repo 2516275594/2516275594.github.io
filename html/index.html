@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="一个收纳常用工具、影音与灵感的个人主页。">
+  <title>ruaruaburua · 个人主页</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --panel: rgba(19, 27, 49, .72);
+      --line: rgba(255,255,255,.11);
+      --muted: #9aa8c4;
+      --text: #f3f6ff;
+      --accent: #9b8cff;
+      --cyan: #65d9e8;
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; scroll-behavior: smooth; }
+    body {
+      min-height: 100vh; margin: 0; padding: 28px 20px 24px;
+      overflow-x: hidden; color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(ellipse at 14% 8%, rgba(101,217,232,.16), transparent 34%),
+        radial-gradient(ellipse at 88% 18%, rgba(155,140,255,.2), transparent 34%),
+        radial-gradient(ellipse at 50% 100%, rgba(66,92,160,.17), transparent 42%),
+        var(--bg);
+    }
+    body::before, body::after {
+      content: ""; position: fixed; z-index: -1; width: 280px; height: 280px;
+      border-radius: 50%; filter: blur(75px); opacity: .24; pointer-events: none;
+      animation: drift 16s ease-in-out infinite alternate;
+    }
+    body::before { background: #6558d3; top: 30%; left: -180px; }
+    body::after { background: #2bb7c8; right: -180px; bottom: 4%; animation-delay: -7s; }
+    @keyframes drift { to { transform: translate3d(45px,-35px,0) scale(1.15); } }
+    .shell { width: min(920px, 100%); margin: 0 auto; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom: clamp(42px, 9vh, 88px); }
+    .brand { display:flex; align-items:center; gap:11px; color:#dfe7ff; font-size:14px; letter-spacing:.12em; font-weight:700; }
+    .brand-mark { display:grid; place-items:center; width:34px; height:34px; border:1px solid rgba(255,255,255,.2); border-radius:12px; background:linear-gradient(145deg,rgba(155,140,255,.34),rgba(101,217,232,.16)); box-shadow:0 8px 28px rgba(0,0,0,.2); }
+    .status { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px; }
+    .status-dot { width:7px; height:7px; border-radius:50%; background:#72e2b2; box-shadow:0 0 12px #72e2b2; }
+    .hero { text-align:center; margin:0 auto 38px; }
+    .eyebrow { display:inline-flex; align-items:center; gap:8px; padding:7px 12px; border:1px solid var(--line); border-radius:999px; color:#b8c5e1; background:rgba(255,255,255,.045); font-size:12px; letter-spacing:.08em; }
+    h1 { margin:22px 0 12px; font-size:clamp(38px,8vw,68px); line-height:1.08; letter-spacing:-.055em; font-weight:800; }
+    h1 span { background:linear-gradient(100deg,#f4f5ff 15%,#b9adff 55%,#76e2e8); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .clock-card { width:fit-content; max-width:100%; margin:18px auto 0; padding:12px 18px; border:1px solid var(--line); border-radius:16px; background:rgba(255,255,255,.045); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
+    #date { color:#dce5fb; font-size:13px; letter-spacing:.03em; }
+    .quote { margin:20px auto 0; color:#aab7d2; font-size:14px; }
+    .quote::before { content:"“"; color:var(--accent); font-size:22px; margin-right:5px; vertical-align:-3px; }
+    .quote::after { content:"”"; color:var(--accent); font-size:22px; margin-left:5px; vertical-align:-7px; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; margin:0 2px 16px; }
+    .section-head h2 { margin:0; font-size:14px; color:#dfe6f8; font-weight:650; letter-spacing:.06em; }
+    .section-head span { color:#7583a1; font-size:11px; letter-spacing:.12em; }
+    .link-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+    .link-card {
+      position:relative; display:flex; align-items:center; gap:14px; min-height:92px;
+      padding:18px; color:inherit; text-decoration:none; overflow:hidden;
+      border:1px solid var(--line); border-radius:18px;
+      background:linear-gradient(145deg,rgba(255,255,255,.085),rgba(255,255,255,.025));
+      box-shadow:0 12px 32px rgba(0,0,0,.12);
+      backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+      transition:transform .25s ease,border-color .25s ease,background .25s ease,box-shadow .25s ease;
+    }
+    .link-card::after { content:"↗"; position:absolute; top:14px; right:16px; color:#7482a2; font-size:14px; transition:transform .25s ease,color .25s ease; }
+    .link-card:hover { transform:translateY(-5px); border-color:rgba(155,140,255,.48); background:linear-gradient(145deg,rgba(155,140,255,.15),rgba(101,217,232,.06)); box-shadow:0 18px 38px rgba(0,0,0,.22); }
+    .link-card:hover::after { transform:translate(2px,-2px); color:#d5ceff; }
+    .icon { display:grid; place-items:center; flex:0 0 44px; width:44px; height:44px; border-radius:14px; color:#dcd6ff; background:rgba(155,140,255,.15); font-size:21px; }
+    .link-card:nth-child(2) .icon, .link-card:nth-child(5) .icon { color:#a7edf1; background:rgba(101,217,232,.13); }
+    .link-card:nth-child(3) .icon { color:#ffd6a3; background:rgba(255,190,120,.13); }
+    .link-copy { min-width:0; }
+    .link-copy strong { display:block; margin-bottom:5px; font-size:15px; font-weight:650; }
+    .link-copy small { display:block; color:#8795b2; font-size:11px; }
+    footer { display:flex; justify-content:center; margin-top:46px; color:#667491; font-size:11px; letter-spacing:.04em; }
+    @media (max-width:650px) {
+      body { padding:20px 16px 24px; }
+      .topbar { margin-bottom:56px; }
+      .link-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
+      .link-card { min-height:84px; padding:14px 12px; gap:10px; border-radius:16px; }
+      .icon { flex-basis:38px; width:38px; height:38px; border-radius:12px; font-size:18px; }
+      .link-copy strong { font-size:14px; }
+      .link-copy small { font-size:10px; }
+      .hero { margin-bottom:34px; }
+    }
+    @media (max-width:380px) {
+      .link-grid { grid-template-columns:1fr; }
+      .link-card { min-height:76px; }
+      .status { font-size:0; }
+      .status-dot { width:8px; height:8px; }
+    }
+    @media (prefers-reduced-motion:reduce) {
+      *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">✦</span><span>RUARUABURUA</span></div>
+      <div class="status"><span class="status-dot"></span> 一个小小的个人空间</div>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">✧ &nbsp;WELCOME TO MY SPACE</div>
+      <h1><span>你好，欢迎来到这里。</span></h1>
+      <div class="clock-card"><div id="date">正在获取日期…</div></div>
+      <p class="quote" id="daily-quote">今天也要开心呀～</p>
+    </section>
+
+    <section aria-label="快捷入口">
+      <div class="section-head"><h2>快捷入口</h2><span>QUICK ACCESS · 07</span></div>
+      <nav class="link-grid">
+        <a class="link-card" href="./video.html" target="_blank" rel="noopener noreferrer">
+          <span class="icon" aria-hidden="true">▶</span><span class="link-copy"><strong>看视频</strong><small>Video collection</small></span>
+        </a>
+        <a class="link-card" href="./note.html" target="_blank" rel="noopener noreferrer">
+          <span class="icon" aria-hidden="true">▤</span><span class="link-copy"><strong>记事本</strong><small>Quick notes</small></span>
+        </a>
+        <a class="link-card" href="./tianqi.html" target="_blank" rel="noopener noreferrer">
+          <span class="icon" aria-hidden="true">✧</span><span class="link-copy"><strong>天气</strong><small>15-day weather forecast</small></span>
+        </a>
+        <a class="link-card" href="./movie.html" target="_blank" rel="noopener noreferrer">
+          <span class="icon" aria-hidden="true">▣</span><span class="link-copy"><strong>电影</strong><small>Movie time</small></span>
+        </a>
+        <a class="link-card" href="./text.html" target="_blank" rel="noopener noreferrer">
+          <span class="icon" aria-hidden="true">✎</span><span class="link-copy"><strong>笔记</strong><small>Thoughts & ideas</small></span>
+        </a>
+        <a class="link-card" href="./duibi.html" target="_blank" rel="noopener noreferrer">
+          <span class="icon" aria-hidden="true">⇄</span><span class="link-copy"><strong>文本对比</strong><small>Text comparison</small></span>
+        </a>
+        <a class="link-card" href="./mima.html" target="_blank" rel="noopener noreferrer">
+          <span class="icon" aria-hidden="true">⌁</span><span class="link-copy"><strong>随机密码</strong><small>Password generator</small></span>
+        </a>
+      </nav>
+    </section>
+    <footer>MADE WITH CARE · HAVE A NICE DAY</footer>
+  </main>
+
+  <script>
+    const quotes = [
+      "今天也要开心呀～",
+      "阳光正好，微风不燥。",
+      "生活很苦，但你很甜。",
+      "别忘了微笑哦！😊",
+      "努力成为更好的自己！",
+      "每一天都是新的开始。",
+      "愿你被世界温柔以待。"
+    ];
+    function updateDate() {
+      const now = new Date();
+      document.getElementById("date").textContent =
+        now.toLocaleDateString("zh-CN", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+      document.getElementById("daily-quote").textContent = quotes[now.getDate() % quotes.length];
+    }
+    updateDate();
+  </script>
+</body>
+</html>

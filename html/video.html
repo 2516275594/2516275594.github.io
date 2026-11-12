@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b16">
+<title>随机视频 · Video Lounge</title>
+<style>
+:root{color-scheme:dark;--text:#f5f7ff;--muted:#9ba7c2;--line:rgba(255,255,255,.13);--glass:rgba(13,18,34,.68);--accent:#a995ff;--cyan:#72e4e8}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#070a12;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+body:before,body:after{content:"";position:fixed;width:42vw;height:42vw;max-width:620px;max-height:620px;border-radius:50%;filter:blur(100px);opacity:.16;pointer-events:none;z-index:0;animation:float 14s ease-in-out infinite alternate}
+body:before{background:#795cff;left:-18vw;top:-22vw}body:after{background:#19c8d2;right:-20vw;bottom:-25vw;animation-delay:-6s}
+@keyframes float{to{transform:translate(55px,45px) scale(1.12)}}
+.stage{position:relative;z-index:1;width:100%;height:100%;display:grid;place-items:center;padding:18px}
+.video-shell{position:relative;width:min(100%,1200px);height:min(100%,calc(100vw * .5625));min-height:min(420px,calc(100vh - 36px));max-height:100%;overflow:hidden;border:1px solid rgba(255,255,255,.12);border-radius:26px;background:radial-gradient(ellipse at 50% 40%,#18213a,#05070d 72%);box-shadow:0 28px 100px rgba(0,0,0,.55),0 0 80px rgba(123,103,255,.08)}
+#videoPlayer{position:absolute;top:0;left:0;width:100%;height:calc(100% - 112px);display:block;object-fit:contain;background:#05070d}
+.topbar{position:absolute;top:18px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:center;gap:12px;z-index:5;pointer-events:none}
+.brand,.top-actions{pointer-events:auto}.brand{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--line);border-radius:16px;background:var(--glass);backdrop-filter:blur(18px);box-shadow:0 8px 28px #0003}
+.brand-mark{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:linear-gradient(135deg,#9b85ff,#55dce5);color:#101326;font-weight:900}
+.brand strong{font-size:13px;letter-spacing:.12em}.brand small{display:block;margin-top:2px;color:var(--muted);font-size:10px;letter-spacing:.08em}
+.top-actions{display:flex;gap:9px}.glass-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 15px;border:1px solid var(--line);border-radius:14px;color:var(--text);background:var(--glass);backdrop-filter:blur(18px);font:600 13px inherit;cursor:pointer;text-decoration:none;transition:.2s}
+.glass-btn:hover,.control:hover{border-color:#b7a9ff88;background:rgba(116,99,190,.32);transform:translateY(-2px)}
+.glass-btn svg,.control svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.center-state{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;z-index:3;background:rgba(4,7,15,.68);backdrop-filter:blur(8px);text-align:center;padding:24px}
+.center-state[hidden]{display:none}.spinner{width:44px;height:44px;border:3px solid #ffffff25;border-top-color:#b6a5ff;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.state-title{font-size:17px;font-weight:700}.state-sub{font-size:12px;color:var(--muted);line-height:1.7}.retry{margin-top:4px;padding:11px 20px;border:0;border-radius:12px;background:linear-gradient(110deg,#a18cff,#66dfe5);color:#101326;font-weight:800;cursor:pointer}
+.bottom{position:absolute;left:20px;right:20px;bottom:12px;z-index:5;display:grid;gap:10px}
+.progress-wrap{display:flex;align-items:center;gap:12px;padding:0 5px;color:#e7eaff;font-size:11px;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px #000}
+.progress{height:5px;flex:1;border-radius:9px;background:#ffffff35;cursor:pointer;overflow:hidden}.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#a38aff,#66e2e8);border-radius:9px;pointer-events:none}
+.controlbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:19px;background:var(--glass);backdrop-filter:blur(20px);box-shadow:0 10px 36px #0004}
+.control-group{display:flex;align-items:center;gap:8px}.control{width:42px;height:42px;display:grid;place-items:center;border:1px solid transparent;border-radius:13px;background:transparent;color:white;cursor:pointer;transition:.2s}.control.primary{width:48px;height:48px;background:linear-gradient(135deg,#a18cff,#65dce5);color:#111528}.control.primary svg{width:21px;height:21px}
+.volume{display:flex;align-items:center;gap:8px}.volume input{width:82px;accent-color:#a995ff;cursor:pointer}
+.hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:12px 16px;border:1px solid var(--line);border-radius:14px;background:#080b16b8;color:#dce3fa;font-size:12px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:2}.hint.show{opacity:1}
+@media(max-width:700px){.stage{padding:0}.video-shell{width:100%;height:100%;min-height:0;border:0;border-radius:0}.topbar{top:max(12px,env(safe-area-inset-top));left:12px;right:12px}.brand{padding:8px 10px}.brand strong{font-size:11px}.brand small{font-size:9px}.glass-btn{min-height:40px;padding:0 11px;font-size:12px}.bottom{left:10px;right:10px;bottom:max(10px,env(safe-area-inset-bottom));gap:8px}#videoPlayer{height:calc(100% - 108px)}.controlbar{padding:8px;border-radius:16px}.control{width:38px;height:38px}.control.primary{width:44px;height:44px}.control-group{gap:3px}.volume input{width:60px}.volume{gap:3px}.progress-wrap{font-size:10px}.video-shell{box-shadow:none}}
+@media(max-width:390px){.volume input{width:45px}.brand small{display:none}.glass-btn{padding:0 9px}.control{width:34px;height:36px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<main class="stage">
+<section class="video-shell" id="videoShell" aria-label="随机视频播放器">
+<video id="videoPlayer" playsinline autoplay muted preload="auto"></video>
+<header class="topbar">
+<div class="brand"><span class="brand-mark">▶</span><span><strong>VIDEO LOUNGE</strong><small>随机视频 · 随时发现</small></span></div>
+<div class="top-actions">
+<a class="glass-btn" href="./index.html" aria-label="返回首页"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7"/><path d="M5 9v12h14V9M9 21v-7h6v7"/></svg><span>返回首页</span></a>
+<button class="glass-btn" id="fullscreenBtn" type="button" aria-label="全屏"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+</div>
+</header>
+<div class="center-state" id="loading"><div class="spinner"></div><div class="state-title">正在为你寻找下一段精彩</div><div class="state-sub">随机视频加载中，请稍候…</div></div>
+<div class="center-state" id="error" hidden><div style="font-size:36px">☁</div><div class="state-title">视频暂时无法播放</div><div class="state-sub" id="errorText">请检查网络后重试</div><button class="retry" id="retryBtn">重新加载</button></div>
+<div class="hint" id="hint">已切换到下一个随机视频</div>
+<footer class="bottom">
+<div class="progress-wrap"><span id="currentTime">00:00</span><div class="progress" id="progress"><div class="progress-fill" id="progressFill"></div></div><span id="duration">00:00</span></div>
+<div class="controlbar">
+<div class="control-group">
+<button class="control" id="prevBtn" title="上一个随机视频" aria-label="上一个随机视频"><svg viewBox="0 0 24 24"><path d="M19 5 9 12l10 7V5ZM5 5v14"/></svg></button>
+<button class="control primary" id="playBtn" title="播放/暂停" aria-label="播放/暂停"><svg id="playIcon" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7V5Z"/></svg></button>
+<button class="control" id="nextBtn" title="下一个随机视频" aria-label="下一个随机视频"><svg viewBox="0 0 24 24"><path d="m5 5 10 7-10 7V5Zm14 0v14"/></svg></button>
+</div>
+<div class="control-group">
+<div class="volume"><button class="control" id="muteBtn" title="取消静音/静音" aria-label="切换静音"><svg id="volumeIcon" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15 9a5 5 0 0 1 0 6"/></svg></button><input id="volume" type="range" min="0" max="1" step=".05" value=".75" aria-label="音量"></div>
+</div>
+</div>
+</footer>
+</section>
+</main>
+<script>
+(() => {
+const API_URL='https://api.yujn.cn/api/zzxjj.php?type=video';
+const video=document.getElementById('videoPlayer'),loading=document.getElementById('loading'),error=document.getElementById('error'),errorText=document.getElementById('errorText');
+const playBtn=document.getElementById('playBtn'),playIcon=document.getElementById('playIcon'),volume=document.getElementById('volume'),volumeIcon=document.getElementById('volumeIcon');
+const progress=document.getElementById('progress'),progressFill=document.getElementById('progressFill'),currentTime=document.getElementById('currentTime'),duration=document.getElementById('duration');
+let requestId=0,wheelLock=false;
+const fmt=t=>{if(!Number.isFinite(t))return'00:00';const m=Math.floor(t/60),s=Math.floor(t%60);return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')};
+function state(mode,message){loading.hidden=mode!=='loading';error.hidden=mode!=='error';if(message)errorText.textContent=message}
+function updatePlayIcon(){playIcon.innerHTML=video.paused?'<path d="m8 5 12 7-12 7V5Z"/>':'<path d="M8 5h3v14H8zM15 5h3v14h-3z"/>'}
+function updateVolume(){volumeIcon.innerHTML=video.muted||video.volume===0?'<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="m16 9 5 6m0-6-5 6"/>':'<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15 9a5 5 0 0 1 0 6"/>'}
+function loadRandom(){const id=++requestId;state('loading');video.pause();video.removeAttribute('src');video.load();video.src=API_URL+'&_='+Date.now();video.load();video.play().catch(()=>{});const timer=setTimeout(()=>{if(id===requestId&&video.readyState<2)state('error','视频加载超时，请重试或换一个视频');},18000);video.dataset.timer=timer}
+video.addEventListener('loadeddata',()=>{clearTimeout(Number(video.dataset.timer));state('ready');video.play().catch(()=>{});updatePlayIcon()});
+video.addEventListener('canplay',()=>state('ready'));
+video.addEventListener('error',()=>{clearTimeout(Number(video.dataset.timer));state('error','接口返回的视频无法播放，可能是网络或视频源暂不可用')});
+video.addEventListener('waiting',()=>{if(video.currentTime===0)state('loading')});
+video.addEventListener('play',updatePlayIcon);video.addEventListener('pause',updatePlayIcon);
+video.addEventListener('timeupdate',()=>{currentTime.textContent=fmt(video.currentTime);duration.textContent=fmt(video.duration);progressFill.style.width=video.duration?video.currentTime/video.duration*100+'%':'0%'});
+video.addEventListener('ended',loadRandom);
+document.getElementById('retryBtn').addEventListener('click',loadRandom);
+document.getElementById('nextBtn').addEventListener('click',loadRandom);
+document.getElementById('prevBtn').addEventListener('click',loadRandom);
+playBtn.addEventListener('click',()=>{if(video.paused)video.play().catch(()=>{});else video.pause()});
+document.getElementById('muteBtn').addEventListener('click',()=>{video.muted=!video.muted;updateVolume()});
+volume.addEventListener('input',()=>{video.volume=Number(volume.value);video.muted=video.volume===0;updateVolume()});
+progress.addEventListener('click',e=>{if(!Number.isFinite(video.duration))return;const r=progress.getBoundingClientRect();video.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*video.duration});
+document.getElementById('fullscreenBtn').addEventListener('click',()=>{const el=document.getElementById('videoShell');if(!document.fullscreenElement)el.requestFullscreen?.();else document.exitFullscreen?.()});
+document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName))return;if(e.code==='Space'){e.preventDefault();playBtn.click()}else if(e.code==='ArrowRight')loadRandom();else if(e.code==='ArrowLeft')loadRandom();else if(e.key.toLowerCase()==='f')document.getElementById('fullscreenBtn').click();else if(e.key.toLowerCase()==='m')document.getElementById('muteBtn').click()});
+document.getElementById('videoShell').addEventListener('wheel',e=>{e.preventDefault();if(wheelLock)return;wheelLock=true;loadRandom();setTimeout(()=>wheelLock=false,900)},{passive:false});
+updateVolume();loadRandom();
+})();
+</script>
+</body>
+</html>
