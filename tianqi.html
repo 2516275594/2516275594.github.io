@@ -290,14 +290,14 @@ async function loadWeather(city='济南',knownPlace=null){
   if(city==='济南'&&!knownPlace){
    place={name:'济南',admin1:'山东省',country:'中国'};
    try{
-    const res=await fetch('./data/openmeteo_weather.json?ts='+Date.now(),{cache:'no-store'});
+    const res=await fetch('https://bamboo-weather-api.wangbamboo4.workers.dev/api/jinan/openmeteo?ts='+Date.now(),{cache:'no-store'});
     if(!res.ok)throw Error('缓存不可用');
     const payload=await res.json();
     const fetchedAt=Date.parse(payload.fetched_at||'');
     if(!payload.current||!payload.daily?.time?.length||!payload.hourly?.time?.length||!Number.isFinite(fetchedAt)||Date.now()-fetchedAt>90*60*1000)throw Error('缓存数据过期或不完整');
     data=normalizeOpenMeteo(payload);sourceTime=payload.fetched_at||payload.current.time;
    }catch(e){
-    const res=await fetch('./data/jinan_weather.json?ts='+Date.now(),{cache:'no-store'});
+    const res=await fetch('https://bamboo-weather-api.wangbamboo4.workers.dev/api/jinan/fallback?ts='+Date.now(),{cache:'no-store'});
     if(!res.ok)throw Error('济南天气缓存暂不可用');
     const payload=await res.json();
     if(!payload.realtime||!Array.isArray(payload.daily_forecast)||!payload.daily_forecast.length)throw Error('济南备用天气数据不完整');
