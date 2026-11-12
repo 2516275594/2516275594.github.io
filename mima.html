@@ -7,23 +7,41 @@
   <meta name="description" content="在线随机密码生成器，支持大小写字母、数字和可选特殊符号。">
   <title>随机密码生成器</title>
   <style>
-    :root{color-scheme:dark;--bg:#0b1020;--panel:rgba(22,32,56,.82);--line:rgba(255,255,255,.12);--text:#f3f6ff;--muted:#9aa8c4;--accent:#a99aff;--cyan:#70dce8}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;padding:28px 18px;display:grid;place-items:center;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Microsoft YaHei",sans-serif;background:radial-gradient(ellipse at 15% 10%,rgba(101,217,232,.16),transparent 35%),radial-gradient(ellipse at 90% 20%,rgba(155,140,255,.2),transparent 35%),var(--bg)}
-    .card{width:min(620px,100%);padding:clamp(22px,5vw,40px);border:1px solid var(--line);border-radius:26px;background:var(--panel);box-shadow:0 24px 70px rgba(0,0,0,.28);backdrop-filter:blur(18px)}
-    .top{display:flex;align-items:center;justify-content:space-between;gap:12px}.back{color:#bcb2ff;text-decoration:none;font-size:13px}.tag{padding:7px 11px;border:1px solid var(--line);border-radius:99px;color:var(--muted);font-size:11px;letter-spacing:.08em}
-    h1{margin:24px 0 8px;font-size:clamp(28px,6vw,38px);letter-spacing:-.04em} .desc{margin:0;color:var(--muted);font-size:14px;line-height:1.8}
-    .output{display:flex;gap:10px;margin:28px 0 22px;padding:12px;border:1px solid rgba(169,154,255,.3);border-radius:16px;background:rgba(7,12,25,.55)}
-    #password{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#fff;font:600 16px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.02em}
-    button{border:0;border-radius:12px;padding:12px 17px;font:600 14px inherit;cursor:pointer;transition:transform .18s,filter .18s}button:hover{filter:brightness(1.1);transform:translateY(-1px)}button:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
-    .copy{flex:0 0 auto;color:#10182d;background:linear-gradient(110deg,#bcb0ff,#75e1e8)}
-    .field{margin:20px 0}.field-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.field label,.field-title{font-size:14px;font-weight:600}.hint{color:var(--muted);font-size:12px}
-    .length-row{display:flex;align-items:center;gap:10px}.length-row input[type=number]{width:76px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.06);color:var(--text);font:inherit}
-    .generate{flex:1;color:#10182d;background:linear-gradient(110deg,#bcb0ff,#75e1e8);white-space:nowrap}
-    .options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.option{display:flex;align-items:center;gap:10px;padding:13px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.035);color:#dce5fb;font-size:13px}
-    input[type=checkbox]{width:17px;height:17px;accent-color:#a99aff}
-        #message{min-height:20px;margin:14px 0 0;color:var(--cyan);font-size:12px;text-align:center}
-    footer{margin-top:28px;color:#7785a3;font-size:11px;text-align:center}
+    :root{color-scheme:light;--ink:#24324a;--muted:#718096;--line:rgba(94,119,157,.18);--blue:#527de8;--mint:#45bda9}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;padding:28px 18px;display:grid;place-items:center;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Microsoft YaHei",sans-serif;background:linear-gradient(135deg,#eef6ff 0%,#f6f2ff 48%,#e9fbf5 100%);position:relative;overflow-x:hidden}
+    body::before,body::after{content:"";position:fixed;width:360px;height:360px;border-radius:50%;filter:blur(70px);opacity:.5;pointer-events:none;z-index:0;animation:float 14s ease-in-out infinite alternate}
+    body::before{background:#c5d9ff;top:-150px;left:-130px}
+    body::after{background:#b9f0df;right:-150px;bottom:-160px;animation-delay:-6s}
+    @keyframes float{to{transform:translate3d(35px,28px,0) scale(1.08)}}
+    .card{position:relative;z-index:1;width:min(620px,100%);padding:clamp(22px,5vw,40px);border:1px solid rgba(255,255,255,.85);border-radius:28px;background:rgba(255,255,255,.78);box-shadow:0 24px 70px rgba(77,101,145,.14);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .back{color:#5475c7;text-decoration:none;font-size:13px;font-weight:650}
+    .back:hover{text-decoration:underline}
+    .tag{padding:7px 11px;border:1px solid rgba(82,125,232,.18);border-radius:99px;color:#6680bd;background:#f1f5ff;font-size:11px;letter-spacing:.08em}
+    h1{margin:24px 0 8px;font-size:clamp(28px,6vw,38px);letter-spacing:-.04em;color:#253653}
+    .desc{margin:0;color:var(--muted);font-size:14px;line-height:1.8}
+    .output{display:flex;gap:10px;margin:28px 0 22px;padding:12px;border:1px solid rgba(82,125,232,.22);border-radius:17px;background:linear-gradient(120deg,#f3f6ff,#f1fbfa)}
+    #password{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#30466d;font:650 16px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.02em}
+    button{border:0;border-radius:12px;padding:12px 17px;font:600 14px inherit;cursor:pointer;transition:transform .18s,filter .18s,box-shadow .18s}
+    button:hover{filter:brightness(1.04);transform:translateY(-1px)}
+    button:focus-visible,input:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+    .copy{flex:0 0 auto;color:white;background:linear-gradient(110deg,#6388ed,#4bbfae);box-shadow:0 6px 16px rgba(82,125,232,.2)}
+    .field{margin:20px 0}
+    .field-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .field label,.field-title{font-size:14px;font-weight:700;color:#34445f}
+    .hint{color:#8794a9;font-size:12px}
+    .length-row{display:flex;align-items:center;gap:10px}
+    .length-row input[type=number]{width:76px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#f7f9fd;color:var(--ink);font:inherit}
+    .generate{flex:1;color:white;background:linear-gradient(110deg,#6388ed,#4bbfae);box-shadow:0 7px 18px rgba(82,125,232,.16);white-space:nowrap}
+    .options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .option{display:flex;align-items:center;gap:10px;padding:13px;border:1px solid var(--line);border-radius:13px;background:rgba(247,250,255,.85);color:#52617a;font-size:13px;transition:border-color .2s,background .2s}
+    .option:has(input:checked){border-color:rgba(82,125,232,.32);background:#f0f5ff}
+    input[type=checkbox]{width:17px;height:17px;accent-color:#6388ed}
+    #message{min-height:20px;margin:14px 0 0;color:#279b8b;font-size:12px;text-align:center}
+    footer{margin-top:28px;color:#94a0b2;font-size:11px;text-align:center}
     @media(max-width:460px){.output{flex-direction:column}.copy{width:100%}.options{grid-template-columns:1fr}.length-row{gap:8px}.length-row .generate{padding:11px 10px;font-size:13px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
   </style>
 </head>
 <body>
