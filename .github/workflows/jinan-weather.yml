@@ -1,15 +1,7 @@
 name: Update Jinan Weather
 
 on:
-  push:
-    paths:
-      - '.github/workflows/jinan-weather.yml'
-      - 'scripts/jinan_weather.py'
-      - 'scripts/openmeteo_weather.py'
-      - 'tianqi.html'
-  schedule:
-    # GitHub schedule uses UTC; run every 10 minutes to reduce stale-data windows.
-    - cron: '*/10 * * * *'
+  # Scheduled crawling is now handled by Cloudflare Worker Cron.
   workflow_dispatch:
 
 permissions:
