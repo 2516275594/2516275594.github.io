@@ -321,8 +321,22 @@ async function loadWeather(city='济南',knownPlace=null){
   }
   data.fetchedAt=sourceTime;
   const label=[place.name,place.admin1,place.country].filter(Boolean).join(' · ');
-  renderWeather(place,label,data,provider,[],'unavailable');
-  renderAlerts([],'unavailable');
+  let alertItems=[],alertsProvider='unavailable';
+  try{
+   const alertUrl='https://bamboo-weather-api.wangbamboo4.workers.dev/api/weather?city='+encodeURIComponent(place.name);
+   const alertRes=await fetch(alertUrl,{cache:'no-store'});
+   if(!alertRes.ok)throw Error('预警接口 HTTP '+alertRes.status);
+   const alertPayload=await alertRes.json();
+   if(alertPayload.alertsProvider==='apizero'&&Array.isArray(alertPayload.alerts)){
+    alertsProvider='apizero';
+    alertItems=alertPayload.alerts.slice(0,1);
+   }else{
+    throw Error(alertPayload.alertsError||'预警接口未成功返回');
+   }
+  }catch(alertError){
+   console.warn('天气预警查询失败：',alertError);
+  }
+  renderWeather(place,label,data,provider,alertItems,alertsProvider);
  }catch(error){
   showError(error.message||'天气数据加载失败，请稍后重试。');
   if(!$('currentArea').classList.contains('hidden'))$('currentArea').classList.remove('loading');
