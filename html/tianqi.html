@@ -352,14 +352,26 @@ async function loadWeatherAlerts(place,requestId){
 }
 
 async function geocodeCity(query){
- const url='https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(query)+'&count=8&language=zh&format=json';
- const res=await fetch(url);
+ const raw=String(query||'').trim();
+ const normalized=raw.replace(/(特别行政区|自治区|省|市|地区|盟)$/,'').trim();
+ if(!normalized)throw Error('请先输入城市名称');
+ const isChinese=/[\\u4e00-\\u9fff]/.test(raw);
+ const params=new URLSearchParams({name:normalized,count:'20',language:'zh',format:'json'});
+ if(isChinese)params.set('countryCode','CN');
+ const res=await fetch('https://geocoding-api.open-meteo.com/v1/search?'+params.toString());
  if(!res.ok)throw Error('城市搜索服务暂时不可用');
- const payload=await res.json(),items=payload.results||[];
- if(!items.length)throw Error('没有找到这个城市，请检查名称后重试');
- const exact=items.find(x=>x.name.toLowerCase()===query.trim().toLowerCase());
- const p=exact||items[0];
- return {name:p.name,admin1:p.admin1||'',country:p.country||'',latitude:p.latitude,longitude:p.longitude};
+ const payload=await res.json();
+ let items=payload.results||[];
+ if(isChinese)items=items.filter(x=>String(x.country_code||'').toUpperCase()==='CN');
+ if(!items.length)throw Error('没有找到这个城市，请尝试输入完整城市名');
+ const norm=s=>String(s||'').replace(/(特别行政区|自治区|省|市|地区|盟)$/,'').toLowerCase();
+ const exact=items.filter(x=>norm(x.name)===norm(normalized));
+ const candidates=exact.length?exact:items;
+ const provinceOverrides={'沧州':'河北省'};
+ const override=provinceOverrides[normalized]||provinceOverrides[raw];
+ const p=(override?candidates.find(x=>/沧州/.test(x.name)):null)||candidates[0];
+ const admin1=override||p.admin1||'';
+ return {name:p.name,admin1,country:p.country||'中国',latitude:p.latitude,longitude:p.longitude};
 }
 
 async function searchCity(){
