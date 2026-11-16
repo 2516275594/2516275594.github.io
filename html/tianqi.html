@@ -337,15 +337,27 @@ async function loadWeather(city='济南',knownPlace=null){
 
 async function loadWeatherAlerts(place,requestId){
  try{
-  const params=new URLSearchParams({city:place.name||'',province:place.admin1||''});
-  const response=await fetch('https://bamboo-weather-api.wangbamboo4.workers.dev/api/alerts?'+params.toString(),{cache:'no-store'});
-  if(!response.ok)throw Error('预警请求 HTTP '+response.status);
-  const payload=await response.json();
+  const response=await fetch('/data/weather_alerts_national_latest.json?v='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw Error('GitHub 预警数据 HTTP '+response.status);
+  const snapshot=await response.json();
+  const fetchedAt=Date.parse(snapshot.fetchedAt||'');
+  if(!snapshot.ok||!Array.isArray(snapshot.alerts)||!Number.isFinite(fetchedAt)||Date.now()-fetchedAt>30*60*1000)throw Error('GitHub 全国预警快照超过30分钟或数据不完整');
   if(requestId!==alertRequestId)return;
-  if(!payload.ok||!Array.isArray(payload.alerts))throw Error(payload.error||'预警数据格式异常');
-  renderAlerts(payload.alerts,'weathercom');
-  const updated=payload.fetchedAt?new Date(payload.fetchedAt).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai'}):'';
-  $('alertsUpdated').textContent=updated?'全国预警快照更新时间：'+updated+'（北京时间）':'预警数据由国家气象中心提供';
+  const cityName=String(place.name||'').trim().replace(/(市|地区|自治州)$/,'');
+  const aliases=[cityName];
+  if(/六盘水/.test(cityName))aliases.push('六盘水市','六枝','水城','盘州','钟山');
+  if(/毕节/.test(cityName))aliases.push('毕节市');
+  if(/恩施/.test(cityName))aliases.push('恩施州');
+  const provincePrefix=String(place.admin1||'').trim();
+  const alerts=snapshot.alerts.filter(item=>{
+   const text=String(item.search_text||item.title||'');
+   const cityMatch=aliases.some(alias=>alias&&text.includes(alias));
+   const provinceWideMatch=!!provincePrefix&&text.startsWith(provincePrefix)&&/^(气象台|气象局|气象服务中心|气象中心)/.test(text.slice(provincePrefix.length));
+   return cityMatch||provinceWideMatch;
+  });
+  renderAlerts(alerts,'weathercom');
+  const updated=new Date(snapshot.fetchedAt).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai'});
+  $('alertsUpdated').textContent='全国预警快照更新时间：'+updated+'（北京时间，GitHub）';
  }catch(error){
   if(requestId!==alertRequestId)return;
   console.warn('天气预警查询失败：',error);
