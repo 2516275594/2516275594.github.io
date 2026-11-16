@@ -121,7 +121,7 @@ body:after{right:-240px;bottom:8%;animation-delay:-17s;opacity:.43}
  </div>
  <div id="error" class="error"></div>
 </section>
-<section id="alertsSection" class="section hidden"><div class="section-head"><h2>⚠️ 天气预警与风险提醒</h2><p>WEATHER ALERTS</p></div><div id="alerts" class="alert-list"></div></section>
+<section id="alertsSection" class="section hidden"><div class="section-head"><h2>⚠️ 天气预警与风险提醒</h2><p>WEATHER ALERTS</p></div><div id="alerts" class="alert-list"></div><p id="alertsUpdated" class="notice">预警数据由国家气象中心提供</p></section>
 <section id="hourlySection" class="section hidden"><div class="section-head"><h2>未来 24 小时</h2><p>HOURLY OUTLOOK</p></div><div class="glass hourly-wrap"><div id="hourly" class="hourly"></div></div></section>
 <section id="empty" class="glass empty"><div class="empty-icon">🌤️</div><h2>今天，想看看哪里的天空？</h2><p>默认显示济南天气。可在上方搜索框输入其他城市，查看该城市实时天气、逐小时预报和未来16天趋势。</p></section>
 <section id="forecastSection" class="section hidden"><div class="section-head"><h2>未来 15 天</h2><p>DAILY FORECAST · 15 DAYS</p></div><div class="glass"><div class="forecast" id="forecast"></div></div></section>
@@ -344,9 +344,12 @@ async function loadWeatherAlerts(place,requestId){
   if(requestId!==alertRequestId)return;
   if(!payload.ok||!Array.isArray(payload.alerts))throw Error(payload.error||'预警数据格式异常');
   renderAlerts(payload.alerts,'weathercom');
+  const updated=payload.fetchedAt?new Date(payload.fetchedAt).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai'}):'';
+  $('alertsUpdated').textContent=updated?'全国预警快照更新时间：'+updated+'（北京时间）':'预警数据由国家气象中心提供';
  }catch(error){
   if(requestId!==alertRequestId)return;
   console.warn('天气预警查询失败：',error);
+  $('alertsUpdated').textContent='预警数据加载失败：'+(error.message||'网络连接失败')+'。请以当地气象部门发布为准。';
   renderAlerts([],'unavailable');
  }
 }
