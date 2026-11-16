@@ -345,14 +345,19 @@ async function loadWeatherAlerts(place,requestId){
   if(requestId!==alertRequestId)return;
   const cityName=String(place.name||'').trim().replace(/(市|地区|自治州)$/,'');
   const aliases=[cityName];
+  if(/济南|jinan/i.test(cityName))aliases.push('济南','济南市');
   if(/六盘水/.test(cityName))aliases.push('六盘水市','六枝','水城','盘州','钟山');
   if(/毕节/.test(cityName))aliases.push('毕节市');
   if(/恩施/.test(cityName))aliases.push('恩施州');
-  const provincePrefix=String(place.admin1||'').trim();
+  // 统一 Open-Meteo 返回的省份名称（例如 Shandong、山东、山东省）
+  let provinceCore=String(place.admin1||'').trim().toLowerCase();
+  const provinceNames={'shandong':'山东','山东省':'山东','山东':'山东'};
+  provinceCore=provinceNames[provinceCore]||provinceCore.replace(/(省|自治区|特别行政区|市)$/,'');
   const alerts=snapshot.alerts.filter(item=>{
    const text=String(item.search_text||item.title||'');
    const cityMatch=aliases.some(alias=>alias&&text.includes(alias));
-   const provinceWideMatch=!!provincePrefix&&text.startsWith(provincePrefix)&&/^(气象台|气象局|气象服务中心|气象中心)/.test(text.slice(provincePrefix.length));
+   const rest=text.startsWith(provinceCore)?text.slice(provinceCore.length):'';
+   const provinceWideMatch=!!provinceCore&&/^(省|自治区|特别行政区)?(气象台|气象局|气象服务中心|气象中心)/.test(rest);
    return cityMatch||provinceWideMatch;
   });
   renderAlerts(alerts,'weathercom');
