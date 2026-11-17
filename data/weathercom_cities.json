@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "provider": "中国天气网",
+  "source": "https://www.weather.com.cn/",
+  "updatedAt": null,
+  "cityCount": 0,
+  "availableCount": 0,
+  "cursor": 0,
+  "batchSize": 60,
+  "updatedThisRun": 0,
+  "failedThisRun": [],
+  "cities": {}
+}
