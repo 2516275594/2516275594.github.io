@@ -1,0 +1,62 @@
+name: Update China Cities Weather
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      full_refresh:
+        description: "全量刷新所有地级市（首次初始化建议勾选）"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: china-cities-weather
+  cancel-in-progress: false
+
+jobs:
+  update-cities:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade requests beautifulsoup4
+
+      - name: Fetch China Weather city data
+        env:
+          WEATHERCOM_FULL_REFRESH: \${{ inputs.full_refresh || 'false' }}
+          WEATHERCOM_BATCH_SIZE: "60"
+        run: python scripts/weathercom_cities.py
+
+      - name: Commit static city weather JSON
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --mixed origin/main
+            git add data/weathercom_cities.json
+            if git diff --cached --quiet; then
+              echo "City weather data unchanged; skip commit."
+              exit 0
+            fi
+            git commit -m "Update China cities weather data"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push attempt $attempt failed; retrying."
+          done
+          echo "::error::Could not push city weather data after 3 attempts."
+          exit 1
