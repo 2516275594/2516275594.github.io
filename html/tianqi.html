@@ -123,8 +123,8 @@ body:after{right:-240px;bottom:8%;animation-delay:-17s;opacity:.43}
 </section>
 <section id="alertsSection" class="section hidden"><div class="section-head"><h2>⚠️ 天气预警与风险提醒</h2><p>WEATHER ALERTS</p></div><div id="alerts" class="alert-list"></div><p id="alertsUpdated" class="notice">预警数据由国家气象中心提供</p></section>
 <section id="hourlySection" class="section hidden"><div class="section-head"><h2>未来 24 小时</h2><p>HOURLY OUTLOOK</p></div><div class="glass hourly-wrap"><div id="hourly" class="hourly"></div></div></section>
-<section id="empty" class="glass empty"><div class="empty-icon">🌤️</div><h2>今天，想看看哪里的天空？</h2><p>默认显示济南天气。可在上方搜索框输入其他城市，查看该城市实时天气、逐小时预报和未来7天趋势。</p></section>
-<section id="forecastSection" class="section hidden"><div class="section-head"><h2>未来 7 天</h2><p>DAILY FORECAST · 7 DAYS</p></div><div class="glass"><div class="forecast" id="forecast"></div></div></section>
+<section id="empty" class="glass empty"><div class="empty-icon">🌤️</div><h2>今天，想看看哪里的天空？</h2><p>默认显示济南天气。可在上方搜索框输入其他城市，查看该城市实时天气、逐小时预报和未来天气趋势。</p></section>
+<section id="forecastSection" class="section hidden"><div class="section-head"><h2 id="forecastTitle">未来 15 天</h2><p id="forecastSubtitle">DAILY FORECAST · 15 DAYS</p></div><div class="glass"><div class="forecast" id="forecast"></div></div></section>
 <section id="adviceSection" class="section hidden"><div class="section-head"><h2>今日生活指南</h2><p>LIFESTYLE INSIGHTS</p></div><div class="advice-grid" id="advice"></div></section>
 <footer class="foot">愿每一天都有好天气</footer>
 </main>
@@ -164,7 +164,7 @@ function generalAdvice(d,c){
   ['☀️','防晒与温差',uvText+'；'+tempText+'。',uv==null?'紫外线指数暂无':'紫外线指数 '+uv]
  ];
 }
-function windDirection(deg){if(!Number.isFinite(Number(deg)))return '--';return ['北风','东北风','东风','东南风','南风','西南风','西风','西北风'][Math.round(Number(deg)/45)%8]+' '+Math.round(Number(deg))+'°'}
+function windDirection(deg){if(deg===null||deg===undefined||deg===''||!Number.isFinite(Number(deg)))return '--';return ['北风','东北风','东风','东南风','南风','西南风','西风','西北风'][Math.round(Number(deg)/45)%8]+' '+Math.round(Number(deg))+'°'}
 function clock(value){if(!value)return '--';const s=String(value);return s.includes('T')?(s.split('T')[1]?.slice(0,5)||'--'):s.slice(0,5)}
 function duration(seconds){if(seconds===null||seconds===undefined||seconds==='')return '--';if(!Number.isFinite(Number(seconds)))return '--';const h=Math.floor(seconds/3600),m=Math.round(seconds%3600/60);return h+'小时'+m+'分'}
 function timeAtOrAfter(candidate,target){if(/[Z+]/.test(candidate))return Date.parse(candidate)>=Date.parse(target);return candidate>=target}
@@ -488,6 +488,7 @@ function normalizeJinanWeather(payload){
 
 function renderWeather(place,label,data,provider='open-meteo',nativeAlerts=[],alertsProvider='unavailable'){
  const c=data.current,d=data.daily,now=info(c.weather_code),today=info(d.weather_code[0]);
+ const isChinaWeather=provider==='中国天气网';$('forecastTitle').textContent=isChinaWeather?'未来 7 天':'未来 15 天';$('forecastSubtitle').textContent=isChinaWeather?'DAILY FORECAST · 7 DAYS':'DAILY FORECAST · 15 DAYS';
  $('cityName').textContent=label;$('updated').textContent='天气 · '+new Date(data.fetchedAt||c.time).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 更新';
  $('currentIcon').textContent=now[1];$('temperature').innerHTML=Math.round(c.temperature_2m)+'<sup>°C</sup>';$('condition').textContent=now[0];$('feels').textContent=Number.isFinite(c.apparent_temperature)?'体感温度 '+Math.round(c.apparent_temperature)+'°C':'体感温度 暂无数据';
  $('humidity').textContent=Number.isFinite(c.relative_humidity_2m)?Math.round(c.relative_humidity_2m):'--';$('wind').textContent=Number.isFinite(c.wind_speed_10m)?Math.round(c.wind_speed_10m):'--';$('windDir').textContent=c.wind_direction_text||windDirection(c.wind_direction_10m);$('gust').textContent=Number.isFinite(c.wind_gusts_10m)?Math.round(c.wind_gusts_10m):'--';$('pressure').textContent=Number.isFinite(c.pressure_msl)?Math.round(c.pressure_msl):'--';$('cloud').textContent=Number.isFinite(c.cloud_cover)?Math.round(c.cloud_cover):'--';$('precip').textContent=Number.isFinite(c.precipitation)?Number(c.precipitation).toFixed(1):'--';$('uv').textContent=c.ultraviolet_text|| (Number.isFinite(d.uv_index_max?.[0])?Number(d.uv_index_max[0]).toFixed(1):'--');$('uvUnit').textContent=c.ultraviolet_text?'':'UV';
