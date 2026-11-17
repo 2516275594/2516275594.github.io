@@ -319,7 +319,7 @@ async function loadWeather(city='济南',knownPlace=null,forceSearch=false){
    const entries=Object.entries(snapshot.cities||{});
    let match=entries.find(([name])=>normalizeName(name)===wanted);
    if(!match)match=entries.find(([name])=>normalizeName(name).includes(wanted));
-   if(!match)throw Error('暂未找到该城市的天气数据，请检查城市名称或稍后重试');
+   if(!match){const progress=Number(snapshot.availableCount||0)+'/'+Number(snapshot.cityCount||0);throw Error(Number(snapshot.availableCount||0)<Number(snapshot.cityCount||0)?'全国城市天气数据正在初始化（已更新 '+progress+' 个城市），请稍后重试':'暂未收录该城市，请检查城市名称');}
    const entry=match[1];
    if(!entry||!entry.data||!entry.location)throw Error('该城市天气数据尚未生成，请稍后再试');
    place=entry.location;
