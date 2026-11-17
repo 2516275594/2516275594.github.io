@@ -36,7 +36,7 @@ jobs:
 
       - name: Fetch China Weather city data
         env:
-          WEATHERCOM_FULL_REFRESH: \${{ inputs.full_refresh || 'false' }}
+          WEATHERCOM_FULL_REFRESH: ${{ inputs.full_refresh || 'false' }}
           WEATHERCOM_BATCH_SIZE: "60"
         run: python scripts/weathercom_cities.py
 
