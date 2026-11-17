@@ -224,7 +224,7 @@ def main():
             cursor = int(previous.get("cursor", 0)) % len(cities)
         except Exception:
             old, cursor = {}, 0
-    full = os.getenv("WEATHERCOM_FULL_REFRESH", "false").lower() == "true"
+    full = os.getenv("WEATHERCOM_FULL_REFRESH", "false").lower() == "true" or not old
     selected = cities if full else [cities[(cursor + i) % len(cities)] for i in range(min(BATCH_SIZE, len(cities)))]
     successes, failures = {}, []
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
