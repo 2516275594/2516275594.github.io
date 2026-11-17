@@ -67,7 +67,7 @@ def parse_city_index():
                 "name": str(city),
                 "province": str(province),
                 "code": str(item["AREAID"]),
-                "district": str(item[1] if len(item) > 1 else district),
+                "district": str(district),
             })
     # 城市名去重，优先保留更直接的编码条目。
     unique = {}
