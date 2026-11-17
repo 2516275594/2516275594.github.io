@@ -311,15 +311,22 @@ async function loadWeather(city='济南',knownPlace=null,forceSearch=false){
     showError('天气数据暂不可用，当前显示备用天气。');
    }
   }else{
-   const apiUrl=new URL('https://bamboo-weather-api.wangbamboo4.workers.dev/api/weathercom');
-   apiUrl.searchParams.set('city',city);
-   const res=await fetch(apiUrl.toString(),{cache:'no-store'});
-   const payload=await res.json();
-   if(!res.ok||!payload.ok||!payload.data)throw Error(payload.error||'中国天气网暂时无法提供该城市天气');
-   place=payload.location;
-   data=payload.data;
+   const res=await fetch('/data/weathercom_cities.json?v='+Date.now(),{cache:'no-store'});
+   if(!res.ok)throw Error('全国城市天气静态数据暂不可用');
+   const snapshot=await res.json();
+   const normalizeName=value=>String(value||'').trim().replace(/(市|地区|自治州|盟)$/,'');
+   const wanted=normalizeName(city);
+   const entries=Object.entries(snapshot.cities||{});
+   let match=entries.find(([name])=>normalizeName(name)===wanted);
+   if(!match)match=entries.find(([name])=>normalizeName(name).includes(wanted));
+   if(!match)throw Error('暂未找到该城市的天气数据，请检查城市名称或稍后重试');
+   const entry=match[1];
+   if(!entry||!entry.data||!entry.location)throw Error('该城市天气数据尚未生成，请稍后再试');
+   place=entry.location;
+   data=entry.data;
    provider='中国天气网';
-   sourceTime=payload.fetchedAt||payload.data.fetchedAt||new Date().toISOString();
+   sourceTime=entry.fetchedAt||entry.data.fetchedAt||snapshot.updatedAt||new Date().toISOString();
+   if(Date.now()-Date.parse(sourceTime)>3*60*60*1000)showError('该城市天气数据超过 3 小时未更新，当前显示最近一次成功数据。');
   }
   data.fetchedAt=sourceTime;
   const label=[place.name,place.admin1,place.country].filter(Boolean).join(' · ');
